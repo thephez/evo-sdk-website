@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dash Platform Evo JS SDK Documentation</title>
+  <link rel="icon" type="image/svg+xml" href="https://media.dash.org/wp-content/uploads/blue-d.svg" />
+  <link rel="alternate icon" type="image/png" href="https://media.dash.org/wp-content/uploads/blue-d-250.png" />
+  <style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5; display: flex; }
+.sidebar { width: 280px; background-color: white; box-shadow: 2px 0 4px rgba(0,0,0,0.1); position: fixed; height: 100vh; overflow-y: auto; padding: 20px; }
+.sidebar h2 { font-size: 1.2em; margin-bottom: 10px; color: #2c3e50; }
+.sidebar ul { list-style: none; padding: 0; margin: 0 0 20px 0; }
+.sidebar li { margin-bottom: 5px; }
+.content { margin-left: 320px; padding: 30px; max-width: 1100px; }
+.category { margin: 15px 0; padding: 10px 14px; background: #fff; border-left: 3px solid #3498db; color: #34495e; font-weight: 600; }
+.operation { background: #fff; margin: 16px 0; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); padding: 18px; }
+.parameters { background: #f9fafb; padding: 12px; border-radius: 4px; }
+.example { background: #0b1021; color: #d6e1ff; padding: 12px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.9em; }
+.description { color: #4a5568; }
+.param { color: #475569; padding: 2px 0; }
+.section-title { margin-top: 30px; }
+    </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h2>Evo SDK Docs</h2>
+    <div style="font-size:12px;color:#6b7280;margin:4px 0 12px">Generated: 2025-09-16T11:27:13+00:00</div>
+    <div class="section-header">Queries</div>
+    <ul><li class="category">Identity Queries</li><li style="margin-left: 14px;"><a href="#q-getIdentity">Get Identity</a></li><li style="margin-left: 14px;"><a href="#q-getIdentityKeys">Get Identity Keys</a></li><li style="margin-left: 14px;"><a href="#q-getIdentityNonce">Get Identity Nonce</a></li><li style="margin-left: 14px;"><a href="#q-getIdentityContractNonce">Get Identity Contract Nonce</a></li><li style="margin-left: 14px;"><a href="#q-getIdentityBalance">Get Identity Balance</a></li><li style="margin-left: 14px;"><a href="#q-getIdentitiesBalances">Get Identities Balances</a></li><li style="margin-left: 14px;"><a href="#q-getIdentityBalanceAndRevision">Get Identity Balance and Revision</a></li><li style="margin-left: 14px;"><a href="#q-getIdentityByPublicKeyHash">Get Identity by Unique Public Key Hash</a></li><li style="margin-left: 14px;"><a href="#q-getIdentityByNonUniquePublicKeyHash">Get Identity by Non-Unique Public Key Hash</a></li><li style="margin-left: 14px;"><a href="#q-getIdentityTokenBalances">Get Identity Token Balances</a></li><li style="margin-left: 14px;"><a href="#q-getIdentitiesTokenBalances">Get Identities Token Balances</a></li><li style="margin-left: 14px;"><a href="#q-getIdentityTokenInfos">Get Identity Token Info</a></li><li style="margin-left: 14px;"><a href="#q-getIdentitiesTokenInfos">Get Identities Token Info</a></li><li class="category">Data Contract Queries</li><li style="margin-left: 14px;"><a href="#q-getDataContract">Get Data Contract</a></li><li style="margin-left: 14px;"><a href="#q-getDataContractHistory">Get Data Contract History</a></li><li style="margin-left: 14px;"><a href="#q-getDataContracts">Get Data Contracts</a></li><li class="category">Document Queries</li><li style="margin-left: 14px;"><a href="#q-getDocuments">Get Documents</a></li><li style="margin-left: 14px;"><a href="#q-getDocument">Get Document</a></li><li class="category">DPNS Queries</li><li style="margin-left: 14px;"><a href="#q-getDpnsUsername">Get DPNS Usernames</a></li><li style="margin-left: 14px;"><a href="#q-dpnsCheckAvailability">DPNS Check Availability</a></li><li style="margin-left: 14px;"><a href="#q-dpnsResolve">DPNS Resolve Name</a></li><li class="category">Voting & Contested Resources</li><li style="margin-left: 14px;"><a href="#q-getContestedResources">Get Contested Resources</a></li><li style="margin-left: 14px;"><a href="#q-getContestedResourceVoteState">Get Contested Resource Vote State</a></li><li style="margin-left: 14px;"><a href="#q-getContestedResourceVotersForIdentity">Get Contested Resource Voters for Identity</a></li><li style="margin-left: 14px;"><a href="#q-getContestedResourceIdentityVotes">Get Contested Resource Identity Votes</a></li><li style="margin-left: 14px;"><a href="#q-getVotePollsByEndDate">Get Vote Polls by End Date</a></li><li class="category">Protocol & Version</li><li style="margin-left: 14px;"><a href="#q-getProtocolVersionUpgradeState">Get Protocol Version Upgrade State</a></li><li style="margin-left: 14px;"><a href="#q-getProtocolVersionUpgradeVoteStatus">Get Protocol Version Upgrade Vote Status</a></li><li class="category">Epoch & Block</li><li style="margin-left: 14px;"><a href="#q-getEpochsInfo">Get Epochs Info</a></li><li style="margin-left: 14px;"><a href="#q-getCurrentEpoch">Get Current Epoch</a></li><li style="margin-left: 14px;"><a href="#q-getFinalizedEpochInfos">Get Finalized Epoch Info</a></li><li style="margin-left: 14px;"><a href="#q-getEvonodesProposedEpochBlocksByIds">Get Evonodes Proposed Epoch Blocks by IDs</a></li><li style="margin-left: 14px;"><a href="#q-getEvonodesProposedEpochBlocksByRange">Get Evonodes Proposed Epoch Blocks by Range</a></li><li class="category">Token Queries</li><li style="margin-left: 14px;"><a href="#q-getTokenStatuses">Get Token Statuses</a></li><li style="margin-left: 14px;"><a href="#q-getTokenDirectPurchasePrices">Get Token Direct Purchase Prices</a></li><li style="margin-left: 14px;"><a href="#q-getTokenContractInfo">Get Token Contract Info</a></li><li style="margin-left: 14px;"><a href="#q-getTokenPerpetualDistributionLastClaim">Get Token Perpetual Distribution Last Claim</a></li><li style="margin-left: 14px;"><a href="#q-getTokenTotalSupply">Get Token Total Supply</a></li><li class="category">Group Queries</li><li style="margin-left: 14px;"><a href="#q-getGroupInfo">Get Group Info</a></li><li style="margin-left: 14px;"><a href="#q-getGroupInfos">Get Group Infos</a></li><li style="margin-left: 14px;"><a href="#q-getGroupActions">Get Group Actions</a></li><li style="margin-left: 14px;"><a href="#q-getGroupActionSigners">Get Group Action Signers</a></li><li class="category">System & Utility</li><li style="margin-left: 14px;"><a href="#q-getStatus">Get Status</a></li><li style="margin-left: 14px;"><a href="#q-getCurrentQuorumsInfo">Get Current Quorums Info</a></li><li style="margin-left: 14px;"><a href="#q-getPrefundedSpecializedBalance">Get Prefunded Specialized Balance</a></li><li style="margin-left: 14px;"><a href="#q-getTotalCreditsInPlatform">Get Total Credits in Platform</a></li><li style="margin-left: 14px;"><a href="#q-getPathElements">Get Path Elements</a></li><li style="margin-left: 14px;"><a href="#q-waitForStateTransitionResult">Wait for State Transition Result</a></li></ul>
+    <div class="section-header">State Transitions</div>
+    <ul><li class="category">Identity Transitions</li><li style="margin-left: 14px;"><a href="#t-identityCreate">Identity Create</a></li><li style="margin-left: 14px;"><a href="#t-identityTopUp">Identity Top Up</a></li><li style="margin-left: 14px;"><a href="#t-identityUpdate">Identity Update</a></li><li style="margin-left: 14px;"><a href="#t-identityCreditTransfer">Identity Credit Transfer</a></li><li style="margin-left: 14px;"><a href="#t-identityCreditWithdrawal">Identity Credit Withdrawal</a></li><li class="category">Document Transitions</li><li style="margin-left: 14px;"><a href="#t-documentCreate">Document Create</a></li><li style="margin-left: 14px;"><a href="#t-documentReplace">Document Replace</a></li><li style="margin-left: 14px;"><a href="#t-documentDelete">Document Delete</a></li><li style="margin-left: 14px;"><a href="#t-documentTransfer">Document Transfer</a></li><li style="margin-left: 14px;"><a href="#t-documentPurchase">Document Purchase</a></li><li style="margin-left: 14px;"><a href="#t-documentSetPrice">Document Set Price</a></li><li class="category">Token Transitions</li><li style="margin-left: 14px;"><a href="#t-tokenBurn">Token Burn</a></li><li style="margin-left: 14px;"><a href="#t-tokenMint">Token Mint</a></li><li style="margin-left: 14px;"><a href="#t-tokenClaim">Token Claim</a></li><li style="margin-left: 14px;"><a href="#t-tokenSetPriceForDirectPurchase">Token Set Price</a></li><li style="margin-left: 14px;"><a href="#t-tokenDirectPurchase">Token Direct Purchase</a></li><li style="margin-left: 14px;"><a href="#t-tokenConfigUpdate">Token Config Update</a></li><li style="margin-left: 14px;"><a href="#t-tokenTransfer">Token Transfer</a></li><li style="margin-left: 14px;"><a href="#t-tokenFreeze">Token Freeze</a></li><li style="margin-left: 14px;"><a href="#t-tokenUnfreeze">Token Unfreeze</a></li><li style="margin-left: 14px;"><a href="#t-tokenDestroyFrozen">Token Destroy Frozen</a></li><li class="category">Voting Transitions</li><li style="margin-left: 14px;"><a href="#t-dpnsUsername">DPNS Username</a></li><li style="margin-left: 14px;"><a href="#t-masternodeVote">Contested Resource</a></li></ul>
+  </div>
+  <div class="content">
+    <h1>Dash Platform Evo JS SDK</h1>
+    <p>This documentation is generated from API definitions and shows EvoSDK usage examples.</p>
+    <h2 class="section-title">Queries</h2>
+    <div class="category">Identity Queries</div>
+<div class="operation">
+  <h3 id="q-getIdentity">Get Identity</h3>
+  <p class="description">Fetch an identity by its identifier</p>
+  <div class="parameters"><div class="param"><code>id</code> <em>(text, required)</em> — Identity ID</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.identities.fetch(id)</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getIdentityKeys">Get Identity Keys</h3>
+  <p class="description">Retrieve keys associated with an identity</p>
+  <div class="parameters"><div class="param"><code>identityId</code> <em>(text, required)</em> — Identity ID</div>
+<div class="param"><code>keyRequestType</code> <em>(select, optional)</em> — Key Request Type</div>
+<div class="param"><code>specificKeyIds</code> <em>(array, optional)</em> — Specific Key IDs (required for 'specific' type)</div>
+<div class="param"><code>searchPurposeMap</code> <em>(text, optional)</em> — Search Purpose Map JSON (required for 'search' type)</div>
+<div class="param"><code>limit</code> <em>(number, optional)</em> — Limit</div>
+<div class="param"><code>offset</code> <em>(number, optional)</em> — Offset</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.identities.getKeys({ identityId, keyRequestType, specificKeyIds, searchPurposeMap, limit, offset })</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getIdentityNonce">Get Identity Nonce</h3>
+  <p class="description">Get the current nonce for an identity</p>
+  <div class="parameters"><div class="param"><code>identityId</code> <em>(text, required)</em> — Identity ID</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.wasm.getIdentityNonce(identityId)</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getIdentityContractNonce">Get Identity Contract Nonce</h3>
+  <p class="description">Get the nonce for an identity in relation to a specific contract</p>
+  <div class="parameters"><div class="param"><code>identityId</code> <em>(text, required)</em> — Identity ID</div>
+<div class="param"><code>contractId</code> <em>(text, required)</em> — Contract ID</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.wasm.getIdentityContractNonce(identityId, contractId)</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getIdentityBalance">Get Identity Balance</h3>
+  <p class="description">Get the credit balance of an identity</p>
+  <div class="parameters"><div class="param"><code>id</code> <em>(text, required)</em> — Identity ID</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.wasm.getIdentityBalance(id)</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getIdentitiesBalances">Get Identities Balances</h3>
+  <p class="description">Get balances for multiple identities</p>
+  <div class="parameters"><div class="param"><code>ids</code> <em>(array, required)</em> — Identity IDs</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.wasm.getIdentitiesBalances(ids)</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getIdentityBalanceAndRevision">Get Identity Balance and Revision</h3>
+  <p class="description">Get both balance and revision number for an identity</p>
+  <div class="parameters"><div class="param"><code>id</code> <em>(text, required)</em> — Identity ID</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.wasm.getIdentityBalanceAndRevision(id)</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getIdentityByPublicKeyHash">Get Identity by Unique Public Key Hash</h3>
+  <p class="description">Find an identity by its unique public key hash</p>
+  <div class="parameters"><div class="param"><code>publicKeyHash</code> <em>(text, required)</em> — Public Key Hash</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.wasm.getIdentityByPublicKeyHash(publicKeyHash)</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getIdentityByNonUniquePublicKeyHash">Get Identity by Non-Unique Public Key Hash</h3>
+  <p class="description">Find identities by non-unique public key hash</p>
+  <div class="parameters"><div class="param"><code>publicKeyHash</code> <em>(text, required)</em> — Public Key Hash</div>
+<div class="param"><code>startAfter</code> <em>(text, optional)</em> — Start After</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.wasm.getIdentityByNonUniquePublicKeyHash(publicKeyHash, startAfter)</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getIdentityTokenBalances">Get Identity Token Balances</h3>
+  <p class="description">Get token balances for an identity</p>
+  <div class="parameters"><div class="param"><code>identityId</code> <em>(text, required)</em> — Identity ID</div>
+<div class="param"><code>tokenIds</code> <em>(array, required)</em> — Token IDs</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.wasm.getIdentityTokenBalances(identityId, tokenIds)</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getIdentitiesTokenBalances">Get Identities Token Balances</h3>
+  <p class="description">Get token balance for multiple identities</p>
+  <div class="parameters"><div class="param"><code>identityIds</code> <em>(array, required)</em> — Identity IDs</div>
+<div class="param"><code>tokenId</code> <em>(text, required)</em> — Token ID</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.tokens.balances(identityIds, tokenId)</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getIdentityTokenInfos">Get Identity Token Info</h3>
+  <p class="description">Get token information for an identity's tokens</p>
+  <div class="parameters"><div class="param"><code>identityId</code> <em>(text, required)</em> — Identity ID</div>
+<div class="param"><code>tokenIds</code> <em>(array, optional)</em> — Token IDs (optional)</div>
+<div class="param"><code>limit</code> <em>(number, optional)</em> — Limit</div>
+<div class="param"><code>offset</code> <em>(number, optional)</em> — Offset</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.tokens.identityTokenInfos(identityId, tokenIds, { limit, offset })</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getIdentitiesTokenInfos">Get Identities Token Info</h3>
+  <p class="description">Get token information for multiple identities with a specific token</p>
+  <div class="parameters"><div class="param"><code>identityIds</code> <em>(array, required)</em> — Identity IDs</div>
+<div class="param"><code>tokenId</code> <em>(text, required)</em> — Token ID</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.tokens.identitiesTokenInfos(identityIds, tokenId)</div>
+</div>
+<div class="category">Data Contract Queries</div>
+<div class="operation">
+  <h3 id="q-getDataContract">Get Data Contract</h3>
+  <p class="description">Fetch a data contract by its identifier</p>
+  <div class="parameters"><div class="param"><code>id</code> <em>(text, required)</em> — Data Contract ID</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.contracts.fetch(id)</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getDataContractHistory">Get Data Contract History</h3>
+  <p class="description">Get the version history of a data contract</p>
+  <div class="parameters"><div class="param"><code>id</code> <em>(text, required)</em> — Data Contract ID</div>
+<div class="param"><code>limit</code> <em>(number, optional)</em> — Limit</div>
+<div class="param"><code>offset</code> <em>(number, optional)</em> — Offset</div>
+<div class="param"><code>startAtMs</code> <em>(number, optional)</em> — Start At Timestamp (ms)</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.contracts.getHistory({ contractId: id, limit, startAtMs })</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getDataContracts">Get Data Contracts</h3>
+  <p class="description">Fetch multiple data contracts by their identifiers</p>
+  <div class="parameters"><div class="param"><code>ids</code> <em>(array, required)</em> — Data Contract IDs</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.contracts.getMany(ids)</div>
+</div>
+<div class="category">Document Queries</div>
+<div class="operation">
+  <h3 id="q-getDocuments">Get Documents</h3>
+  <p class="description">Query documents from a data contract</p>
+  <div class="parameters"><div class="param"><code>dataContractId</code> <em>(text, required)</em> — Data Contract ID</div>
+<div class="param"><code>documentType</code> <em>(text, required)</em> — Document Type</div>
+<div class="param"><code>where</code> <em>(json, optional)</em> — Where Clause (JSON)</div>
+<div class="param"><code>orderBy</code> <em>(json, optional)</em> — Order By (JSON)</div>
+<div class="param"><code>limit</code> <em>(number, optional)</em> — Limit</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.documents.query({ contractId, type: documentType, where, orderBy, limit, startAfter, startAt })</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getDocument">Get Document</h3>
+  <p class="description">Fetch a specific document by ID</p>
+  <div class="parameters"><div class="param"><code>dataContractId</code> <em>(text, required)</em> — Data Contract ID</div>
+<div class="param"><code>documentType</code> <em>(text, required)</em> — Document Type</div>
+<div class="param"><code>documentId</code> <em>(text, required)</em> — Document ID</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.documents.get(dataContractId, documentType, documentId)</div>
+</div>
+<div class="category">DPNS Queries</div>
+<div class="operation">
+  <h3 id="q-getDpnsUsername">Get DPNS Usernames</h3>
+  <p class="description">Get DPNS usernames for an identity</p>
+  <div class="parameters"><div class="param"><code>identityId</code> <em>(text, required)</em> — Identity ID</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.dpns.username(identityId)</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-dpnsCheckAvailability">DPNS Check Availability</h3>
+  <p class="description">Check if a DPNS username is available</p>
+  <div class="parameters"><div class="param"><code>label</code> <em>(text, required)</em> — Label (Username)</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.dpns.isNameAvailable(label)</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-dpnsResolve">DPNS Resolve Name</h3>
+  <p class="description">Resolve a DPNS name to an identity ID</p>
+  <div class="parameters"><div class="param"><code>name</code> <em>(text, required)</em> — Name</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.dpns.resolveName(name)</div>
+</div>
+<div class="category">Voting & Contested Resources</div>
+<div class="operation">
+  <h3 id="q-getContestedResources">Get Contested Resources</h3>
+  <p class="description">Get list of contested resources</p>
+  <div class="parameters"><div class="param"><code>documentTypeName</code> <em>(text, required)</em> — Document Type</div>
+<div class="param"><code>dataContractId</code> <em>(text, required)</em> — Data Contract ID</div>
+<div class="param"><code>indexName</code> <em>(text, required)</em> — Index Name</div>
+<div class="param"><code>startAtValue</code> <em>(text, optional)</em> — Start At Value</div>
+<div class="param"><code>limit</code> <em>(number, optional)</em> — Limit</div>
+<div class="param"><code>offset</code> <em>(number, optional)</em> — Offset</div>
+<div class="param"><code>orderAscending</code> <em>(checkbox, optional)</em> — Order Ascending</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.group.contestedResources({ documentTypeName, contractId, indexName, startAtValue, limit, orderAscending })</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getContestedResourceVoteState">Get Contested Resource Vote State</h3>
+  <p class="description">Get the current vote state for a contested resource</p>
+  <div class="parameters"><div class="param"><code>dataContractId</code> <em>(text, required)</em> — Data Contract ID</div>
+<div class="param"><code>documentTypeName</code> <em>(text, required)</em> — Document Type</div>
+<div class="param"><code>indexName</code> <em>(text, required)</em> — Index Name</div>
+<div class="param"><code>indexValues</code> <em>(array, required)</em> — Index Values</div>
+<div class="param"><code>resultType</code> <em>(text, required)</em> — Result Type</div>
+<div class="param"><code>allowIncludeLockedAndAbstainingVoteTally</code> <em>(checkbox, optional)</em> — Allow Include Locked and Abstaining Vote Tally</div>
+<div class="param"><code>startAtIdentifierInfo</code> <em>(text, optional)</em> — Start At Identifier Info</div>
+<div class="param"><code>count</code> <em>(number, optional)</em> — Count</div>
+<div class="param"><code>orderAscending</code> <em>(checkbox, optional)</em> — Order Ascending</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.voting.contestedResourceVoteState({ contractId, documentTypeName, indexName, indexValues, resultType, allowIncludeLockedAndAbstainingVoteTally, startAtIdentifierInfo, count, orderAscending })</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getContestedResourceVotersForIdentity">Get Contested Resource Voters for Identity</h3>
+  <p class="description">Get voters who voted for a specific identity in a contested resource</p>
+  <div class="parameters"><div class="param"><code>dataContractId</code> <em>(text, required)</em> — Contract ID</div>
+<div class="param"><code>documentTypeName</code> <em>(text, required)</em> — Document Type</div>
+<div class="param"><code>indexName</code> <em>(text, required)</em> — Index Name</div>
+<div class="param"><code>indexValues</code> <em>(array, required)</em> — Index Values</div>
+<div class="param"><code>contestantId</code> <em>(text, required)</em> — Contestant Identity ID</div>
+<div class="param"><code>startAtIdentifierInfo</code> <em>(text, optional)</em> — Start At Identifier Info</div>
+<div class="param"><code>count</code> <em>(number, optional)</em> — Count</div>
+<div class="param"><code>orderAscending</code> <em>(checkbox, optional)</em> — Order Ascending</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.group.contestedResourceVotersForIdentity({ contractId, documentTypeName, indexName, indexValues, contestantId, startAtVoterInfo, limit, orderAscending })</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getContestedResourceIdentityVotes">Get Contested Resource Identity Votes</h3>
+  <p class="description">Get all votes cast by a specific identity</p>
+  <div class="parameters"><div class="param"><code>identityId</code> <em>(text, required)</em> — Identity ID</div>
+<div class="param"><code>limit</code> <em>(number, optional)</em> — Limit</div>
+<div class="param"><code>offset</code> <em>(number, optional)</em> — Offset</div>
+<div class="param"><code>orderAscending</code> <em>(checkbox, optional)</em> — Order Ascending</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.voting.contestedResourceIdentityVotes(identityId, { limit, startAtVotePollIdInfo, orderAscending })</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getVotePollsByEndDate">Get Vote Polls by End Date</h3>
+  <p class="description">Get vote polls within a time range</p>
+  <div class="parameters"><div class="param"><code>startTimeMs</code> <em>(number, optional)</em> — Start Time (ms)</div>
+<div class="param"><code>endTimeMs</code> <em>(number, optional)</em> — End Time (ms)</div>
+<div class="param"><code>limit</code> <em>(number, optional)</em> — Limit</div>
+<div class="param"><code>offset</code> <em>(number, optional)</em> — Offset</div>
+<div class="param"><code>orderAscending</code> <em>(checkbox, optional)</em> — Order Ascending</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.wasm.getVotePollsByEndDate(epoch, limit, startAfter, orderAscending)</div>
+</div>
+<div class="category">Protocol & Version</div>
+<div class="operation">
+  <h3 id="q-getProtocolVersionUpgradeState">Get Protocol Version Upgrade State</h3>
+  <p class="description">Get the current state of protocol version upgrades</p>
+  <div class="parameters"><p class="param-optional">No parameters</p></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.protocol.versionUpgradeState()</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getProtocolVersionUpgradeVoteStatus">Get Protocol Version Upgrade Vote Status</h3>
+  <p class="description">Get voting status for protocol version upgrades</p>
+  <div class="parameters"><div class="param"><code>startProTxHash</code> <em>(text, required)</em> — Start ProTx Hash</div>
+<div class="param"><code>count</code> <em>(number, required)</em> — Count</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.protocol.versionUpgradeVoteStatus({ startProTxHash, count })</div>
+</div>
+<div class="category">Epoch & Block</div>
+<div class="operation">
+  <h3 id="q-getEpochsInfo">Get Epochs Info</h3>
+  <p class="description">Get information about epochs</p>
+  <div class="parameters"><div class="param"><code>startEpoch</code> <em>(number, required)</em> — Start Epoch</div>
+<div class="param"><code>count</code> <em>(number, required)</em> — Count</div>
+<div class="param"><code>ascending</code> <em>(checkbox, optional)</em> — Ascending Order</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.epoch.epochsInfo({ startEpoch, count, ascending })</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getCurrentEpoch">Get Current Epoch</h3>
+  <p class="description">Get information about the current epoch</p>
+  <div class="parameters"><p class="param-optional">No parameters</p></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.epoch.current()</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getFinalizedEpochInfos">Get Finalized Epoch Info</h3>
+  <p class="description">Get information about finalized epochs</p>
+  <div class="parameters"><div class="param"><code>startEpoch</code> <em>(number, required)</em> — Start Epoch</div>
+<div class="param"><code>count</code> <em>(number, required)</em> — Count</div>
+<div class="param"><code>ascending</code> <em>(checkbox, optional)</em> — Ascending Order</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.epoch.finalizedInfos({ startEpoch, count, ascending })</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getEvonodesProposedEpochBlocksByIds">Get Evonodes Proposed Epoch Blocks by IDs</h3>
+  <p class="description">Get proposed blocks by evonode IDs</p>
+  <div class="parameters"><div class="param"><code>epoch</code> <em>(number, required)</em> — Epoch</div>
+<div class="param"><code>ids</code> <em>(array, required)</em> — ProTx Hashes</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.epoch.evonodesProposedBlocksByIds(epoch, ids)</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getEvonodesProposedEpochBlocksByRange">Get Evonodes Proposed Epoch Blocks by Range</h3>
+  <p class="description">Get proposed blocks by range</p>
+  <div class="parameters"><div class="param"><code>epoch</code> <em>(number, required)</em> — Epoch</div>
+<div class="param"><code>limit</code> <em>(number, optional)</em> — Limit</div>
+<div class="param"><code>startAfter</code> <em>(text, optional)</em> — Start After (Evonode ID)</div>
+<div class="param"><code>orderAscending</code> <em>(checkbox, optional)</em> — Order Ascending</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.epoch.evonodesProposedBlocksByRange(epoch, { limit, startAfter, orderAscending })</div>
+</div>
+<div class="category">Token Queries</div>
+<div class="operation">
+  <h3 id="q-getTokenStatuses">Get Token Statuses</h3>
+  <p class="description">Get token statuses</p>
+  <div class="parameters"><div class="param"><code>tokenIds</code> <em>(array, required)</em> — Token IDs</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.tokens.statuses(tokenIds)</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getTokenDirectPurchasePrices">Get Token Direct Purchase Prices</h3>
+  <p class="description">Get direct purchase prices for tokens</p>
+  <div class="parameters"><div class="param"><code>tokenIds</code> <em>(array, required)</em> — Token IDs</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.tokens.directPurchasePrices(tokenIds)</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getTokenContractInfo">Get Token Contract Info</h3>
+  <p class="description">Get information about a token contract</p>
+  <div class="parameters"><div class="param"><code>dataContractId</code> <em>(text, required)</em> — Data Contract ID</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.tokens.contractInfo(dataContractId)</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getTokenPerpetualDistributionLastClaim">Get Token Perpetual Distribution Last Claim</h3>
+  <p class="description">Get last claim information for perpetual distribution</p>
+  <div class="parameters"><div class="param"><code>identityId</code> <em>(text, required)</em> — Identity ID</div>
+<div class="param"><code>tokenId</code> <em>(text, required)</em> — Token ID</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.tokens.perpetualDistributionLastClaim(identityId, tokenId)</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getTokenTotalSupply">Get Token Total Supply</h3>
+  <p class="description">Get total supply of a token</p>
+  <div class="parameters"><div class="param"><code>tokenId</code> <em>(text, required)</em> — Token ID</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.tokens.totalSupply(tokenId)</div>
+</div>
+<div class="category">Group Queries</div>
+<div class="operation">
+  <h3 id="q-getGroupInfo">Get Group Info</h3>
+  <p class="description">Get information about a group</p>
+  <div class="parameters"><div class="param"><code>contractId</code> <em>(text, required)</em> — Contract ID</div>
+<div class="param"><code>groupContractPosition</code> <em>(number, required)</em> — Group Contract Position</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.wasm.getGroupInfo(contractId, groupContractPosition)</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getGroupInfos">Get Group Infos</h3>
+  <p class="description">Get information about multiple groups</p>
+  <div class="parameters"><div class="param"><code>contractId</code> <em>(text, required)</em> — Contract ID</div>
+<div class="param"><code>startAtGroupContractPosition</code> <em>(number, optional)</em> — Start at Position</div>
+<div class="param"><code>startGroupContractPositionIncluded</code> <em>(checkbox, optional)</em> — Include Start Position</div>
+<div class="param"><code>count</code> <em>(number, optional)</em> — Count</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.wasm.getGroupInfos(contractId, startAtGroupContractPosition, startGroupContractPositionIncluded, count)</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getGroupActions">Get Group Actions</h3>
+  <p class="description">Get actions for a group</p>
+  <div class="parameters"><div class="param"><code>contractId</code> <em>(text, required)</em> — Contract ID</div>
+<div class="param"><code>groupContractPosition</code> <em>(number, required)</em> — Group Contract Position</div>
+<div class="param"><code>status</code> <em>(select, required)</em> — Status</div>
+<div class="param"><code>startActionId</code> <em>(text, optional)</em> — Start Action ID</div>
+<div class="param"><code>startActionIdIncluded</code> <em>(checkbox, optional)</em> — Include Start Action</div>
+<div class="param"><code>count</code> <em>(number, optional)</em> — Count</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.wasm.getGroupActions(contractId, groupContractPosition, status, startActionId, startActionIdIncluded, count)</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getGroupActionSigners">Get Group Action Signers</h3>
+  <p class="description">Get signers for a group action</p>
+  <div class="parameters"><div class="param"><code>contractId</code> <em>(text, required)</em> — Contract ID</div>
+<div class="param"><code>groupContractPosition</code> <em>(number, required)</em> — Group Contract Position</div>
+<div class="param"><code>status</code> <em>(select, required)</em> — Status</div>
+<div class="param"><code>actionId</code> <em>(text, required)</em> — Action ID</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.wasm.getGroupActionSigners(contractId, groupContractPosition, status, actionId)</div>
+</div>
+<div class="category">System & Utility</div>
+<div class="operation">
+  <h3 id="q-getStatus">Get Status</h3>
+  <p class="description">Get system status</p>
+  <div class="parameters"><p class="param-optional">No parameters</p></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.system.status()</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getCurrentQuorumsInfo">Get Current Quorums Info</h3>
+  <p class="description">Get information about current quorums</p>
+  <div class="parameters"><p class="param-optional">No parameters</p></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.system.currentQuorumsInfo()</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getPrefundedSpecializedBalance">Get Prefunded Specialized Balance</h3>
+  <p class="description">Get prefunded specialized balance</p>
+  <div class="parameters"><div class="param"><code>identityId</code> <em>(text, required)</em> — Specialized Balance ID</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.system.prefundedSpecializedBalance(identityId)</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getTotalCreditsInPlatform">Get Total Credits in Platform</h3>
+  <p class="description">Get total credits in the platform</p>
+  <div class="parameters"><p class="param-optional">No parameters</p></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.system.totalCreditsInPlatform()</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-getPathElements">Get Path Elements</h3>
+  <p class="description">Access any data in the Dash Platform state tree. This low-level query allows direct access to GroveDB storage by specifying a path through the tree structure and keys to retrieve at that path. Common paths include: Identities (32), Tokens (96), DataContractDocuments (64), Balances (16), Votes (80), and more.</p>
+  <div class="parameters"><div class="param"><code>path</code> <em>(array, required)</em> — Path</div>
+<div class="param"><code>keys</code> <em>(array, required)</em> — Keys</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.system.pathElements(path, keys)</div>
+</div>
+
+<div class="operation">
+  <h3 id="q-waitForStateTransitionResult">Wait for State Transition Result</h3>
+  <p class="description">Internal query to wait for and retrieve the result of a previously submitted state transition</p>
+  <div class="parameters"><div class="param"><code>stateTransitionHash</code> <em>(text, required)</em> — State Transition Hash</div></div>
+  <div class="example">// Evo SDK example\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.system.waitForStateTransitionResult(stateTransitionHash)</div>
+</div>
+
+    <h2 class="section-title">State Transitions</h2>
+    <p class="description">State transitions require valid identities and private keys on the selected network. Examples below show method usage.</p>
+    <div class="category">Identity Transitions</div>
+<div class="operation">
+  <h3 id="t-identityCreate">Identity Create</h3>
+  <p class="description">Create a new identity with initial credits</p>
+  <div class="parameters"><div class="param"><code>assetLockProof</code> <em>(string, required)</em> — Asset Lock Proof</div>
+<div class="param"><code>assetLockProofPrivateKey</code> <em>(string, required)</em> — Asset Lock Proof Private Key</div>
+<div class="param"><code>publicKeys</code> <em>(string, required)</em> — Public Keys</div></div>
+  <div class="example">// Evo SDK example (requires keys/funding)\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.identities.create({ assetLockProof, assetLockPrivateKeyWif, publicKeys })</div>
+</div>
+
+<div class="operation">
+  <h3 id="t-identityTopUp">Identity Top Up</h3>
+  <p class="description">Add credits to an existing identity</p>
+  <div class="parameters"><div class="param"><code>identityId</code> <em>(string, required)</em> — Identity ID</div>
+<div class="param"><code>assetLockProof</code> <em>(string, required)</em> — Asset Lock Proof</div>
+<div class="param"><code>assetLockProofPrivateKey</code> <em>(string, required)</em> — Asset Lock Proof Private Key</div></div>
+  <div class="example">// Evo SDK example (requires keys/funding)\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.identities.topUp({ identityId, assetLockProof, assetLockPrivateKeyWif })</div>
+</div>
+
+<div class="operation">
+  <h3 id="t-identityUpdate">Identity Update</h3>
+  <p class="description">Update identity keys (add or disable)</p>
+  <div class="parameters"><div class="param"><code>addPublicKeys</code> <em>(textarea, optional)</em> — Keys to Add (JSON array)</div>
+<div class="param"><code>disablePublicKeys</code> <em>(text, optional)</em> — Key IDs to Disable (comma-separated)</div></div>
+  <div class="example">// Evo SDK example (requires keys/funding)\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.identities.update({ identityId, addPublicKeys, disablePublicKeyIds, privateKeyWif })</div>
+</div>
+
+<div class="operation">
+  <h3 id="t-identityCreditTransfer">Identity Credit Transfer</h3>
+  <p class="description">Transfer credits between identities</p>
+  <div class="parameters"><div class="param"><code>recipientId</code> <em>(text, required)</em> — Recipient Identity ID</div>
+<div class="param"><code>amount</code> <em>(number, required)</em> — Amount (credits)</div></div>
+  <div class="example">// Evo SDK example (requires keys/funding)\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.identities.creditTransfer({ senderId, recipientId, amount, privateKeyWif, keyId })</div>
+</div>
+
+<div class="operation">
+  <h3 id="t-identityCreditWithdrawal">Identity Credit Withdrawal</h3>
+  <p class="description">Withdraw credits from identity to Dash address</p>
+  <div class="parameters"><div class="param"><code>toAddress</code> <em>(text, required)</em> — Dash Address</div>
+<div class="param"><code>amount</code> <em>(number, required)</em> — Amount (credits)</div>
+<div class="param"><code>coreFeePerByte</code> <em>(number, optional)</em> — Core Fee Per Byte (optional)</div></div>
+  <div class="example">// Evo SDK example (requires keys/funding)\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.identities.creditWithdrawal({ identityId, toAddress, amount, coreFeePerByte, privateKeyWif, keyId })</div>
+</div>
+<div class="category">Document Transitions</div>
+<div class="operation">
+  <h3 id="t-documentCreate">Document Create</h3>
+  <p class="description">Create a new document</p>
+  <div class="parameters"><div class="param"><code>contractId</code> <em>(text, required)</em> — Data Contract ID</div>
+<div class="param"><code>documentType</code> <em>(text, required)</em> — Document Type</div>
+<div class="param"><code>fetchSchema</code> <em>(button, optional)</em> — Fetch Schema</div>
+<div class="param"><code>documentFields</code> <em>(dynamic, optional)</em> — Document Fields</div></div>
+  <div class="example">// Evo SDK example (requires keys/funding)\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.documents.create({ contractId, type: documentType, ownerId, data, entropyHex, privateKeyWif })</div>
+</div>
+
+<div class="operation">
+  <h3 id="t-documentReplace">Document Replace</h3>
+  <p class="description">Replace an existing document</p>
+  <div class="parameters"><div class="param"><code>contractId</code> <em>(text, required)</em> — Data Contract ID</div>
+<div class="param"><code>documentType</code> <em>(text, required)</em> — Document Type</div>
+<div class="param"><code>documentId</code> <em>(text, required)</em> — Document ID</div>
+<div class="param"><code>loadDocument</code> <em>(button, optional)</em> — Load Document</div>
+<div class="param"><code>documentFields</code> <em>(dynamic, optional)</em> — Document Fields</div></div>
+  <div class="example">// Evo SDK example (requires keys/funding)\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.documents.replace({ contractId, type: documentType, documentId, ownerId, data, revision, privateKeyWif })</div>
+</div>
+
+<div class="operation">
+  <h3 id="t-documentDelete">Document Delete</h3>
+  <p class="description">Delete an existing document</p>
+  <div class="parameters"><div class="param"><code>contractId</code> <em>(text, required)</em> — Data Contract ID</div>
+<div class="param"><code>documentType</code> <em>(text, required)</em> — Document Type</div>
+<div class="param"><code>documentId</code> <em>(text, required)</em> — Document ID</div></div>
+  <div class="example">// Evo SDK example (requires keys/funding)\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.documents.delete({ contractId, type: documentType, documentId, ownerId, privateKeyWif })</div>
+</div>
+
+<div class="operation">
+  <h3 id="t-documentTransfer">Document Transfer</h3>
+  <p class="description">Transfer document ownership</p>
+  <div class="parameters"><div class="param"><code>contractId</code> <em>(text, required)</em> — Data Contract ID</div>
+<div class="param"><code>documentType</code> <em>(text, required)</em> — Document Type</div>
+<div class="param"><code>documentId</code> <em>(text, required)</em> — Document ID</div>
+<div class="param"><code>recipientId</code> <em>(text, required)</em> — Recipient Identity ID</div></div>
+  <div class="example">// Evo SDK example (requires keys/funding)\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.documents.transfer({ contractId, type: documentType, documentId, ownerId, recipientId, privateKeyWif })</div>
+</div>
+
+<div class="operation">
+  <h3 id="t-documentPurchase">Document Purchase</h3>
+  <p class="description">Purchase a document</p>
+  <div class="parameters"><div class="param"><code>contractId</code> <em>(text, required)</em> — Data Contract ID</div>
+<div class="param"><code>documentType</code> <em>(text, required)</em> — Document Type</div>
+<div class="param"><code>documentId</code> <em>(text, required)</em> — Document ID</div>
+<div class="param"><code>price</code> <em>(number, required)</em> — Price (credits)</div></div>
+  <div class="example">// Evo SDK example (requires keys/funding)\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.documents.purchase({ contractId, type: documentType, documentId, buyerId, price, privateKeyWif })</div>
+</div>
+
+<div class="operation">
+  <h3 id="t-documentSetPrice">Document Set Price</h3>
+  <p class="description">Set or update document price</p>
+  <div class="parameters"><div class="param"><code>contractId</code> <em>(text, required)</em> — Data Contract ID</div>
+<div class="param"><code>documentType</code> <em>(text, required)</em> — Document Type</div>
+<div class="param"><code>documentId</code> <em>(text, required)</em> — Document ID</div>
+<div class="param"><code>price</code> <em>(number, required)</em> — Price (credits, 0 to remove)</div></div>
+  <div class="example">// Evo SDK example (requires keys/funding)\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.documents.setPrice({ contractId, type: documentType, documentId, ownerId, price, privateKeyWif })</div>
+</div>
+<div class="category">Token Transitions</div>
+<div class="operation">
+  <h3 id="t-tokenBurn">Token Burn</h3>
+  <p class="description">Burn tokens</p>
+  <div class="parameters"><div class="param"><code>contractId</code> <em>(text, required)</em> — Data Contract ID</div>
+<div class="param"><code>tokenPosition</code> <em>(number, required)</em> — Token Contract Position</div>
+<div class="param"><code>amount</code> <em>(text, required)</em> — Amount to Burn</div>
+<div class="param"><code>publicNote</code> <em>(text, optional)</em> — Public Note</div></div>
+  <div class="example">// Evo SDK example (requires keys/funding)\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.tokens.burn({ contractId, tokenPosition, amount, identityId, privateKeyWif, publicNote })</div>
+</div>
+
+<div class="operation">
+  <h3 id="t-tokenMint">Token Mint</h3>
+  <p class="description">Mint new tokens</p>
+  <div class="parameters"><div class="param"><code>contractId</code> <em>(text, required)</em> — Data Contract ID</div>
+<div class="param"><code>tokenPosition</code> <em>(number, required)</em> — Token Contract Position</div>
+<div class="param"><code>amount</code> <em>(text, required)</em> — Amount to Mint</div>
+<div class="param"><code>issuedToIdentityId</code> <em>(text, optional)</em> — Issue To Identity ID</div>
+<div class="param"><code>publicNote</code> <em>(text, optional)</em> — Public Note</div></div>
+  <div class="example">// Evo SDK example (requires keys/funding)\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.tokens.mint({ contractId, tokenPosition, amount, identityId, privateKeyWif, recipientId, publicNote })</div>
+</div>
+
+<div class="operation">
+  <h3 id="t-tokenClaim">Token Claim</h3>
+  <p class="description">Claim tokens from a distribution</p>
+  <div class="parameters"><div class="param"><code>contractId</code> <em>(text, required)</em> — Data Contract ID</div>
+<div class="param"><code>tokenPosition</code> <em>(number, required)</em> — Token Contract Position</div>
+<div class="param"><code>distributionType</code> <em>(select, required)</em> — Distribution Type</div>
+<div class="param"><code>publicNote</code> <em>(text, optional)</em> — Public Note</div></div>
+  <div class="example">// Evo SDK example (requires keys/funding)\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.tokens.claim({ contractId, tokenPosition, distributionType, identityId, privateKeyWif, publicNote })</div>
+</div>
+
+<div class="operation">
+  <h3 id="t-tokenSetPriceForDirectPurchase">Token Set Price</h3>
+  <p class="description">Set or update the price for direct token purchases</p>
+  <div class="parameters"><div class="param"><code>contractId</code> <em>(text, required)</em> — Data Contract ID</div>
+<div class="param"><code>tokenPosition</code> <em>(number, required)</em> — Token Contract Position</div>
+<div class="param"><code>priceType</code> <em>(select, required)</em> — Price Type</div>
+<div class="param"><code>priceData</code> <em>(text, optional)</em> — Price Data (single price or JSON map)</div>
+<div class="param"><code>publicNote</code> <em>(text, optional)</em> — Public Note</div></div>
+  <div class="example">// Evo SDK example (requires keys/funding)\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.tokens.setPriceForDirectPurchase({ contractId, tokenPosition, identityId, priceType, priceData, privateKeyWif, publicNote })</div>
+</div>
+
+<div class="operation">
+  <h3 id="t-tokenDirectPurchase">Token Direct Purchase</h3>
+  <p class="description">Purchase tokens directly at the configured price</p>
+  <div class="parameters"><div class="param"><code>contractId</code> <em>(text, required)</em> — Data Contract ID</div>
+<div class="param"><code>tokenPosition</code> <em>(number, required)</em> — Token Contract Position</div>
+<div class="param"><code>amount</code> <em>(text, required)</em> — Amount to Purchase</div>
+<div class="param"><code>totalAgreedPrice</code> <em>(text, optional)</em> — Total Agreed Price (in credits) - Optional, fetches from pricing schedule if not provided</div></div>
+  <div class="example">// Evo SDK example (requires keys/funding)\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.tokens.directPurchase({ contractId, tokenPosition, amount, identityId, totalAgreedPrice, privateKeyWif })</div>
+</div>
+
+<div class="operation">
+  <h3 id="t-tokenConfigUpdate">Token Config Update</h3>
+  <p class="description">Update token configuration settings</p>
+  <div class="parameters"><div class="param"><code>contractId</code> <em>(text, required)</em> — Data Contract ID</div>
+<div class="param"><code>tokenPosition</code> <em>(number, required)</em> — Token Contract Position</div>
+<div class="param"><code>configItemType</code> <em>(select, required)</em> — Config Item Type</div>
+<div class="param"><code>configValue</code> <em>(text, required)</em> — Config Value (JSON or specific value)</div>
+<div class="param"><code>publicNote</code> <em>(text, optional)</em> — Public Note</div></div>
+  <div class="example">// Evo SDK example (requires keys/funding)\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.tokens.configUpdate({ contractId, tokenPosition, configItemType, configValue, identityId, privateKeyWif, publicNote })</div>
+</div>
+
+<div class="operation">
+  <h3 id="t-tokenTransfer">Token Transfer</h3>
+  <p class="description">Transfer tokens between identities</p>
+  <div class="parameters"><div class="param"><code>contractId</code> <em>(text, required)</em> — Data Contract ID</div>
+<div class="param"><code>tokenPosition</code> <em>(number, required)</em> — Token Contract Position</div>
+<div class="param"><code>amount</code> <em>(text, required)</em> — Amount to Transfer</div>
+<div class="param"><code>recipientId</code> <em>(text, required)</em> — Recipient Identity ID</div>
+<div class="param"><code>publicNote</code> <em>(text, optional)</em> — Public Note</div></div>
+  <div class="example">// Evo SDK example (requires keys/funding)\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.tokens.transfer({ contractId, tokenPosition, amount, senderId, recipientId, privateKeyWif, publicNote })</div>
+</div>
+
+<div class="operation">
+  <h3 id="t-tokenFreeze">Token Freeze</h3>
+  <p class="description">Freeze tokens for a specific identity</p>
+  <div class="parameters"><div class="param"><code>contractId</code> <em>(text, required)</em> — Data Contract ID</div>
+<div class="param"><code>tokenPosition</code> <em>(number, required)</em> — Token Contract Position</div>
+<div class="param"><code>identityToFreeze</code> <em>(text, required)</em> — Identity ID to Freeze</div>
+<div class="param"><code>publicNote</code> <em>(text, optional)</em> — Public Note</div></div>
+  <div class="example">// Evo SDK example (requires keys/funding)\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.tokens.freeze({ contractId, tokenPosition, identityToFreeze, freezerId, privateKeyWif, publicNote })</div>
+</div>
+
+<div class="operation">
+  <h3 id="t-tokenUnfreeze">Token Unfreeze</h3>
+  <p class="description">Unfreeze tokens for a specific identity</p>
+  <div class="parameters"><div class="param"><code>contractId</code> <em>(text, required)</em> — Data Contract ID</div>
+<div class="param"><code>tokenPosition</code> <em>(number, required)</em> — Token Contract Position</div>
+<div class="param"><code>identityToUnfreeze</code> <em>(text, required)</em> — Identity ID to Unfreeze</div>
+<div class="param"><code>publicNote</code> <em>(text, optional)</em> — Public Note</div></div>
+  <div class="example">// Evo SDK example (requires keys/funding)\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.tokens.unfreeze({ contractId, tokenPosition, identityToUnfreeze, unfreezerId, privateKeyWif, publicNote })</div>
+</div>
+
+<div class="operation">
+  <h3 id="t-tokenDestroyFrozen">Token Destroy Frozen</h3>
+  <p class="description">Destroy frozen tokens</p>
+  <div class="parameters"><div class="param"><code>contractId</code> <em>(text, required)</em> — Data Contract ID</div>
+<div class="param"><code>tokenPosition</code> <em>(number, required)</em> — Token Contract Position</div>
+<div class="param"><code>frozenIdentityId</code> <em>(text, required)</em> — Identity ID whose frozen tokens to destroy</div>
+<div class="param"><code>publicNote</code> <em>(text, optional)</em> — Public Note</div></div>
+  <div class="example">// Evo SDK example (requires keys/funding)\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.tokens.destroyFrozen({ contractId, tokenPosition, identityId: frozenIdentityId, destroyerId, privateKeyWif, publicNote })</div>
+</div>
+<div class="category">Voting Transitions</div>
+<div class="operation">
+  <h3 id="t-dpnsUsername">DPNS Username</h3>
+  <p class="description">Cast a vote for a contested DPNS username</p>
+  <div class="parameters"><div class="param"><code>contestedUsername</code> <em>(text, required)</em> — Contested Username</div>
+<div class="param"><code>voteChoice</code> <em>(select, required)</em> — Vote Choice</div>
+<div class="param"><code>targetIdentity</code> <em>(text, optional)</em> — Target Identity ID (if voting for identity)</div></div>
+  <div class="example">// Evo SDK example (requires keys/funding)\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.voting.masternodeVote({ masternodeProTxHash, contractId, documentTypeName, indexName, indexValues, voteChoice, votingKeyWif })</div>
+</div>
+
+<div class="operation">
+  <h3 id="t-masternodeVote">Contested Resource</h3>
+  <p class="description">Cast a vote for contested resources as a masternode</p>
+  <div class="parameters"><div class="param"><code>contractId</code> <em>(text, required)</em> — Data Contract ID</div>
+<div class="param"><code>fetchContestedResources</code> <em>(button, optional)</em> — Get Contested Resources</div>
+<div class="param"><code>contestedResourceDropdown</code> <em>(dynamic, optional)</em> — Contested Resources</div>
+<div class="param"><code>voteChoice</code> <em>(select, required)</em> — Vote Choice</div>
+<div class="param"><code>targetIdentity</code> <em>(text, optional)</em> — Target Identity ID (if voting for identity)</div></div>
+  <div class="example">// Evo SDK example (requires keys/funding)\nconst client = EvoSDK.testnetTrusted();\nawait client.connect();\nawait client.voting.masternodeVote({ masternodeProTxHash, contractId, documentTypeName, indexName, indexValues, voteChoice, votingKeyWif })</div>
+</div>
+
+  </div>
+  <script type="module">import { EvoSDK } from '../dist/evo-sdk.module.js'; window.EvoSDK = EvoSDK;</script>
+</body>
+</html>
