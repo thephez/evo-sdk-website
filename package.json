@@ -1,0 +1,13 @@
+{
+  "private": true,
+  "dependencies": {
+    "@dashevo/evo-sdk": "file:../platform/packages/js-evo-sdk"
+  },
+  "scripts": {
+    "docs:generate": "python3 website/generate_docs.py",
+    "docs:check": "python3 website/check_documentation.py",
+    "website:serve": "cd website && python3 -m http.server 8081",
+    "website:test": "playwright test website"
+  },
+  "packageManager": "yarn@4.0.2"
+}
