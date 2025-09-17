@@ -1,0 +1,41 @@
+import type { EvoSDK } from '../sdk.js';
+export declare class GroupFacade {
+    private sdk;
+    constructor(sdk: EvoSDK);
+    contestedResources(params: {
+        documentTypeName: string;
+        contractId: string;
+        indexName: string;
+        startAtValue?: Uint8Array;
+        limit?: number;
+        orderAscending?: boolean;
+    }): Promise<any>;
+    contestedResourcesWithProof(params: {
+        documentTypeName: string;
+        contractId: string;
+        indexName: string;
+        startAtValue?: Uint8Array;
+        limit?: number;
+        orderAscending?: boolean;
+    }): Promise<any>;
+    contestedResourceVotersForIdentity(params: {
+        contractId: string;
+        documentTypeName: string;
+        indexName: string;
+        indexValues: any[];
+        contestantId: string;
+        startAtVoterInfo?: string;
+        limit?: number;
+        orderAscending?: boolean;
+    }): Promise<any>;
+    contestedResourceVotersForIdentityWithProof(params: {
+        contractId: string;
+        documentTypeName: string;
+        indexName: string;
+        indexValues: any[];
+        contestantId: string;
+        startAtIdentifierInfo?: string;
+        count?: number;
+        orderAscending?: boolean;
+    }): Promise<any>;
+}

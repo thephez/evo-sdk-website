@@ -1,0 +1,878 @@
+import { EvoSDK } from './dist/sdk.js';
+
+const elements = {
+  apiErrorBanner: document.getElementById('apiErrorBanner'),
+  apiErrorMessage: document.getElementById('apiErrorMessage'),
+  apiRetryButton: document.getElementById('apiRetryButton'),
+  preloader: document.getElementById('preloader'),
+  preloaderText: document.getElementById('preloaderText'),
+  progressFill: document.getElementById('progressFill'),
+  progressPercent: document.getElementById('progressPercent'),
+  statusBanner: document.getElementById('statusBanner'),
+  networkRadios: Array.from(document.querySelectorAll('input[name="network"]')),
+  networkIndicator: document.getElementById('networkIndicator'),
+  trustedMode: document.getElementById('trustedMode'),
+  operationType: document.getElementById('operationType'),
+  queryCategory: document.getElementById('queryCategory'),
+  queryType: document.getElementById('queryType'),
+  queryDescription: document.getElementById('queryDescription'),
+  authenticationInputs: document.getElementById('authenticationInputs'),
+  identityIdGroup: document.getElementById('identityIdGroup'),
+  assetLockProofGroup: document.getElementById('assetLockProofGroup'),
+  queryInputs: document.getElementById('queryInputs'),
+  queryTitle: document.getElementById('queryTitle'),
+  dynamicInputs: document.getElementById('dynamicInputs'),
+  proofToggleContainer: document.getElementById('proofToggleContainer'),
+  proofToggle: document.getElementById('proofToggle'),
+  noProofInfoContainer: document.getElementById('noProofInfoContainer'),
+  executeButton: document.getElementById('executeQuery'),
+  clearButton: document.getElementById('clearButton'),
+  copyButton: document.getElementById('copyButton'),
+  clearCacheButton: document.getElementById('clearCacheButton'),
+  resultContainer: document.getElementById('resultSplitContainer'),
+  resultContent: document.getElementById('identityInfo'),
+  platformVersion: document.getElementById('platformVersion'),
+  latestVersionInfo: document.getElementById('latestVersionInfo'),
+  connectTimeout: document.getElementById('connectTimeout'),
+  requestTimeout: document.getElementById('requestTimeout'),
+  retries: document.getElementById('retries'),
+  banFailedAddress: document.getElementById('banFailedAddress'),
+  applyConfig: document.getElementById('applyConfig'),
+};
+
+const SUPPORTED_QUERIES = new Set([
+  'getIdentity', 'getIdentityKeys',
+  'getDataContract', 'getDataContractHistory', 'getDataContracts',
+  'getDocuments', 'getDocument',
+  'getDpnsUsername', 'getDpnsUsernames', 'dpnsResolve', 'dpnsCheckAvailability',
+  'getEpochsInfo', 'getCurrentEpoch', 'getFinalizedEpochInfos', 'getEvonodesProposedEpochBlocksByIds', 'getEvonodesProposedEpochBlocksByRange',
+  'getStatus', 'getCurrentQuorumsInfo', 'getTotalCreditsInPlatform', 'getPrefundedSpecializedBalance', 'getPathElements', 'waitForStateTransitionResult',
+  'getTokenStatuses', 'getTokenDirectPurchasePrices', 'getTokenContractInfo', 'getTokenPerpetualDistributionLastClaim', 'getTokenTotalSupply',
+  'getIdentitiesTokenInfos', 'getIdentityTokenInfos', 'getIdentitiesTokenBalances',
+  'getContestedResources', 'getContestedResourceVotersForIdentity', 'getContestedResourceVoteState', 'getContestedResourceIdentityVotes',
+]);
+
+const SUPPORTED_TRANSITIONS = new Set([
+  'identityCreate', 'identityTopUp', 'identityCreditTransfer', 'identityCreditWithdrawal', 'identityUpdate',
+  'dataContractCreate', 'dataContractUpdate',
+  'documentCreate', 'documentReplace', 'documentDelete', 'documentTransfer', 'documentPurchase', 'documentSetPrice',
+  'tokenMint', 'tokenBurn', 'tokenTransfer', 'tokenFreeze', 'tokenUnfreeze', 'tokenDestroyFrozen', 'tokenSetPriceForDirectPurchase', 'tokenDirectPurchase', 'tokenClaim', 'tokenConfigUpdate',
+  'masternodeVote',
+]);
+
+const PROOF_CAPABLE = new Set([
+  'getIdentity', 'getDataContract', 'getDataContractHistory', 'getDataContracts', 'getDocuments', 'getDocument',
+  'getDpnsUsername', 'getDpnsUsernames', 'getEpochsInfo', 'getCurrentEpoch', 'getFinalizedEpochInfos',
+  'getEvonodesProposedEpochBlocksByIds', 'getEvonodesProposedEpochBlocksByRange', 'getTotalCreditsInPlatform',
+  'getPrefundedSpecializedBalance', 'getPathElements', 'getTokenStatuses', 'getTokenDirectPurchasePrices', 'getTokenContractInfo',
+  'getTokenPerpetualDistributionLastClaim', 'getTokenTotalSupply', 'getIdentitiesTokenInfos', 'getIdentityTokenInfos', 'getIdentitiesTokenBalances',
+  'getContestedResources', 'getContestedResourceVotersForIdentity', 'getContestedResourceVoteState', 'getContestedResourceIdentityVotes',
+]);
+
+const SUPPORTED_INPUT_TYPES = new Set(['text', 'string', 'textarea', 'number', 'checkbox', 'json', 'select', 'multiselect', 'array']);
+
+const state = {
+  rawDefinitions: { queries: {}, transitions: {} },
+  definitions: { queries: {}, transitions: {} },
+  selected: null,
+  client: null,
+  clientKey: null,
+  currentResult: null,
+  advancedOptions: {},
+};
+
+function normalizeType(type) {
+  if (!type) return 'text';
+  switch (type) {
+    case 'string': return 'text';
+    case 'textarea': return 'textarea';
+    default: return type;
+  }
+}
+
+function setStatus(message, variant = 'loading') {
+  if (!elements.statusBanner) return;
+  elements.statusBanner.textContent = message;
+  elements.statusBanner.className = `status-banner ${variant}`;
+}
+
+function showPreloader(message = 'Loading...') {
+  if (!elements.preloader) return;
+  elements.preloader.style.display = 'flex';
+  if (elements.preloaderText) elements.preloaderText.textContent = message;
+}
+
+function hidePreloader() {
+  if (!elements.preloader) return;
+  elements.preloader.style.display = 'none';
+}
+
+function setProgress(percent, message) {
+  if (elements.progressFill) elements.progressFill.style.width = `${percent}%`;
+  if (elements.progressPercent) elements.progressPercent.textContent = `${percent}%`;
+  if (message && elements.preloaderText) elements.preloaderText.textContent = message;
+}
+
+function showApiError(message) {
+  if (elements.apiErrorBanner) {
+    elements.apiErrorBanner.style.display = 'block';
+  }
+  if (elements.apiErrorMessage) {
+    elements.apiErrorMessage.textContent = message;
+  }
+}
+
+function hideApiError() {
+  if (elements.apiErrorBanner) {
+    elements.apiErrorBanner.style.display = 'none';
+  }
+}
+
+function defaultResultMessage() {
+  if (!elements.resultContent) return;
+  elements.resultContent.classList.add('empty');
+  elements.resultContent.classList.remove('error');
+  elements.resultContent.textContent = 'No data fetched yet. Select a query category and type to begin.';
+  state.currentResult = null;
+}
+
+function updateNetworkIndicator() {
+  const selected = elements.networkRadios.find(r => r.checked)?.value || 'testnet';
+  if (!elements.networkIndicator) return;
+  elements.networkIndicator.textContent = selected.toUpperCase();
+  elements.networkIndicator.classList.toggle('mainnet', selected === 'mainnet');
+  elements.networkIndicator.classList.toggle('testnet', selected !== 'mainnet');
+}
+
+function buildClientOptions() {
+  const selectedNetwork = elements.networkRadios.find(r => r.checked)?.value || 'testnet';
+  const opts = {
+    network: selectedNetwork,
+    trusted: !!(elements.trustedMode && elements.trustedMode.checked),
+    proofs: false,
+  };
+  const { advancedOptions } = state;
+  if (advancedOptions.platformVersion) opts.platformVersion = advancedOptions.platformVersion;
+  if (advancedOptions.connectTimeout) opts.connectTimeout = advancedOptions.connectTimeout;
+  if (advancedOptions.requestTimeout) opts.requestTimeout = advancedOptions.requestTimeout;
+  if (advancedOptions.retries) opts.retries = advancedOptions.retries;
+  if (typeof advancedOptions.banFailedAddress === 'boolean') {
+    opts.banFailedAddress = advancedOptions.banFailedAddress;
+  }
+  return opts;
+}
+
+async function ensureClient(force = false) {
+  const options = buildClientOptions();
+  const newKey = JSON.stringify(options);
+  if (!force && state.client && state.clientKey === newKey && state.client.isConnected) {
+    return state.client;
+  }
+  if (state.client && typeof state.client.disconnect === 'function') {
+    try { await state.client.disconnect(); } catch (_) { /* ignore */ }
+  }
+  const client = new EvoSDK(options);
+  await client.connect();
+  state.client = client;
+  state.clientKey = newKey;
+  return client;
+}
+
+function filterDefinitions(source, entriesKey, allowSet) {
+  const filtered = {};
+  for (const [groupKey, group] of Object.entries(source || {})) {
+    const items = group?.[entriesKey];
+    if (!items) continue;
+    const allowed = Object.entries(items).filter(([key, def]) => {
+      if (!allowSet.has(key)) return false;
+      const inputs = def?.inputs;
+      if (!Array.isArray(inputs)) return true;
+      return inputs.every(input => SUPPORTED_INPUT_TYPES.has(normalizeType(input.type)));
+    });
+    if (!allowed.length) continue;
+    filtered[groupKey] = {
+      ...group,
+      [entriesKey]: Object.fromEntries(allowed),
+    };
+  }
+  return filtered;
+}
+
+function populateCategories() {
+  const type = elements.operationType.value;
+  const isQuery = type === 'queries';
+  if (type === 'wallet') {
+    elements.queryCategory.innerHTML = '<option value="">Wallet helpers are not available in this demo</option>';
+    elements.queryType.innerHTML = '<option value="">Select Operation</option>';
+    elements.queryType.style.display = 'none';
+    if (elements.queryTypeLabel) {
+      elements.queryTypeLabel.style.display = 'none';
+    }
+    hideOperationDetails();
+    setStatus('Wallet helpers are not available with the Evo SDK demo.', 'loading');
+    elements.authenticationInputs.style.display = 'none';
+    return;
+  }
+
+  const target = isQuery ? state.definitions.queries : state.definitions.transitions;
+  elements.queryCategory.innerHTML = '<option value="">Select Category</option>';
+  const entries = Object.entries(target);
+  entries.sort((a, b) => (a[1]?.label || a[0]).localeCompare(b[1]?.label || b[0]));
+  for (const [key, group] of entries) {
+    const option = document.createElement('option');
+    option.value = key;
+    option.textContent = group?.label || key;
+    elements.queryCategory.appendChild(option);
+  }
+  elements.queryType.innerHTML = '<option value="">Select Operation</option>';
+  elements.queryType.style.display = 'none';
+  if (elements.queryTypeLabel) {
+    elements.queryTypeLabel.style.display = 'none';
+  }
+  hideOperationDetails();
+
+  elements.authenticationInputs.style.display = isQuery ? 'none' : 'block';
+}
+
+function populateOperations(categoryKey) {
+  const type = elements.operationType.value;
+  const isQuery = type === 'queries';
+  const sourceGroup = (isQuery ? state.definitions.queries : state.definitions.transitions)[categoryKey];
+  const itemsKey = isQuery ? 'queries' : 'transitions';
+  const items = sourceGroup?.[itemsKey];
+  elements.queryType.innerHTML = '<option value="">Select Operation</option>';
+  if (!items) {
+    elements.queryType.style.display = 'none';
+    if (elements.queryTypeLabel) {
+      elements.queryTypeLabel.style.display = 'none';
+    }
+    hideOperationDetails();
+    return;
+  }
+  const entries = Object.entries(items);
+  entries.sort((a, b) => (a[1]?.label || a[0]).localeCompare(b[1]?.label || b[0]));
+  for (const [key, def] of entries) {
+    const option = document.createElement('option');
+    option.value = key;
+    option.textContent = def?.label || key;
+    elements.queryType.appendChild(option);
+  }
+  elements.queryType.style.display = 'block';
+  if (elements.queryTypeLabel) {
+    elements.queryTypeLabel.style.display = 'block';
+  }
+  hideOperationDetails();
+}
+
+function hideOperationDetails() {
+  elements.queryDescription.style.display = 'none';
+  elements.queryInputs.style.display = 'none';
+  elements.dynamicInputs.innerHTML = '';
+  elements.proofToggleContainer.style.display = 'none';
+  elements.noProofInfoContainer.style.display = 'none';
+  if (elements.executeButton) {
+    elements.executeButton.style.display = 'none';
+    elements.executeButton.disabled = true;
+  }
+  state.selected = null;
+}
+
+function onOperationChange(categoryKey, operationKey) {
+  const type = elements.operationType.value;
+  const isQuery = type === 'queries';
+  const group = (isQuery ? state.definitions.queries : state.definitions.transitions)[categoryKey];
+  const itemsKey = isQuery ? 'queries' : 'transitions';
+  const def = group?.[itemsKey]?.[operationKey];
+  if (!def) {
+    hideOperationDetails();
+    return;
+  }
+  const label = def.label || operationKey;
+  elements.queryTitle.textContent = label;
+  if (def.description) {
+    elements.queryDescription.textContent = def.description;
+    elements.queryDescription.style.display = 'block';
+  } else {
+    elements.queryDescription.style.display = 'none';
+  }
+  renderInputs(def);
+  const supportsProof = isQuery && PROOF_CAPABLE.has(operationKey);
+  elements.proofToggle.checked = supportsProof;
+  elements.proofToggleContainer.style.display = supportsProof ? 'flex' : 'none';
+  elements.noProofInfoContainer.style.display = supportsProof ? 'none' : 'block';
+  if (elements.executeButton) {
+    elements.executeButton.style.display = 'block';
+    elements.executeButton.disabled = false;
+  }
+  state.selected = { type, categoryKey, operationKey, definition: def };
+}
+
+function renderInputs(def) {
+  elements.dynamicInputs.innerHTML = '';
+  const inputs = Array.isArray(def.inputs) ? def.inputs : [];
+  if (!inputs.length) {
+    elements.queryInputs.style.display = 'none';
+    return;
+  }
+  const dependencyListeners = [];
+  inputs.forEach((inputDef, index) => {
+    const normalizedType = normalizeType(inputDef.type);
+    if (!SUPPORTED_INPUT_TYPES.has(normalizedType)) return;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'input-group';
+
+    const label = document.createElement('label');
+    label.textContent = inputDef.label || inputDef.name || `Parameter ${index + 1}`;
+    wrapper.appendChild(label);
+
+    const control = createControl(normalizedType, inputDef);
+    if (!control) return;
+    control.dataset.inputName = inputDef.name || `param_${index}`;
+    wrapper.appendChild(control);
+
+    if (inputDef.help) {
+      const help = document.createElement('div');
+      help.style.fontSize = '0.85em';
+      help.style.color = '#666';
+      help.textContent = inputDef.help;
+      wrapper.appendChild(help);
+    }
+
+    if (inputDef.dependsOn && inputDef.dependsOn.field) {
+      const values = inputDef.dependsOn.values || inputDef.dependsOn.value;
+      const valueList = Array.isArray(values) ? values : [values];
+      wrapper.dataset.dependsOn = inputDef.dependsOn.field;
+      wrapper.dataset.dependsValues = valueList.map(String).join(',');
+      wrapper.style.display = 'none';
+      dependencyListeners.push((inputsRoot) => {
+        const target = inputsRoot.querySelector(`[data-input-name="${inputDef.dependsOn.field}"]`);
+        if (!target) return;
+        const raw = target.type === 'checkbox' ? (target.checked ? 'true' : 'false') : target.value;
+        const shouldShow = valueList.map(String).includes(raw);
+        wrapper.style.display = shouldShow ? '' : 'none';
+      });
+    }
+
+    elements.dynamicInputs.appendChild(wrapper);
+  });
+
+  if (dependencyListeners.length) {
+    const updateDependencies = () => dependencyListeners.forEach(fn => fn(elements.dynamicInputs));
+    elements.dynamicInputs.querySelectorAll('select, input, textarea').forEach(el => {
+      el.addEventListener('change', updateDependencies);
+      el.addEventListener('input', updateDependencies);
+    });
+    updateDependencies();
+  }
+
+  elements.queryInputs.style.display = 'block';
+}
+
+function createControl(type, def) {
+  let control;
+  switch (type) {
+    case 'number': {
+      control = document.createElement('input');
+      control.type = 'number';
+      if (def.min !== undefined) control.min = def.min;
+      if (def.max !== undefined) control.max = def.max;
+      if (def.step !== undefined) control.step = def.step;
+      break;
+    }
+    case 'checkbox': {
+      control = document.createElement('input');
+      control.type = 'checkbox';
+      control.checked = def.value === true || def.default === true;
+      break;
+    }
+    case 'json':
+    case 'textarea': {
+      control = document.createElement('textarea');
+      control.rows = def.rows || (type === 'json' ? 6 : 4);
+      if (def.value !== undefined) control.value = typeof def.value === 'string' ? def.value : JSON.stringify(def.value, null, 2);
+      break;
+    }
+    case 'select': {
+      control = document.createElement('select');
+      (def.options || []).forEach(opt => {
+        const option = document.createElement('option');
+        option.value = opt.value;
+        option.textContent = opt.label || opt.value;
+        control.appendChild(option);
+      });
+      if (def.value !== undefined) control.value = def.value;
+      break;
+    }
+    case 'multiselect': {
+      control = document.createElement('select');
+      control.multiple = true;
+      (def.options || []).forEach(opt => {
+        const option = document.createElement('option');
+        option.value = opt.value;
+        option.textContent = opt.label || opt.value;
+        control.appendChild(option);
+      });
+      if (Array.isArray(def.value)) {
+        Array.from(control.options).forEach(opt => {
+          opt.selected = def.value.includes(opt.value);
+        });
+      }
+      break;
+    }
+    case 'array':
+    case 'text':
+    default: {
+      control = document.createElement('input');
+      control.type = 'text';
+      if (def.value !== undefined) control.value = String(def.value);
+      break;
+    }
+  }
+  if (!control) return null;
+  control.name = def.name || '';
+  control.placeholder = def.placeholder || '';
+  control.dataset.inputType = type;
+  if (def.required) control.setAttribute('required', 'true');
+  return control;
+}
+
+function collectArgs(definition) {
+  const defs = Array.isArray(definition.inputs) ? definition.inputs : [];
+  return defs.map((inputDef, index) => {
+    const type = normalizeType(inputDef.type);
+    if (!SUPPORTED_INPUT_TYPES.has(type)) return undefined;
+    const selector = `[data-input-name="${inputDef.name || `param_${index}`}"]`;
+    const control = elements.dynamicInputs.querySelector(selector);
+    if (!control) {
+      if (inputDef.required) {
+        throw new Error(`Missing required input: ${inputDef.label || inputDef.name || `Parameter ${index + 1}`}`);
+      }
+      return undefined;
+    }
+    if (control.closest('.input-group')?.style.display === 'none') {
+      return undefined;
+    }
+    return parseInputValue(type, inputDef, control);
+  });
+}
+
+function parseInputValue(type, def, control) {
+  switch (type) {
+    case 'number': {
+      const raw = control.value.trim();
+      if (!raw) {
+        if (def.required) throw new Error(`${def.label || def.name} is required`);
+        return null;
+      }
+      const val = Number(raw);
+      if (Number.isNaN(val)) {
+        throw new Error(`${def.label || def.name} must be a number`);
+      }
+      return val;
+    }
+    case 'checkbox':
+      return control.checked;
+    case 'json': {
+      const raw = control.value.trim();
+      if (!raw) {
+        if (def.required) throw new Error(`${def.label || def.name} is required`);
+        return null;
+      }
+      try {
+        return JSON.parse(raw);
+      } catch (error) {
+        throw new Error(`${def.label || def.name} must be valid JSON`);
+      }
+    }
+    case 'array': {
+      const raw = control.value.trim();
+      if (!raw) {
+        if (def.required) throw new Error(`${def.label || def.name} is required`);
+        return [];
+      }
+      try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [parsed];
+      } catch (_) {
+        return raw.split(',').map(item => item.trim()).filter(Boolean);
+      }
+    }
+    case 'multiselect':
+      return Array.from(control.selectedOptions).map(opt => opt.value);
+    case 'select':
+      return control.value;
+    case 'textarea':
+    case 'text':
+    default: {
+      const raw = control.value.trim();
+      if (!raw && def.required) {
+        throw new Error(`${def.label || def.name} is required`);
+      }
+      return raw || null;
+    }
+  }
+}
+
+function namedArgs(defs, args) {
+  const out = {};
+  defs.forEach((def, index) => {
+    if (!def || !def.name) return;
+    out[def.name] = args[index];
+  });
+  return out;
+}
+
+async function callEvo(client, groupKey, itemKey, defs, args, useProof) {
+  const n = namedArgs(defs, args);
+  const c = client;
+  switch (itemKey) {
+    // Identities
+    case 'getIdentity': return useProof ? c.identities.fetchWithProof(n.id) : c.identities.fetch(n.id);
+    case 'getIdentityKeys': return c.identities.getKeys({ identityId: n.identityId, keyRequestType: n.keyRequestType, specificKeyIds: n.specificKeyIds, searchPurposeMap: n.searchPurposeMap, limit: n.limit, offset: n.offset });
+    case 'identityCreate': return c.identities.create({ assetLockProof: n.assetLockProof, assetLockPrivateKeyWif: n.assetLockPrivateKeyWif, publicKeys: n.publicKeys });
+    case 'identityTopUp': return c.identities.topUp({ identityId: n.identityId, assetLockProof: n.assetLockProof, assetLockPrivateKeyWif: n.assetLockPrivateKeyWif });
+    case 'identityCreditTransfer': return c.identities.creditTransfer({ senderId: n.senderId, recipientId: n.recipientId, amount: n.amount, privateKeyWif: n.privateKeyWif, keyId: n.keyId });
+    case 'identityCreditWithdrawal': return c.identities.creditWithdrawal({ identityId: n.identityId, toAddress: n.toAddress, amount: n.amount, coreFeePerByte: n.coreFeePerByte, privateKeyWif: n.privateKeyWif, keyId: n.keyId });
+    case 'identityUpdate': return c.identities.update({ identityId: n.identityId, addPublicKeys: n.addPublicKeys, disablePublicKeyIds: n.disablePublicKeyIds, privateKeyWif: n.privateKeyWif });
+    // Contracts
+    case 'getDataContract': return useProof ? c.contracts.fetchWithProof(n.id) : c.contracts.fetch(n.id);
+    case 'getDataContractHistory': return useProof ? c.contracts.getHistoryWithProof({ contractId: n.dataContractId || n.id, limit: n.limit, startAtMs: n.startAtMs }) : c.contracts.getHistory({ contractId: n.dataContractId || n.id, limit: n.limit, startAtMs: n.startAtMs });
+    case 'getDataContracts': return useProof ? c.contracts.getManyWithProof(n.ids) : c.contracts.getMany(n.ids);
+    case 'dataContractCreate': return c.contracts.create({ ownerId: n.ownerId, definition: n.definition, privateKeyWif: n.privateKeyWif, keyId: n.keyId });
+    case 'dataContractUpdate': return c.contracts.update({ contractId: n.dataContractId || n.contractId, ownerId: n.ownerId, updates: n.updates, privateKeyWif: n.privateKeyWif, keyId: n.keyId });
+    // Documents
+    case 'getDocuments': return useProof ? c.documents.queryWithProof({ contractId: n.dataContractId || n.contractId, type: n.documentType, where: n.where, orderBy: n.orderBy, limit: n.limit, startAfter: n.startAfter, startAt: n.startAt }) : c.documents.query({ contractId: n.dataContractId || n.contractId, type: n.documentType, where: n.where, orderBy: n.orderBy, limit: n.limit, startAfter: n.startAfter, startAt: n.startAt });
+    case 'getDocument': return useProof ? c.documents.getWithProof(n.dataContractId || n.contractId, n.documentType, n.documentId) : c.documents.get(n.dataContractId || n.contractId, n.documentType, n.documentId);
+    case 'documentCreate': return c.documents.create({ contractId: n.contractId, type: n.documentType, ownerId: n.ownerId, data: n.data, entropyHex: n.entropyHex, privateKeyWif: n.privateKeyWif });
+    case 'documentReplace': return c.documents.replace({ contractId: n.contractId, type: n.documentType, documentId: n.documentId, ownerId: n.ownerId, data: n.data, revision: n.revision, privateKeyWif: n.privateKeyWif });
+    case 'documentDelete': return c.documents.delete({ contractId: n.contractId, type: n.documentType, documentId: n.documentId, ownerId: n.ownerId, privateKeyWif: n.privateKeyWif });
+    case 'documentTransfer': return c.documents.transfer({ contractId: n.contractId, type: n.documentType, documentId: n.documentId, ownerId: n.ownerId, recipientId: n.recipientId, privateKeyWif: n.privateKeyWif });
+    case 'documentPurchase': return c.documents.purchase({ contractId: n.contractId, type: n.documentType, documentId: n.documentId, buyerId: n.buyerId, price: n.price, privateKeyWif: n.privateKeyWif });
+    case 'documentSetPrice': return c.documents.setPrice({ contractId: n.contractId, type: n.documentType, documentId: n.documentId, ownerId: n.ownerId, price: n.price, privateKeyWif: n.privateKeyWif });
+    // DPNS
+    case 'getDpnsUsername': return useProof ? c.dpns.usernameWithProof(n.identityId) : c.dpns.username(n.identityId);
+    case 'getDpnsUsernames': return useProof ? c.dpns.usernamesWithProof(n.identityId, { limit: n.limit }) : c.dpns.usernames(n.identityId, { limit: n.limit });
+    case 'dpnsResolve': return c.dpns.resolveName(n.name);
+    case 'dpnsCheckAvailability': return c.dpns.isNameAvailable(n.label);
+    // Epoch
+    case 'getEpochsInfo': return useProof ? c.epoch.epochsInfoWithProof({ startEpoch: n.startEpoch, count: n.count, ascending: n.ascending }) : c.epoch.epochsInfo({ startEpoch: n.startEpoch, count: n.count, ascending: n.ascending });
+    case 'getCurrentEpoch': return useProof ? c.epoch.currentWithProof() : c.epoch.current();
+    case 'getFinalizedEpochInfos': return useProof ? c.epoch.finalizedInfosWithProof({ startEpoch: n.startEpoch, count: n.count, ascending: n.ascending }) : c.epoch.finalizedInfos({ startEpoch: n.startEpoch, count: n.count, ascending: n.ascending });
+    case 'getEvonodesProposedEpochBlocksByIds': return useProof ? c.epoch.evonodesProposedBlocksByIdsWithProof(n.epoch, n.ids) : c.epoch.evonodesProposedBlocksByIds(n.epoch, n.ids);
+    case 'getEvonodesProposedEpochBlocksByRange': return useProof ? c.epoch.evonodesProposedBlocksByRangeWithProof(n.epoch, { limit: n.limit, startAfter: n.startAfter, orderAscending: n.orderAscending }) : c.epoch.evonodesProposedBlocksByRange(n.epoch, { limit: n.limit, startAfter: n.startAfter, orderAscending: n.orderAscending });
+    // System
+    case 'getStatus': return c.system.status();
+    case 'getCurrentQuorumsInfo': return c.system.currentQuorumsInfo();
+    case 'getTotalCreditsInPlatform': return useProof ? c.system.totalCreditsInPlatformWithProof() : c.system.totalCreditsInPlatform();
+    case 'getPrefundedSpecializedBalance': return useProof ? c.system.prefundedSpecializedBalanceWithProof(n.identityId) : c.system.prefundedSpecializedBalance(n.identityId);
+    case 'getPathElements': return useProof ? c.system.pathElementsWithProof(n.path, n.keys) : c.system.pathElements(n.path, n.keys);
+    case 'waitForStateTransitionResult': return c.system.waitForStateTransitionResult(n.stateTransitionHash || n.hash);
+    // Tokens
+    case 'getTokenStatuses': return useProof ? c.tokens.statusesWithProof(n.tokenIds) : c.tokens.statuses(n.tokenIds);
+    case 'getTokenDirectPurchasePrices': return useProof ? c.tokens.directPurchasePricesWithProof(n.tokenIds) : c.tokens.directPurchasePrices(n.tokenIds);
+    case 'getTokenContractInfo': return useProof ? c.tokens.contractInfoWithProof(n.dataContractId || n.contractId) : c.tokens.contractInfo(n.dataContractId || n.contractId);
+    case 'getTokenPerpetualDistributionLastClaim': return useProof ? c.tokens.perpetualDistributionLastClaimWithProof(n.identityId, n.tokenId) : c.tokens.perpetualDistributionLastClaim(n.identityId, n.tokenId);
+    case 'getTokenTotalSupply': return useProof ? c.tokens.totalSupplyWithProof(n.tokenId) : c.tokens.totalSupply(n.tokenId);
+    case 'getIdentitiesTokenInfos': return useProof ? c.tokens.identitiesTokenInfosWithProof(n.identityIds, n.tokenId) : c.tokens.identitiesTokenInfos(n.identityIds, n.tokenId);
+    case 'getIdentityTokenInfos': return useProof ? c.tokens.identityTokenInfosWithProof(n.identityId, n.tokenIds) : c.tokens.identityTokenInfos(n.identityId, n.tokenIds, { limit: n.limit, offset: n.offset });
+    case 'getIdentitiesTokenBalances': return useProof ? c.tokens.balancesWithProof(n.identityIds, n.tokenId) : c.tokens.balances(n.identityIds, n.tokenId);
+    case 'tokenMint': return c.tokens.mint({ contractId: n.contractId, tokenPosition: n.tokenPosition, amount: n.amount, identityId: n.identityId, privateKeyWif: n.privateKeyWif, recipientId: n.recipientId, publicNote: n.publicNote });
+    case 'tokenBurn': return c.tokens.burn({ contractId: n.contractId, tokenPosition: n.tokenPosition, amount: n.amount, identityId: n.identityId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
+    case 'tokenTransfer': return c.tokens.transfer({ contractId: n.contractId, tokenPosition: n.tokenPosition, amount: n.amount, senderId: n.senderId, recipientId: n.recipientId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
+    case 'tokenFreeze': return c.tokens.freeze({ contractId: n.contractId, tokenPosition: n.tokenPosition, identityToFreeze: n.identityToFreeze, freezerId: n.freezerId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
+    case 'tokenUnfreeze': return c.tokens.unfreeze({ contractId: n.contractId, tokenPosition: n.tokenPosition, identityToUnfreeze: n.identityToUnfreeze, unfreezerId: n.unfreezerId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
+    case 'tokenDestroyFrozen': return c.tokens.destroyFrozen({ contractId: n.contractId, tokenPosition: n.tokenPosition, identityId: n.frozenIdentityId || n.identityId, destroyerId: n.destroyerId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
+    case 'tokenSetPriceForDirectPurchase': return c.tokens.setPriceForDirectPurchase({ contractId: n.contractId, tokenPosition: n.tokenPosition, identityId: n.identityId, priceType: n.priceType, priceData: n.priceData, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
+    case 'tokenDirectPurchase': return c.tokens.directPurchase({ contractId: n.contractId, tokenPosition: n.tokenPosition, amount: n.amount, identityId: n.identityId, totalAgreedPrice: n.totalAgreedPrice, privateKeyWif: n.privateKeyWif });
+    case 'tokenClaim': return c.tokens.claim({ contractId: n.contractId, tokenPosition: n.tokenPosition, distributionType: n.distributionType, identityId: n.identityId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
+    case 'tokenConfigUpdate': return c.tokens.configUpdate({ contractId: n.contractId, tokenPosition: n.tokenPosition, configItemType: n.configItemType, configValue: n.configValue, identityId: n.identityId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
+    // Group & Voting
+    case 'getContestedResources': return useProof ? c.group.contestedResourcesWithProof({ documentTypeName: n.documentTypeName, contractId: n.dataContractId || n.contractId, indexName: n.indexName, startAtValue: n.startAtValue, limit: n.limit, orderAscending: n.orderAscending }) : c.group.contestedResources({ documentTypeName: n.documentTypeName, contractId: n.dataContractId || n.contractId, indexName: n.indexName, startAtValue: n.startAtValue, limit: n.limit, orderAscending: n.orderAscending });
+    case 'getContestedResourceVotersForIdentity': return useProof ? c.group.contestedResourceVotersForIdentityWithProof({ contractId: n.dataContractId || n.contractId, documentTypeName: n.documentTypeName, indexName: n.indexName, indexValues: n.indexValues, contestantId: n.contestantId, startAtIdentifierInfo: n.startAtIdentifierInfo, count: n.count, orderAscending: n.orderAscending }) : c.group.contestedResourceVotersForIdentity({ contractId: n.dataContractId || n.contractId, documentTypeName: n.documentTypeName, indexName: n.indexName, indexValues: n.indexValues, contestantId: n.contestantId, startAtVoterInfo: n.startAtVoterInfo, limit: n.limit, orderAscending: n.orderAscending });
+    case 'getContestedResourceVoteState': return useProof ? c.voting.contestedResourceVoteStateWithProof({ contractId: n.dataContractId || n.contractId, documentTypeName: n.documentTypeName, indexName: n.indexName, indexValues: n.indexValues, resultType: n.resultType, allowIncludeLockedAndAbstainingVoteTally: n.allowIncludeLockedAndAbstainingVoteTally, startAtIdentifierInfo: n.startAtIdentifierInfo, count: n.count, orderAscending: n.orderAscending }) : c.voting.contestedResourceVoteState({ contractId: n.dataContractId || n.contractId, documentTypeName: n.documentTypeName, indexName: n.indexName, indexValues: n.indexValues, resultType: n.resultType, allowIncludeLockedAndAbstainingVoteTally: n.allowIncludeLockedAndAbstainingVoteTally, startAtIdentifierInfo: n.startAtIdentifierInfo, count: n.count, orderAscending: n.orderAscending });
+    case 'getContestedResourceIdentityVotes': return useProof ? c.voting.contestedResourceIdentityVotesWithProof(n.identityId, { limit: n.limit, offset: n.offset, orderAscending: n.orderAscending }) : c.voting.contestedResourceIdentityVotes(n.identityId, { limit: n.limit, startAtVotePollIdInfo: n.startAtVotePollIdInfo, orderAscending: n.orderAscending });
+    case 'masternodeVote': return c.voting.masternodeVote({ masternodeProTxHash: n.masternodeProTxHash, contractId: n.contractId, documentTypeName: n.documentTypeName, indexName: n.indexName, indexValues: n.indexValues, voteChoice: n.voteChoice, votingKeyWif: n.votingKeyWif });
+  }
+  throw new Error(`Operation ${itemKey} is not supported by Evo SDK Demo`);
+}
+
+function formatResult(value) {
+  if (value === undefined) return 'undefined';
+  if (value === null) return 'null';
+  if (typeof value === 'string') return value;
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch (_) {
+    return String(value);
+  }
+}
+
+async function executeSelected() {
+  if (!state.selected) return;
+  try {
+    if (elements.executeButton) {
+      elements.executeButton.disabled = true;
+    }
+    const { definition } = state.selected;
+    const args = collectArgs(definition);
+    const client = await ensureClient();
+    const useProof = elements.proofToggleContainer.style.display !== 'none' && elements.proofToggle.checked && state.selected.type === 'queries';
+    setStatus(`Running ${state.selected.operationKey}${useProof ? ' (proof)' : ''}...`, 'loading');
+    const result = await callEvo(client, state.selected.categoryKey, state.selected.operationKey, definition.inputs || [], args, useProof);
+    const formatted = formatResult(result);
+    elements.resultContent.classList.remove('empty', 'error');
+    elements.resultContent.textContent = formatted;
+    state.currentResult = formatted;
+    setStatus('Completed', 'success');
+  } catch (error) {
+    const message = error?.message || String(error);
+    elements.resultContent.classList.remove('empty');
+    elements.resultContent.classList.add('error');
+    elements.resultContent.textContent = `Error: ${message}`;
+    state.currentResult = null;
+    setStatus(`Error: ${message}`, 'error');
+  } finally {
+    if (elements.executeButton) {
+      elements.executeButton.disabled = false;
+    }
+  }
+}
+
+function clearResults() {
+  if (!elements.resultContent) return;
+  elements.resultContent.textContent = '';
+  elements.resultContent.classList.add('empty');
+  elements.resultContent.classList.remove('error');
+  state.currentResult = null;
+}
+
+function copyResults() {
+  const content = state.currentResult ?? elements.resultContent?.textContent ?? '';
+  if (!content) return;
+  navigator.clipboard.writeText(content).then(() => {
+    if (!elements.copyButton) return;
+    const original = elements.copyButton.textContent;
+    elements.copyButton.textContent = 'Copied!';
+    setTimeout(() => { elements.copyButton.textContent = original; }, 2000);
+  }).catch(() => {
+    setStatus('Unable to copy result', 'error');
+  });
+}
+
+async function clearCache() {
+  if (!elements.clearCacheButton) return;
+  const button = elements.clearCacheButton;
+  const original = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Clearing...';
+  try {
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      const controller = navigator.serviceWorker.controller;
+      const channel = new MessageChannel();
+      const responsePromise = new Promise(resolve => {
+        channel.port1.onmessage = resolve;
+        setTimeout(resolve, 1500);
+      });
+      controller.postMessage({ action: 'clearCache' }, [channel.port2]);
+      await responsePromise;
+    }
+
+    if ('caches' in window) {
+      const cacheNames = await caches.keys();
+      await Promise.all(cacheNames.map(name => caches.delete(name)));
+    }
+
+    button.textContent = 'Cache Cleared!';
+    setTimeout(() => window.location.reload(true), 1000);
+  } catch (error) {
+    console.error('Failed to clear cache:', error);
+    button.textContent = 'Failed';
+    setStatus('Failed to clear cache', 'error');
+    setTimeout(() => {
+      button.textContent = original;
+      button.disabled = false;
+    }, 2000);
+  }
+}
+
+function applyAdvancedConfig() {
+  const options = {};
+  const platformVersion = parseInt(elements.platformVersion?.value || '', 10);
+  if (!Number.isNaN(platformVersion)) options.platformVersion = platformVersion;
+  const connectTimeout = parseInt(elements.connectTimeout?.value || '', 10);
+  if (!Number.isNaN(connectTimeout)) options.connectTimeout = connectTimeout;
+  const requestTimeout = parseInt(elements.requestTimeout?.value || '', 10);
+  if (!Number.isNaN(requestTimeout)) options.requestTimeout = requestTimeout;
+  const retries = parseInt(elements.retries?.value || '', 10);
+  if (!Number.isNaN(retries)) options.retries = retries;
+  if (elements.banFailedAddress) options.banFailedAddress = elements.banFailedAddress.checked;
+  state.advancedOptions = options;
+  state.clientKey = null;
+  setStatus('Configuration applied. Reconnect on next request.', 'success');
+}
+
+async function loadDefinitions() {
+  setStatus('Loading API definitions...', 'loading');
+  setProgress(25, 'Fetching API definitions...');
+  const response = await fetch('./api-definitions.json', { cache: 'no-store' });
+  if (!response.ok) {
+    throw new Error(`Failed to load api-definitions.json (${response.status})`);
+  }
+  const data = await response.json();
+  state.rawDefinitions = {
+    queries: data.queries || {},
+    transitions: data.transitions || {},
+  };
+  state.definitions = {
+    queries: filterDefinitions(state.rawDefinitions.queries, 'queries', SUPPORTED_QUERIES),
+    transitions: filterDefinitions(state.rawDefinitions.transitions, 'transitions', SUPPORTED_TRANSITIONS),
+  };
+  if (elements.latestVersionInfo && data.version) {
+    elements.latestVersionInfo.textContent = `Latest manifest version: ${data.version}`;
+  }
+  setProgress(65, 'Building interface...');
+  populateCategories();
+  hideApiError();
+}
+
+function attachEventListeners() {
+  elements.networkRadios.forEach(radio => {
+    radio.addEventListener('change', () => {
+      updateNetworkIndicator();
+      state.clientKey = null;
+      setStatus('Network updated. Reconnect on next request.', 'loading');
+    });
+  });
+  if (elements.trustedMode) {
+    elements.trustedMode.addEventListener('change', () => {
+      state.clientKey = null;
+      setStatus('Trusted quorum preference updated.', 'loading');
+    });
+  }
+  elements.operationType.addEventListener('change', () => {
+    populateCategories();
+  });
+  elements.queryCategory.addEventListener('change', (event) => {
+    const value = event.target.value;
+    if (!value) {
+      elements.queryType.innerHTML = '<option value="">Select Operation</option>';
+      elements.queryType.style.display = 'none';
+      if (elements.queryTypeLabel) {
+        elements.queryTypeLabel.style.display = 'none';
+      }
+      hideOperationDetails();
+      return;
+    }
+    populateOperations(value);
+  });
+  elements.queryType.addEventListener('change', (event) => {
+    const category = elements.queryCategory.value;
+    const operation = event.target.value;
+    if (!operation) {
+      hideOperationDetails();
+      return;
+    }
+    onOperationChange(category, operation);
+  });
+  if (elements.executeButton) {
+    elements.executeButton.addEventListener('click', executeSelected);
+  }
+  if (elements.clearButton && !elements.clearButton.hasAttribute('onclick')) {
+    elements.clearButton.addEventListener('click', clearResults);
+  }
+  if (elements.copyButton && !elements.copyButton.hasAttribute('onclick')) {
+    elements.copyButton.addEventListener('click', copyResults);
+  }
+  if (elements.clearCacheButton && !elements.clearCacheButton.hasAttribute('onclick')) {
+    elements.clearCacheButton.addEventListener('click', clearCache);
+  }
+  if (elements.applyConfig) {
+    elements.applyConfig.addEventListener('click', applyAdvancedConfig);
+  }
+  if (elements.apiRetryButton) {
+    elements.apiRetryButton.addEventListener('click', async () => {
+      showPreloader('Retrying...');
+      try {
+        await loadDefinitions();
+        setStatus('Definitions refreshed', 'success');
+      } catch (error) {
+        showApiError(error.message || 'Failed to reload API definitions');
+        setStatus('Failed to reload definitions', 'error');
+      } finally {
+        hidePreloader();
+      }
+    });
+  }
+}
+
+async function init() {
+  if (elements.preloaderText) {
+    elements.preloaderText.textContent = 'Loading Evo SDK...';
+  }
+  showPreloader('Initializing Evo SDK...');
+  setProgress(5, 'Starting...');
+  const testnetRadio = document.getElementById('testnet');
+  const mainnetRadio = document.getElementById('mainnet');
+  if (testnetRadio) {
+    testnetRadio.checked = true;
+  } else if (elements.networkRadios.length && !elements.networkRadios.some(r => r.checked)) {
+    elements.networkRadios[0].checked = true;
+  }
+  if (mainnetRadio && mainnetRadio !== testnetRadio) {
+    mainnetRadio.checked = false;
+  }
+  if (elements.trustedMode) {
+    elements.trustedMode.disabled = false;
+    elements.trustedMode.checked = true;
+  }
+  updateNetworkIndicator();
+  attachEventListeners();
+  defaultResultMessage();
+  try {
+    await loadDefinitions();
+    setProgress(90, 'Finalizing UI...');
+    setStatus('Ready', 'success');
+  } catch (error) {
+    showApiError(error.message || 'Unable to load API definitions.');
+    setStatus('Failed to initialize', 'error');
+  } finally {
+    setProgress(100, 'Ready');
+    setTimeout(hidePreloader, 300);
+  }
+}
+
+init();
+
+Object.assign(window, {
+  clearResults,
+  copyResults,
+  clearCache,
+});
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker-simple.js')
+      .then((registration) => {
+        console.log('Service worker registered:', registration.scope);
+        setInterval(() => registration.update(), 60 * 60 * 1000);
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          if (event.data?.type === 'cache-updated') {
+            if (elements.statusBanner) {
+              elements.statusBanner.textContent = 'New version detected! Refresh to update.';
+              elements.statusBanner.className = 'status-banner warning';
+              if (!elements.statusBanner.querySelector('button')) {
+                const refreshBtn = document.createElement('button');
+                refreshBtn.textContent = 'Refresh Now';
+                refreshBtn.style.marginLeft = '10px';
+                refreshBtn.onclick = () => window.location.reload(true);
+                elements.statusBanner.appendChild(refreshBtn);
+              }
+            }
+          }
+        });
+      })
+      .catch((error) => {
+        console.warn('Service worker registration failed:', error);
+      });
+  });
+}
