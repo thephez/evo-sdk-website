@@ -1,311 +1,192 @@
 <!DOCTYPE html>
 <html>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js" 
+        integrity="sha384-JEyTNhjM6R1ElGoJns4U2Ln4ofPcqzSsynQkmEc/KGy6336qAZl70tDLufbkla+3" 
+        crossorigin="anonymous"></script>
+
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dash Platform Evo JS SDK</title>
   <link rel="icon" type="image/svg+xml" href="https://media.dash.org/wp-content/uploads/blue-d.svg">
   <link rel="alternate icon" type="image/png" href="https://media.dash.org/wp-content/uploads/blue-d-250.png">
-  <link rel="stylesheet" href="./index.css" />
+  <link rel="stylesheet" href="index.css">
 </head>
+
 <body>
   <div class="header">
-    <div>Dash Platform Evo JS SDK</div>
-    <nav>
-      <a href="./docs.html">Documentation</a>
-      <a href="./AI_REFERENCE.md">AI Reference</a>
+    <h1>Dash Platform Evo JS SDK</h1>
+    <nav class="header-nav">
+      <a href="docs.html">Documentation</a>
+      <a href="AI_REFERENCE.md">AI Reference</a>
       <a href="https://github.com/dashpay/platform" target="_blank">GitHub</a>
     </nav>
   </div>
-  <div class="app">
-    <aside class="sidebar">
-      <div style="margin: 8px 0 12px;">
-        <div style="font-weight:600; color:#374151;">Network</div>
-        <label><input type="radio" name="network" value="testnet" checked> Testnet</label>
-        <label style="margin-left:10px;"><input type="radio" name="network" value="mainnet"> Mainnet</label>
-        <div style="margin-top:6px;"><label><input id="trustedToggle" type="checkbox" checked /> Trusted Quorums</label></div>
-      </div>
-      <div id="sidebarList"></div>
-    </aside>
-    <main class="main">
-      <div class="status" id="status">Initializing…</div>
-      <div class="inputs">
-        <h3 id="opTitle">Select a query</h3>
-        <div id="opDescription" style="color:#6b7280; margin-bottom:8px;"></div>
-        <div id="form"></div>
-        <div id="proofBox" style="margin-top:8px; display:none;">
-          <label><input type="checkbox" id="withProof"> With Proof Info</label>
+  
+  <!-- Error Banner for API definitions loading failures -->
+  <div id="apiErrorBanner" style="display: none; background-color: #f8d7da; color: #721c24; padding: 15px; margin: 0; border-bottom: 1px solid #f5c6cb; text-align: center;">
+    <div style="display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap;">
+      <span id="apiErrorMessage">Failed to load API definitions. Please check your connection and try again.</span>
+      <button id="apiRetryButton" style="background-color: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px;">Retry</button>
+    </div>
+  </div>
+  
+  <div id="preloader">
+    <div class="preloader-content">
+      <div class="preloader-text" id="preloaderText">Loading Evo SDK...</div>
+      <div class="preloader-progress">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
         </div>
-        <button class="run" id="runBtn" disabled>Run</button>
-        <div class="result" id="result"></div>
+        <div class="progress-percent" id="progressPercent">0%</div>
       </div>
-    </main>
+    </div>
+  </div>
+  
+  <div class="app-container">
+    <div class="sidebar">
+      <div class="network-toggle">
+        <label>Network:</label>
+        <input type="radio" id="mainnet" name="network" value="mainnet">
+        <label for="mainnet">Mainnet</label>
+        <input type="radio" id="testnet" name="network" value="testnet">
+        <label for="testnet">Testnet</label>
+        <span id="networkIndicator" class="network-indicator mainnet">MAINNET</span>
+        <br>
+        <label style="margin-top: 10px; display: block;">
+          <input type="checkbox" id="trustedMode" style="margin-right: 5px;" checked disabled>
+          Trusted Quorums Mode
+        </label>
+      </div>
+      
+      <!-- SDK Configuration Section (Collapsible) -->
+      <details class="sdk-config" style="margin: 0; padding: 0; border-bottom: 1px solid #e0e0e0;">
+        <summary style="padding: 15px 20px; background-color: #f8f9fa; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-weight: 500; color: #333;">Advanced SDK Configuration</span>
+          <span style="font-size: 0.8em; color: #666;">▼</span>
+        </summary>
+        <div style="padding: 15px 20px; background-color: #f0f4f8;">
+          <div style="margin-bottom: 10px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: 500;">Platform Version:</label>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <input type="number" id="platformVersion" placeholder="Latest" style="flex: 1; padding: 5px;" min="1">
+              <span id="latestVersionInfo" style="font-size: 0.9em; color: #666;"></span>
+            </div>
+            <small style="color: #666;">Leave empty for latest version</small>
+          </div>
+          
+          <details style="margin-top: 10px;">
+            <summary style="cursor: pointer; font-weight: 500; margin-bottom: 10px;">Request Settings</summary>
+            <div style="margin-top: 10px;">
+              <label style="display: block; margin-bottom: 5px;">Connect Timeout (ms):</label>
+              <input type="number" id="connectTimeout" placeholder="Default: 3000" style="width: 100%; padding: 5px;">
+            </div>
+            <div style="margin-top: 10px;">
+              <label style="display: block; margin-bottom: 5px;">Request Timeout (ms):</label>
+              <input type="number" id="requestTimeout" placeholder="Default: 60000" style="width: 100%; padding: 5px;">
+            </div>
+            <div style="margin-top: 10px;">
+              <label style="display: block; margin-bottom: 5px;">Retries:</label>
+              <input type="number" id="retries" placeholder="Default: 5" style="width: 100%; padding: 5px;">
+            </div>
+            <div style="margin-top: 10px;">
+              <label style="display: flex; align-items: center;">
+                <input type="checkbox" id="banFailedAddress" style="margin-right: 5px;">
+                Ban Failed Addresses
+              </label>
+            </div>
+          </details>
+          
+          <button id="applyConfig" style="margin-top: 15px; padding: 8px 15px; background-color: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%;">Apply Configuration</button>
+        </div>
+      </details>
+      
+      <div class="query-container">
+        <div class="query-selector">
+          <select id="operationType">
+            <option value="queries">Queries</option>
+            <option value="transitions">State Transitions</option>
+            <option value="wallet">Wallet</option>
+          </select>
+          
+          <select id="queryCategory">
+            <option value="">Select Query Category</option>
+            <option value="identity">Identity Queries</option>
+            <option value="dataContract">Data Contract Queries</option>
+            <option value="document">Document Queries</option>
+            <option value="dpns">DPNS Queries</option>
+            <option value="voting">Voting & Contested Resources</option>
+            <option value="protocol">Protocol & Version</option>
+            <option value="epoch">Epoch & Block</option>
+            <option value="token">Token Queries</option>
+            <option value="group">Group Queries</option>
+            <option value="system">System & Utility</option>
+          </select>
+          
+          <select id="queryType" style="display: none;">
+            <option value="">Select Query Type</option>
+          </select>
+        </div>
+        
+        <div id="authenticationInputs" class="query-inputs" style="display: none;">
+          <h4>Authentication</h4>
+          <div class="input-group" id="identityIdGroup">
+            <label for="identityId">Identity ID</label>
+            <input type="text" id="identityId" placeholder="Enter identity ID">
+          </div>
+          <div class="input-group" id="assetLockProofGroup" style="display: none;">
+            <label for="assetLockProof">Asset Lock Proof</label>
+            <input type="text" id="assetLockProof" placeholder="Enter asset lock proof (hex encoded)">
+          </div>
+          <div class="input-group">
+            <label for="privateKey">Private Key (WIF or hex, optionally with :keyId)</label>
+            <input type="password" id="privateKey" placeholder="Enter private key (WIF or 32-byte hex)">
+          </div>
+        </div>
+        
+        <div id="queryDescription" class="query-description" style="display: none;"></div>
+        
+        <div id="queryInputs" class="query-inputs" style="display: none;">
+          <h4 id="queryTitle">Query Parameters</h4>
+          <div id="dynamicInputs"></div>
+        </div>
+        
+        <div class="proof-toggle" style="display: none; margin: 15px 0;" id="proofToggleContainer">
+          <label style="display: flex; align-items: center; margin: 0;">
+            <span class="toggle-switch">
+              <input type="checkbox" id="proofToggle">
+              <span class="toggle-slider"></span>
+            </span>
+            <span style="margin-left: 60px; font-weight: 500; color: #333;">With Proof Info</span>
+          </label>
+        </div>
+        
+        <div class="no-proof-info" style="display: none; margin: 15px 0; padding: 10px; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px; text-align: center;" id="noProofInfoContainer">
+          <span style="color: #6c757d; font-size: 0.9em;">Note: this query does not provide cryptographic proof verification.</span>
+        </div>
+        
+        <button id="executeQuery" class="execute-button" style="display: none;">Execute Query</button>
+      </div>
+    </div>
+    
+    <div class="result-container">
+      <div class="result-header">
+        <h2>Results</h2>
+        <div class="result-actions">
+          <button id="clearButton" onclick="clearResults()">Clear</button>
+          <button id="copyButton" onclick="copyResults()">Copy</button>
+          <button id="clearCacheButton" onclick="clearCache()" title="Clear Evo SDK cache and reload">Clear Cache</button>
+        </div>
+      </div>
+      <div id="resultSplitContainer" class="result-split-container">
+        <div id="identityInfo" class="result-content empty">No data fetched yet. Select a query category and type to begin.</div>
+      </div>
+    </div>
   </div>
 
-  <script type="module">
-    import { EvoSDK } from '../dist/evo-sdk.module.js';
+    <div id="statusBanner" class="status-banner loading">Initializing Evo SDK...</div>
 
-    const statusEl = document.getElementById('status');
-    const sidebarList = document.getElementById('sidebarList');
-    const formEl = document.getElementById('form');
-    const runBtn = document.getElementById('runBtn');
-    const resultEl = document.getElementById('result');
-    const opTitle = document.getElementById('opTitle');
-    const opDescription = document.getElementById('opDescription');
-    const withProof = document.getElementById('withProof');
-    const proofBox = document.getElementById('proofBox');
+  <script type="module" src="./app.js"></script>
 
-    let apiDefs = null;
-    let selected = null; // { groupKey, itemKey, itemDef, isQuery }
-    let client = null;
-
-    // Supported keys limited to Evo SDK facades
-    const SUPPORTED_QUERIES = new Set([
-      'getIdentity','getIdentityKeys',
-      'getDataContract','getDataContractHistory','getDataContracts',
-      'getDocuments','getDocument',
-      'getDpnsUsername','getDpnsUsernames','dpnsResolve','dpnsCheckAvailability',
-      'getEpochsInfo','getCurrentEpoch','getFinalizedEpochInfos','getEvonodesProposedEpochBlocksByIds','getEvonodesProposedEpochBlocksByRange',
-      'getStatus','getCurrentQuorumsInfo','getTotalCreditsInPlatform','getPrefundedSpecializedBalance','getPathElements','waitForStateTransitionResult',
-      'getTokenStatuses','getTokenDirectPurchasePrices','getTokenContractInfo','getTokenPerpetualDistributionLastClaim','getTokenTotalSupply',
-      'getIdentitiesTokenInfos','getIdentityTokenInfos','getIdentitiesTokenBalances',
-      'getContestedResources','getContestedResourceVotersForIdentity','getContestedResourceVoteState','getContestedResourceIdentityVotes',
-    ]);
-    const SUPPORTED_TRANSITIONS = new Set([
-      'identityCreate','identityTopUp','identityCreditTransfer','identityCreditWithdrawal','identityUpdate',
-      'dataContractCreate','dataContractUpdate',
-      'documentCreate','documentReplace','documentDelete','documentTransfer','documentPurchase','documentSetPrice',
-      'tokenMint','tokenBurn','tokenTransfer','tokenFreeze','tokenUnfreeze','tokenDestroyFrozen','tokenSetPriceForDirectPurchase','tokenDirectPurchase','tokenClaim','tokenConfigUpdate',
-      'masternodeVote',
-    ]);
-
-    function currentNetwork() {
-      const val = [...document.querySelectorAll('input[name="network"]')].find(r => r.checked)?.value || 'testnet';
-      const trusted = document.getElementById('trustedToggle').checked;
-      return { network: val, trusted };
-    }
-
-    async function ensureClient() {
-      if (client && client.isConnected) return client;
-      const { network, trusted } = currentNetwork();
-      client = new EvoSDK({ network, trusted, proofs: false });
-      await client.connect();
-      return client;
-    }
-
-    function setStatus(msg) { statusEl.textContent = msg; }
-
-    function buildSidebar(defs) {
-      sidebarList.innerHTML = '';
-      const mkOp = (groupKey, isQuery, key, def) => {
-        const a = document.createElement('div');
-        a.className = 'op';
-        a.textContent = def.label || key;
-        a.onclick = () => selectOperation(groupKey, isQuery, key, def);
-        return a;
-      };
-      for (const [groupKey, group] of Object.entries(defs)) {
-        const cat = document.createElement('div');
-        cat.className = 'category';
-        cat.textContent = group.label || groupKey;
-        let appendedCategory = false;
-        const items = group.queries || group.transitions || {};
-        const isQuery = !!group.queries;
-        for (const [key, def] of Object.entries(items)) {
-          const ok = isQuery ? SUPPORTED_QUERIES.has(key) : SUPPORTED_TRANSITIONS.has(key);
-          if (!ok) continue;
-          if (!appendedCategory) { sidebarList.appendChild(cat); appendedCategory = true; }
-          sidebarList.appendChild(mkOp(groupKey, isQuery, key, def));
-        }
-      }
-    }
-
-    function mkField(id, label, input) {
-      const wrap = document.createElement('div');
-      wrap.className = 'field';
-      const l = document.createElement('label');
-      l.htmlFor = id; l.textContent = label;
-      wrap.appendChild(l);
-      input.id = id;
-      wrap.appendChild(input);
-      return wrap;
-    }
-
-    function buildForm(def) {
-      formEl.innerHTML = '';
-      (def.inputs || []).forEach((p, idx) => {
-        const id = `inp_${idx}`;
-        let input;
-        switch (p.type) {
-          case 'number': { input = document.createElement('input'); input.type = 'number'; break; }
-          case 'checkbox': { input = document.createElement('input'); input.type = 'checkbox'; break; }
-          case 'json': { input = document.createElement('textarea'); input.rows = 4; break; }
-          case 'select': {
-            input = document.createElement('select');
-            for (const opt of (p.options || [])) {
-              const o = document.createElement('option'); o.value = opt.value; o.textContent = opt.label || opt.value; input.appendChild(o);
-            } break;
-          }
-          case 'multiselect': {
-            input = document.createElement('select'); input.multiple = true;
-            for (const opt of (p.options || [])) { const o = document.createElement('option'); o.value = opt.value; o.textContent = opt.label || opt.value; input.appendChild(o); }
-            break;
-          }
-          default: { input = document.createElement('input'); input.type = 'text'; }
-        }
-        if (p.placeholder) input.placeholder = p.placeholder;
-        formEl.appendChild(mkField(id, p.label || p.name || `Param ${idx+1}`, input));
-      });
-    }
-
-    function parseInput(def, el) {
-      switch (def.type) {
-        case 'number': { const v = el.value.trim(); if (!v && !def.required) return null; return Number(v); }
-        case 'checkbox': return el.checked;
-        case 'json': { const v = el.value.trim(); if (!v && !def.required) return null; return JSON.parse(v); }
-        case 'array': {
-          const v = el.value.trim(); if (!v && !def.required) return [];
-          try { return JSON.parse(v); } catch(_) { return v.split(',').map(s => s.trim()).filter(Boolean); }
-        }
-        case 'multiselect': return Array.from(el.selectedOptions).map(o => o.value);
-        case 'select': return el.value;
-        default: { const v = el.value.trim(); if (!v && !def.required) return null; return v; }
-      }
-    }
-
-    function namedArgs(defs, args) {
-      const out = {};
-      defs.forEach((p, i) => { if (p && p.name) out[p.name] = args[i]; });
-      return out;
-    }
-
-    async function callEvo(client, groupKey, itemKey, defs, args, useProof) {
-      const n = namedArgs(defs, args);
-      // Try Evo SDK facades first; fallback to Wasm call if not mapped.
-      const c = client;
-      switch (itemKey) {
-        // Identities
-        case 'getIdentity': return useProof ? c.identities.fetchWithProof(n.id) : c.identities.fetch(n.id);
-        case 'getIdentityKeys': return c.identities.getKeys({ identityId: n.identityId, keyRequestType: n.keyRequestType, specificKeyIds: n.specificKeyIds, searchPurposeMap: n.searchPurposeMap, limit: n.limit, offset: n.offset });
-        case 'identityCreate': return c.identities.create({ assetLockProof: n.assetLockProof, assetLockPrivateKeyWif: n.assetLockPrivateKeyWif, publicKeys: n.publicKeys });
-        case 'identityTopUp': return c.identities.topUp({ identityId: n.identityId, assetLockProof: n.assetLockProof, assetLockPrivateKeyWif: n.assetLockPrivateKeyWif });
-        case 'identityCreditTransfer': return c.identities.creditTransfer({ senderId: n.senderId, recipientId: n.recipientId, amount: n.amount, privateKeyWif: n.privateKeyWif, keyId: n.keyId });
-        case 'identityCreditWithdrawal': return c.identities.creditWithdrawal({ identityId: n.identityId, toAddress: n.toAddress, amount: n.amount, coreFeePerByte: n.coreFeePerByte, privateKeyWif: n.privateKeyWif, keyId: n.keyId });
-        case 'identityUpdate': return c.identities.update({ identityId: n.identityId, addPublicKeys: n.addPublicKeys, disablePublicKeyIds: n.disablePublicKeyIds, privateKeyWif: n.privateKeyWif });
-        // Contracts
-        case 'getDataContract': return useProof ? c.contracts.fetchWithProof(n.id) : c.contracts.fetch(n.id);
-        case 'getDataContractHistory': return useProof ? c.contracts.getHistoryWithProof({ contractId: n.dataContractId || n.id, limit: n.limit, startAtMs: n.startAtMs }) : c.contracts.getHistory({ contractId: n.dataContractId || n.id, limit: n.limit, startAtMs: n.startAtMs });
-        case 'getDataContracts': return useProof ? c.contracts.getManyWithProof(n.ids) : c.contracts.getMany(n.ids);
-        case 'dataContractCreate': return c.contracts.create({ ownerId: n.ownerId, definition: n.definition, privateKeyWif: n.privateKeyWif, keyId: n.keyId });
-        case 'dataContractUpdate': return c.contracts.update({ contractId: n.dataContractId || n.contractId, ownerId: n.ownerId, updates: n.updates, privateKeyWif: n.privateKeyWif, keyId: n.keyId });
-        // Documents
-        case 'getDocuments': return useProof ? c.documents.queryWithProof({ contractId: n.dataContractId || n.contractId, type: n.documentType, where: n.where, orderBy: n.orderBy, limit: n.limit, startAfter: n.startAfter, startAt: n.startAt }) : c.documents.query({ contractId: n.dataContractId || n.contractId, type: n.documentType, where: n.where, orderBy: n.orderBy, limit: n.limit, startAfter: n.startAfter, startAt: n.startAt });
-        case 'getDocument': return useProof ? c.documents.getWithProof(n.dataContractId || n.contractId, n.documentType, n.documentId) : c.documents.get(n.dataContractId || n.contractId, n.documentType, n.documentId);
-        case 'documentCreate': return c.documents.create({ contractId: n.contractId, type: n.documentType, ownerId: n.ownerId, data: n.data, entropyHex: n.entropyHex, privateKeyWif: n.privateKeyWif });
-        case 'documentReplace': return c.documents.replace({ contractId: n.contractId, type: n.documentType, documentId: n.documentId, ownerId: n.ownerId, data: n.data, revision: n.revision, privateKeyWif: n.privateKeyWif });
-        case 'documentDelete': return c.documents.delete({ contractId: n.contractId, type: n.documentType, documentId: n.documentId, ownerId: n.ownerId, privateKeyWif: n.privateKeyWif });
-        case 'documentTransfer': return c.documents.transfer({ contractId: n.contractId, type: n.documentType, documentId: n.documentId, ownerId: n.ownerId, recipientId: n.recipientId, privateKeyWif: n.privateKeyWif });
-        case 'documentPurchase': return c.documents.purchase({ contractId: n.contractId, type: n.documentType, documentId: n.documentId, buyerId: n.buyerId, price: n.price, privateKeyWif: n.privateKeyWif });
-        case 'documentSetPrice': return c.documents.setPrice({ contractId: n.contractId, type: n.documentType, documentId: n.documentId, ownerId: n.ownerId, price: n.price, privateKeyWif: n.privateKeyWif });
-        // DPNS
-        case 'getDpnsUsername': return useProof ? c.dpns.usernameWithProof(n.identityId) : c.dpns.username(n.identityId);
-        case 'getDpnsUsernames': return useProof ? c.dpns.usernamesWithProof(n.identityId, { limit: n.limit }) : c.dpns.usernames(n.identityId, { limit: n.limit });
-        case 'dpnsResolve': return c.dpns.resolveName(n.name);
-        case 'dpnsCheckAvailability': return c.dpns.isNameAvailable(n.label);
-        // Epoch
-        case 'getEpochsInfo': return useProof ? c.epoch.epochsInfoWithProof({ startEpoch: n.startEpoch, count: n.count, ascending: n.ascending }) : c.epoch.epochsInfo({ startEpoch: n.startEpoch, count: n.count, ascending: n.ascending });
-        case 'getCurrentEpoch': return useProof ? c.epoch.currentWithProof() : c.epoch.current();
-        case 'getFinalizedEpochInfos': return useProof ? c.epoch.finalizedInfosWithProof({ startEpoch: n.startEpoch, count: n.count, ascending: n.ascending }) : c.epoch.finalizedInfos({ startEpoch: n.startEpoch, count: n.count, ascending: n.ascending });
-        case 'getEvonodesProposedEpochBlocksByIds': return useProof ? c.epoch.evonodesProposedBlocksByIdsWithProof(n.epoch, n.ids) : c.epoch.evonodesProposedBlocksByIds(n.epoch, n.ids);
-        case 'getEvonodesProposedEpochBlocksByRange': return useProof ? c.epoch.evonodesProposedBlocksByRangeWithProof(n.epoch, { limit: n.limit, startAfter: n.startAfter, orderAscending: n.orderAscending }) : c.epoch.evonodesProposedBlocksByRange(n.epoch, { limit: n.limit, startAfter: n.startAfter, orderAscending: n.orderAscending });
-        // System
-        case 'getStatus': return c.system.status();
-        case 'getCurrentQuorumsInfo': return c.system.currentQuorumsInfo();
-        case 'getTotalCreditsInPlatform': return useProof ? c.system.totalCreditsInPlatformWithProof() : c.system.totalCreditsInPlatform();
-        case 'getPrefundedSpecializedBalance': return useProof ? c.system.prefundedSpecializedBalanceWithProof(n.identityId) : c.system.prefundedSpecializedBalance(n.identityId);
-        case 'getPathElements': return useProof ? c.system.pathElementsWithProof(n.path, n.keys) : c.system.pathElements(n.path, n.keys);
-        case 'waitForStateTransitionResult': return c.system.waitForStateTransitionResult(n.stateTransitionHash || n.hash);
-        // Tokens
-        case 'getTokenStatuses': return useProof ? c.tokens.statusesWithProof(n.tokenIds) : c.tokens.statuses(n.tokenIds);
-        case 'getTokenDirectPurchasePrices': return useProof ? c.tokens.directPurchasePricesWithProof(n.tokenIds) : c.tokens.directPurchasePrices(n.tokenIds);
-        case 'getTokenContractInfo': return useProof ? c.tokens.contractInfoWithProof(n.dataContractId || n.contractId) : c.tokens.contractInfo(n.dataContractId || n.contractId);
-        case 'getTokenPerpetualDistributionLastClaim': return useProof ? c.tokens.perpetualDistributionLastClaimWithProof(n.identityId, n.tokenId) : c.tokens.perpetualDistributionLastClaim(n.identityId, n.tokenId);
-        case 'getTokenTotalSupply': return useProof ? c.tokens.totalSupplyWithProof(n.tokenId) : c.tokens.totalSupply(n.tokenId);
-        case 'getIdentitiesTokenInfos': return useProof ? c.tokens.identitiesTokenInfosWithProof(n.identityIds, n.tokenId) : c.tokens.identitiesTokenInfos(n.identityIds, n.tokenId);
-        case 'getIdentityTokenInfos': return useProof ? c.tokens.identityTokenInfosWithProof(n.identityId, n.tokenIds) : c.tokens.identityTokenInfos(n.identityId, n.tokenIds, { limit: n.limit, offset: n.offset });
-        case 'getIdentitiesTokenBalances': return useProof ? c.tokens.balancesWithProof(n.identityIds, n.tokenId) : c.tokens.balances(n.identityIds, n.tokenId);
-        case 'tokenMint': return c.tokens.mint({ contractId: n.contractId, tokenPosition: n.tokenPosition, amount: n.amount, identityId: n.identityId, privateKeyWif: n.privateKeyWif, recipientId: n.recipientId, publicNote: n.publicNote });
-        case 'tokenBurn': return c.tokens.burn({ contractId: n.contractId, tokenPosition: n.tokenPosition, amount: n.amount, identityId: n.identityId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
-        case 'tokenTransfer': return c.tokens.transfer({ contractId: n.contractId, tokenPosition: n.tokenPosition, amount: n.amount, senderId: n.senderId, recipientId: n.recipientId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
-        case 'tokenFreeze': return c.tokens.freeze({ contractId: n.contractId, tokenPosition: n.tokenPosition, identityToFreeze: n.identityToFreeze, freezerId: n.freezerId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
-        case 'tokenUnfreeze': return c.tokens.unfreeze({ contractId: n.contractId, tokenPosition: n.tokenPosition, identityToUnfreeze: n.identityToUnfreeze, unfreezerId: n.unfreezerId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
-        case 'tokenDestroyFrozen': return c.tokens.destroyFrozen({ contractId: n.contractId, tokenPosition: n.tokenPosition, identityId: n.frozenIdentityId || n.identityId, destroyerId: n.destroyerId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
-        case 'tokenSetPriceForDirectPurchase': return c.tokens.setPriceForDirectPurchase({ contractId: n.contractId, tokenPosition: n.tokenPosition, identityId: n.identityId, priceType: n.priceType, priceData: n.priceData, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
-        case 'tokenDirectPurchase': return c.tokens.directPurchase({ contractId: n.contractId, tokenPosition: n.tokenPosition, amount: n.amount, identityId: n.identityId, totalAgreedPrice: n.totalAgreedPrice, privateKeyWif: n.privateKeyWif });
-        case 'tokenClaim': return c.tokens.claim({ contractId: n.contractId, tokenPosition: n.tokenPosition, distributionType: n.distributionType, identityId: n.identityId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
-        case 'tokenConfigUpdate': return c.tokens.configUpdate({ contractId: n.contractId, tokenPosition: n.tokenPosition, configItemType: n.configItemType, configValue: n.configValue, identityId: n.identityId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
-        // Group & Voting
-        case 'getContestedResources': return useProof ? c.group.contestedResourcesWithProof({ documentTypeName: n.documentTypeName, contractId: n.dataContractId || n.contractId, indexName: n.indexName, startAtValue: n.startAtValue, limit: n.limit, orderAscending: n.orderAscending }) : c.group.contestedResources({ documentTypeName: n.documentTypeName, contractId: n.dataContractId || n.contractId, indexName: n.indexName, startAtValue: n.startAtValue, limit: n.limit, orderAscending: n.orderAscending });
-        case 'getContestedResourceVotersForIdentity': return useProof ? c.group.contestedResourceVotersForIdentityWithProof({ contractId: n.dataContractId || n.contractId, documentTypeName: n.documentTypeName, indexName: n.indexName, indexValues: n.indexValues, contestantId: n.contestantId, startAtIdentifierInfo: n.startAtIdentifierInfo, count: n.count, orderAscending: n.orderAscending }) : c.group.contestedResourceVotersForIdentity({ contractId: n.dataContractId || n.contractId, documentTypeName: n.documentTypeName, indexName: n.indexName, indexValues: n.indexValues, contestantId: n.contestantId, startAtVoterInfo: n.startAtVoterInfo, limit: n.limit, orderAscending: n.orderAscending });
-        case 'getContestedResourceVoteState': return useProof ? c.voting.contestedResourceVoteStateWithProof({ contractId: n.dataContractId || n.contractId, documentTypeName: n.documentTypeName, indexName: n.indexName, indexValues: n.indexValues, resultType: n.resultType, allowIncludeLockedAndAbstainingVoteTally: n.allowIncludeLockedAndAbstainingVoteTally, startAtIdentifierInfo: n.startAtIdentifierInfo, count: n.count, orderAscending: n.orderAscending }) : c.voting.contestedResourceVoteState({ contractId: n.dataContractId || n.contractId, documentTypeName: n.documentTypeName, indexName: n.indexName, indexValues: n.indexValues, resultType: n.resultType, allowIncludeLockedAndAbstainingVoteTally: n.allowIncludeLockedAndAbstainingVoteTally, startAtIdentifierInfo: n.startAtIdentifierInfo, count: n.count, orderAscending: n.orderAscending });
-        case 'getContestedResourceIdentityVotes': return useProof ? c.voting.contestedResourceIdentityVotesWithProof(n.identityId, { limit: n.limit, offset: n.offset, orderAscending: n.orderAscending }) : c.voting.contestedResourceIdentityVotes(n.identityId, { limit: n.limit, startAtVotePollIdInfo: n.startAtVotePollIdInfo, orderAscending: n.orderAscending });
-        case 'masternodeVote': return c.voting.masternodeVote({ masternodeProTxHash: n.masternodeProTxHash, contractId: n.contractId, documentTypeName: n.documentTypeName, indexName: n.indexName, indexValues: n.indexValues, voteChoice: n.voteChoice, votingKeyWif: n.votingKeyWif });
-      }
-      throw new Error(`Operation ${itemKey} is not supported by Evo SDK site`);
-    }
-
-    async function runSelected() {
-      if (!selected) return;
-      runBtn.disabled = true; resultEl.textContent = '';
-      try {
-        await ensureClient();
-        const defs = selected.itemDef.inputs || [];
-        const args = defs.map((p, idx) => parseInput(p, document.getElementById(`inp_${idx}`)));
-        const useProof = withProof.checked && selected.isQuery;
-        setStatus(`Running ${selected.itemKey}${useProof ? ' (proof)' : ''}…`);
-        const res = await callEvo(client, selected.groupKey, selected.itemKey, defs, args, useProof);
-        try { resultEl.textContent = JSON.stringify(res, null, 2); }
-        catch(_) { resultEl.textContent = String(res); }
-        setStatus('Done');
-      } catch (e) {
-        resultEl.textContent = 'Error: ' + (e && e.message ? e.message : String(e));
-        setStatus('Failed');
-      } finally {
-        runBtn.disabled = false;
-      }
-    }
-
-    function selectOperation(groupKey, isQuery, itemKey, itemDef) {
-      selected = { groupKey, isQuery, itemKey, itemDef };
-      opTitle.textContent = itemDef.label || itemKey;
-      opDescription.textContent = itemDef.description || '';
-      buildForm(itemDef);
-      runBtn.disabled = false;
-      // Show proof toggle if definition signals support, or by heuristic for common methods
-      const supportsProof = !!itemDef.supportsProof || !!(isQuery && (itemKey + 'WithProofInfo'));
-      proofBox.style.display = supportsProof ? 'block' : 'none';
-    }
-
-    // Reload client on network change
-    document.querySelectorAll('input[name="network"],#trustedToggle').forEach(el => {
-      el.addEventListener('change', () => { client = null; setStatus('Reconfigured — reconnect on next run'); });
-    });
-    runBtn.addEventListener('click', runSelected);
-
-    // Init
-    (async () => {
-      try {
-        setStatus('Loading API definitions…');
-        const res = await fetch('./api-definitions.json', { cache: 'no-store' });
-        apiDefs = await res.json();
-        const all = { ...(apiDefs.queries || {}), ...(apiDefs.transitions || {}) };
-        buildSidebar(all);
-        setStatus('Ready');
-      } catch (e) {
-        setStatus('Failed to load api-definitions.json');
-      }
-    })();
-  </script>
-  
 </body>
 </html>

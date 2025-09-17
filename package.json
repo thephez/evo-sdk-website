@@ -1,13 +1,16 @@
 {
   "private": true,
   "dependencies": {
-    "@dashevo/evo-sdk": "file:../platform/packages/js-evo-sdk"
+    "@dashevo/evo-sdk": "link:../platform/packages/js-evo-sdk"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.47.1"
   },
   "scripts": {
-    "docs:generate": "python3 website/generate_docs.py",
-    "docs:check": "python3 website/check_documentation.py",
-    "website:serve": "cd website && python3 -m http.server 8081",
-    "website:test": "playwright test website"
+    "generate": "python3 scripts/generate_docs.py",
+    "check": "python3 scripts/check_documentation.py",
+    "serve": "cd public && python3 -m http.server 8081",
+    "test": "playwright test"
   },
   "packageManager": "yarn@4.0.2"
 }

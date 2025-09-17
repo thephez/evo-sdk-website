@@ -11,7 +11,6 @@ test('index loads and renders sidebar', async ({ page }) => {
   await expect(page.locator('.category').first()).toBeVisible();
 });
 
-test.skip(process.env.EVO_WEBSITE_E2E !== '1', 'Network-backed e2e disabled by default');
 test('run simple query (getStatus)', async ({ page }) => {
   await page.goto('/index.html');
   // Click first category then find an op containing Status
