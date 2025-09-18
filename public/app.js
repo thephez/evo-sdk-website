@@ -149,7 +149,7 @@ function buildClientOptions() {
   const opts = {
     network: selectedNetwork,
     trusted: !!(elements.trustedMode && elements.trustedMode.checked),
-    proofs: false,
+    proofs: true,
   };
   const { advancedOptions } = state;
   if (advancedOptions.platformVersion) opts.platformVersion = advancedOptions.platformVersion;
