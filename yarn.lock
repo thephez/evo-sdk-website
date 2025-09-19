@@ -5,11 +5,21 @@ __metadata:
   version: 8
   cacheKey: 10
 
-"@dashevo/evo-sdk@link:../platform/packages/js-evo-sdk::locator=root-workspace-0b6124%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "@dashevo/evo-sdk@link:../platform/packages/js-evo-sdk::locator=root-workspace-0b6124%40workspace%3A."
+"@dashevo/evo-sdk@npm:^2.1.0-dev.5":
+  version: 2.1.0-dev.5
+  resolution: "@dashevo/evo-sdk@npm:2.1.0-dev.5"
+  dependencies:
+    "@dashevo/wasm-sdk": "npm:2.1.0-dev.5"
+  checksum: 1faad4338c8154b1e9834ea3913353ffc43e044bcfade4128500de8e4bf1e8b1777ebbf69bc6731c9126887050c293dcf6273ad896068b2cf78a110285a75123
   languageName: node
-  linkType: soft
+  linkType: hard
+
+"@dashevo/wasm-sdk@npm:2.1.0-dev.5":
+  version: 2.1.0-dev.5
+  resolution: "@dashevo/wasm-sdk@npm:2.1.0-dev.5"
+  checksum: cd60cff80d46d9059cdfb0aa634cb3e32cbea965105ac1820c6433da2ebd98b4517e03280c125c834f33e5ffbb838edd5239884476487e63dca79ee7e959261f
+  languageName: node
+  linkType: hard
 
 "@isaacs/cliui@npm:^8.0.2":
   version: 8.0.2
@@ -663,7 +673,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
-    "@dashevo/evo-sdk": "link:../platform/packages/js-evo-sdk"
+    "@dashevo/evo-sdk": "npm:^2.1.0-dev.5"
     "@playwright/test": "npm:^1.47.1"
   languageName: unknown
   linkType: soft

@@ -5,3 +5,7 @@
 !.yarn/sdks
 !.yarn/versions
 
+node_modules
+
+#public/dist
+#public/index.html

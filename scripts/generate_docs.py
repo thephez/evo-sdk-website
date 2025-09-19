@@ -13,6 +13,7 @@ import json
 import re
 import shutil
 import textwrap
+import zipfile
 from datetime import datetime, timezone
 from html import escape
 from pathlib import Path
@@ -20,8 +21,22 @@ from typing import Callable, Iterable, List, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PUBLIC_DIR = REPO_ROOT / 'public'
-SDK_WORKSPACE_DIST = REPO_ROOT.parent / 'platform' / 'packages' / 'js-evo-sdk' / 'dist'
+NODE_MODULES_DIR = REPO_ROOT / 'node_modules'
 DEFAULT_TEST_IDENTITY = '5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk'
+
+def copy_node_modules_dist(package: str, destination: Path) -> bool:
+    """Copy the /dist directory from node_modules if it exists."""
+    package_path = NODE_MODULES_DIR
+    for part in package.split('/'):
+        package_path = package_path / part
+    dist_path = package_path / 'dist'
+    if not dist_path.exists():
+        return False
+
+    if destination.exists():
+        shutil.rmtree(destination)
+    shutil.copytree(dist_path, destination)
+    return True
 
 TESTNET_TEST_DATA = {
     'identity_id': DEFAULT_TEST_IDENTITY,
@@ -974,13 +989,11 @@ def main() -> None:
     ai_md = generate_ai_reference_md(queries, transitions)
     (PUBLIC_DIR / 'AI_REFERENCE.md').write_text(ai_md, encoding='utf-8')
 
-    if SDK_WORKSPACE_DIST.exists():
-        public_dist = PUBLIC_DIR / 'dist'
-        if public_dist.exists():
-            shutil.rmtree(public_dist)
-        shutil.copytree(SDK_WORKSPACE_DIST, public_dist)
+    public_dist = PUBLIC_DIR / 'dist'
+    if copy_node_modules_dist('@dashevo/evo-sdk', public_dist):
+        print('Copied Evo SDK dist from node_modules into public/dist')
     else:
-        print('Warning: Evo SDK workspace dist not found; run "yarn workspace @dashevo/evo-sdk build" to enable the demo UI.')
+        print('Warning: Evo SDK dist not found; ensure dependencies are installed or build the workspace package.')
 
     manifest = {
         'generated_at': datetime.now(timezone.utc).isoformat(),
