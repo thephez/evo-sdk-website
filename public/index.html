@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
-<script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js" 
-        integrity="sha384-JEyTNhjM6R1ElGoJns4U2Ln4ofPcqzSsynQkmEc/KGy6336qAZl70tDLufbkla+3" 
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"
+        integrity="sha384-JEyTNhjM6R1ElGoJns4U2Ln4ofPcqzSsynQkmEc/KGy6336qAZl70tDLufbkla+3"
         crossorigin="anonymous"></script>
 
 <head>
@@ -22,7 +22,7 @@
       <a href="https://github.com/dashpay/platform" target="_blank">GitHub</a>
     </nav>
   </div>
-  
+
   <!-- Error Banner for API definitions loading failures -->
   <div id="apiErrorBanner" style="display: none; background-color: #f8d7da; color: #721c24; padding: 15px; margin: 0; border-bottom: 1px solid #f5c6cb; text-align: center;">
     <div style="display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap;">
@@ -30,7 +30,7 @@
       <button id="apiRetryButton" style="background-color: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px;">Retry</button>
     </div>
   </div>
-  
+
   <div id="preloader">
     <div class="preloader-content">
       <div class="preloader-text" id="preloaderText">Loading Evo SDK...</div>
@@ -42,7 +42,7 @@
       </div>
     </div>
   </div>
-  
+
   <div class="app-container">
     <div class="sidebar">
       <div class="network-toggle">
@@ -58,7 +58,7 @@
           Trusted Quorums Mode
         </label>
       </div>
-      
+
       <!-- SDK Configuration Section (Collapsible) -->
       <details class="sdk-config" style="margin: 0; padding: 0; border-bottom: 1px solid #e0e0e0;">
         <summary style="padding: 15px 20px; background-color: #f8f9fa; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;">
@@ -74,7 +74,7 @@
             </div>
             <small style="color: #666;">Leave empty for latest version</small>
           </div>
-          
+
           <details style="margin-top: 10px;">
             <summary style="cursor: pointer; font-weight: 500; margin-bottom: 10px;">Request Settings</summary>
             <div style="margin-top: 10px;">
@@ -96,11 +96,11 @@
               </label>
             </div>
           </details>
-          
+
           <button id="applyConfig" style="margin-top: 15px; padding: 8px 15px; background-color: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%;">Apply Configuration</button>
         </div>
       </details>
-      
+
       <div class="query-container">
         <div class="query-selector">
           <select id="operationType">
@@ -108,7 +108,7 @@
             <option value="transitions">State Transitions</option>
             <option value="wallet">Wallet</option>
           </select>
-          
+
           <select id="queryCategory">
             <option value="">Select Query Category</option>
             <option value="identity">Identity Queries</option>
@@ -122,12 +122,12 @@
             <option value="group">Group Queries</option>
             <option value="system">System & Utility</option>
           </select>
-          
+
           <select id="queryType" style="display: none;">
             <option value="">Select Query Type</option>
           </select>
         </div>
-        
+
         <div id="authenticationInputs" class="query-inputs" style="display: none;">
           <h4>Authentication</h4>
           <div class="input-group" id="identityIdGroup">
@@ -143,14 +143,14 @@
             <input type="password" id="privateKey" placeholder="Enter private key (WIF or 32-byte hex)">
           </div>
         </div>
-        
+
         <div id="queryDescription" class="query-description" style="display: none;"></div>
-        
+
         <div id="queryInputs" class="query-inputs" style="display: none;">
           <h4 id="queryTitle">Query Parameters</h4>
           <div id="dynamicInputs"></div>
         </div>
-        
+
         <div class="proof-toggle" style="display: none; margin: 15px 0;" id="proofToggleContainer">
           <label style="display: flex; align-items: center; margin: 0;">
             <span class="toggle-switch">
@@ -160,22 +160,22 @@
             <span style="margin-left: 60px; font-weight: 500; color: #333;">With Proof Info</span>
           </label>
         </div>
-        
+
         <div class="no-proof-info" style="display: none; margin: 15px 0; padding: 10px; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px; text-align: center;" id="noProofInfoContainer">
           <span style="color: #6c757d; font-size: 0.9em;">Note: this query does not provide cryptographic proof verification.</span>
         </div>
-        
+
         <button id="executeQuery" class="execute-button" style="display: none;">Execute Query</button>
       </div>
     </div>
-    
+
     <div class="result-container">
       <div class="result-header">
         <h2>Results</h2>
         <div class="result-actions">
-          <button id="clearButton" onclick="clearResults()">Clear</button>
-          <button id="copyButton" onclick="copyResults()">Copy</button>
-          <button id="clearCacheButton" onclick="clearCache()" title="Clear Evo SDK cache and reload">Clear Cache</button>
+          <button id="clearButton">Clear</button>
+          <button id="copyButton">Copy</button>
+          <button id="clearCacheButton" title="Clear Evo SDK cache and reload">Clear Cache</button>
         </div>
       </div>
       <div id="resultSplitContainer" class="result-split-container">
