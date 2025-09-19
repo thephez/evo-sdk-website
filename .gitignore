@@ -8,6 +8,9 @@
 # NPM modules
 node_modules
 
+# test artifacts
+test-results
+
 # Generated files by scripts/generate_docs.py
 public/dist
 public/docs.html

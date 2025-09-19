@@ -8,16 +8,29 @@ test('docs page renders heading', async ({ page }) => {
 
 test('index loads and renders sidebar', async ({ page }) => {
   await page.goto('/index.html');
-  await expect(page.locator('.category').first()).toBeVisible();
+  await expect(page.locator('#preloader')).toBeHidden({ timeout: 15_000 });
+  const categorySelect = page.locator('#queryCategory');
+  await expect(categorySelect).toBeVisible();
+  await expect(page.locator('#queryCategory option[value="system"]')).toHaveCount(1);
 });
 
 test('run simple query (getStatus)', async ({ page }) => {
   await page.goto('/index.html');
-  // Click first category then find an op containing Status
-  const sidebar = page.locator('#sidebarList');
-  await expect(sidebar).toBeVisible();
-  const op = sidebar.getByText(/Status/i).first();
-  await op.click();
-  await page.getByRole('button', { name: 'Run' }).click();
-  await expect(page.locator('#result')).toContainText('{', { timeout: 30_000 });
+  await expect(page.locator('#preloader')).toBeHidden({ timeout: 15_000 });
+
+  await page.waitForSelector('#queryCategory option[value="system"]', { timeout: 15_000, state: 'attached' });
+  await page.selectOption('#queryCategory', 'system');
+
+  const queryType = page.locator('#queryType');
+  await expect(queryType).toBeVisible();
+
+  await page.waitForSelector('#queryType option[value="getStatus"]', { timeout: 15_000, state: 'attached' });
+  await page.selectOption('#queryType', 'getStatus');
+
+  const executeButton = page.locator('#executeQuery');
+  await expect(executeButton).toBeVisible();
+  await executeButton.click();
+
+  const result = page.locator('#identityInfo');
+  await expect(result).toContainText('{', { timeout: 30_000 });
 });
