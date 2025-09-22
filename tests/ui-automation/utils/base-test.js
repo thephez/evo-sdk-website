@@ -22,7 +22,7 @@ class BaseTest {
     });
     
     // Verify we're on the right page
-    await expect(this.page).toHaveTitle(/Dash Platform WASM JS SDK/);
+    await expect(this.page).toHaveTitle(/Dash Platform Evo JS SDK/);
     
     console.log('SDK initialized successfully');
   }
