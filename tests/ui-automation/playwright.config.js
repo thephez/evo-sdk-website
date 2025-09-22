@@ -73,7 +73,7 @@ module.exports = defineConfig({
   webServer: {
     command: 'python3 -m http.server 8888',
     url: 'http://localhost:8888',
-    cwd: '../../', // Run from wasm-sdk directory to serve index.html
+    cwd: '../../public', // Run from public directory to serve index.html
     reuseExistingServer: !process.env.CI,
     timeout: 60000,
   },
