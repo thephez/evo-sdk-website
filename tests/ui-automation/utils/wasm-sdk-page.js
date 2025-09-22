@@ -438,36 +438,6 @@ class WasmSdkPage extends BaseTest {
     return await banner.textContent();
   }
 
-  /**
-   * Get proof content when in split view mode
-   */
-  async getProofContent() {
-    await this.page.waitForTimeout(500); // Brief wait for content to render
-    
-    const proofContent = this.page.locator('#proofInfo');
-    const isVisible = await proofContent.isVisible();
-    
-    if (!isVisible) {
-      console.log('⚠️ Proof content not visible');
-      return '';
-    }
-    
-    const content = await proofContent.textContent();
-    return content || '';
-  }
-
-  /**
-   * Check if result is displayed in split view (proof mode)
-   */
-  async isInSplitView() {
-    const dataSection = this.page.locator('.result-data-section');
-    const proofSection = this.page.locator('.result-proof-section');
-    
-    const dataSectionVisible = await dataSection.isVisible();
-    const proofSectionVisible = await proofSection.isVisible();
-    
-    return dataSectionVisible && proofSectionVisible;
-  }
 
   /**
    * Wait for query execution to complete and return the result
@@ -477,12 +447,16 @@ class WasmSdkPage extends BaseTest {
     const result = await this.getResultContent();
     const hasError = await this.hasErrorResult();
     
-    // Check if we're in split view mode (proof mode)
-    const inSplitView = await this.isInSplitView();
-    let proofContent = null;
-    
-    if (inSplitView) {
-      proofContent = await this.getProofContent();
+    // Check if result contains proof data
+    let hasProofData = false;
+    try {
+      if (result && !hasError) {
+        const parsedResult = JSON.parse(result);
+        hasProofData = parsedResult.hasOwnProperty('proof') && parsedResult.hasOwnProperty('metadata');
+      }
+    } catch {
+      // Not JSON or old format, no proof data
+      hasProofData = false;
     }
     
     return {
@@ -490,8 +464,10 @@ class WasmSdkPage extends BaseTest {
       result,
       hasError,
       statusText: await this.getStatusBannerText(),
-      inSplitView,
-      proofContent
+      hasProofData,
+      // Legacy properties for backward compatibility (deprecated)
+      inSplitView: false,
+      proofContent: null
     };
   }
 

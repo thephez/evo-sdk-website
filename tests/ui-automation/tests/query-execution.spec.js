@@ -95,36 +95,58 @@ function validateBasicDpnsQueryResult(result) {
 
 /**
  * Helper function to validate proof content contains expected fields
- * @param {string} proofContent - The proof content string
+ * @param {Object} resultData - The parsed JSON result containing proof fields
  */
-function validateProofContent(proofContent) {
-  expect(proofContent).toBeDefined();
-  expect(proofContent).not.toBe('');
-  expect(proofContent).toContain('metadata');
-  expect(proofContent).toContain('proof');
-  expect(proofContent).toContain('grovedbProof');
-  expect(proofContent).toContain('quorumHash');
-  expect(proofContent).toContain('signature');
+function validateProofContent(resultData) {
+  expect(resultData).toBeDefined();
+  expect(resultData).toHaveProperty('proof');
+  expect(resultData.proof).toHaveProperty('grovedbProof');
+  expect(resultData.proof).toHaveProperty('quorumHash');
+  expect(resultData.proof).toHaveProperty('signature');
+  expect(resultData.proof).toHaveProperty('round');
+  expect(resultData.proof).toHaveProperty('blockIdHash');
+  expect(resultData.proof).toHaveProperty('quorumType');
 }
 
 /**
- * Helper function to validate split view (proof mode) result
+ * Helper function to validate result with proof
  * @param {Object} result - The query result object
  */
-function validateSplitView(result) {
-  expect(result.inSplitView).toBe(true);
-  expect(result.proofContent).toBeDefined();
-  expect(result.proofContent).not.toBe('');
-  validateProofContent(result.proofContent);
+function validateResultWithProof(result) {
+  expect(result.success).toBe(true);
+  expect(result.result).toBeDefined();
+  
+  // Parse the result as JSON to check the format
+  const resultData = JSON.parse(result.result);
+  expect(resultData).toHaveProperty('data');
+  expect(resultData).toHaveProperty('metadata');
+  expect(resultData).toHaveProperty('proof');
+  
+  // Validate metadata structure
+  expect(resultData.metadata).toHaveProperty('height');
+  expect(resultData.metadata).toHaveProperty('coreChainLockedHeight');
+  expect(resultData.metadata).toHaveProperty('timeMs');
+  expect(resultData.metadata).toHaveProperty('protocolVersion');
+  
+  // Validate proof structure
+  validateProofContent(resultData);
 }
 
 /**
- * Helper function to validate single view (non-proof mode) result
+ * Helper function to validate result without proof
  * @param {Object} result - The query result object
  */
-function validateSingleView(result) {
-  expect(result.inSplitView).toBe(false);
-  expect(result.proofContent).toBeNull();
+function validateResultWithoutProof(result) {
+  expect(result.success).toBe(true);
+  expect(result.result).toBeDefined();
+  
+  // For queries without proof, the result should NOT contain proof field
+  const resultData = JSON.parse(result.result);
+  // If Ensure no proof field exists
+  if (resultData.hasOwnProperty('data')) {
+    expect(resultData).not.toHaveProperty('proof');
+    expect(resultData).toHaveProperty('data');
+  }
 }
 
 /**
@@ -286,6 +308,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
   test.describe('Data Contract Queries', () => {
     test('should execute getDataContract query', async () => {
       await wasmSdkPage.setupQuery('dataContract', 'getDataContract');
+      await wasmSdkPage.disableProofInfo();
       
       const success = await parameterInjector.injectParameters('dataContract', 'getDataContract', 'testnet');
       expect(success).toBe(true);
@@ -294,14 +317,15 @@ test.describe('WASM SDK Query Execution Tests', () => {
       
       // Use helper functions for validation
       validateBasicQueryResult(result);
-      validateSingleView(result);
+      validateResultWithoutProof(result);
       validateContractResult(result.result);
       
-      console.log('✅ getDataContract single view without proof confirmed');
+      console.log('✅ getDataContract without proof confirmed');
     });
 
     test('should execute getDataContracts query for multiple contracts', async () => {
       await wasmSdkPage.setupQuery('dataContract', 'getDataContracts');
+      await wasmSdkPage.disableProofInfo();
       
       const success = await parameterInjector.injectParameters('dataContract', 'getDataContracts', 'testnet');
       expect(success).toBe(true);
@@ -310,7 +334,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
       
       // Use helper functions for validation
       validateBasicQueryResult(result);
-      validateSingleView(result);
+      validateResultWithoutProof(result);
       
       // Multiple contracts result should be valid JSON
       expect(() => JSON.parse(result.result)).not.toThrow();
@@ -324,11 +348,12 @@ test.describe('WASM SDK Query Execution Tests', () => {
         validateContractResult(JSON.stringify(contract));
       });
       
-      console.log('✅ getDataContracts single view without proof confirmed');
+      console.log('✅ getDataContracts without proof confirmed');
     });
 
     test('should execute getDataContractHistory query', async () => {
       await wasmSdkPage.setupQuery('dataContract', 'getDataContractHistory');
+      await wasmSdkPage.disableProofInfo();
       
       const success = await parameterInjector.injectParameters('dataContract', 'getDataContractHistory', 'testnet');
       expect(success).toBe(true);
@@ -337,7 +362,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
       
       // Use helper functions for validation
       validateBasicQueryResult(result);
-      validateSingleView(result);
+      validateResultWithoutProof(result);
       
       // Contract history should be valid JSON (array of contract versions)
       expect(() => JSON.parse(result.result)).not.toThrow();
@@ -345,7 +370,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
       expect(historyData).toBeDefined();
       expect(Array.isArray(historyData) || typeof historyData === 'object').toBe(true);
       
-      console.log('✅ getDataContractHistory single view without proof confirmed');
+      console.log('✅ getDataContractHistory without proof confirmed');
     });
 
     test('should execute getDataContract query with proof info', async () => {
@@ -359,13 +384,17 @@ test.describe('WASM SDK Query Execution Tests', () => {
       
       // Validate basic result
       validateBasicQueryResult(result);
-      validateContractResult(result.result);
       
-      // If proof was enabled, verify split view
+      // If proof was enabled, verify proof present
       if (proofEnabled) {
-        validateSplitView(result);
-        console.log('✅ getDataContract split view with proof confirmed');
+        validateResultWithProof(result);
+        // Extract data field for validation when in proof mode
+        const resultData = JSON.parse(result.result);
+        validateContractResult(JSON.stringify(resultData.data));
+        console.log('✅ getDataContract with proof confirmed');
       } else {
+        validateResultWithoutProof(result);
+        validateContractResult(result.result);
         console.log('⚠️ Proof was not enabled for getDataContract query');
       }
     });
@@ -382,23 +411,34 @@ test.describe('WASM SDK Query Execution Tests', () => {
       // Validate basic result
       validateBasicQueryResult(result);
       
-      // Multiple contracts result should be valid JSON
-      expect(() => JSON.parse(result.result)).not.toThrow();
-      const contractsData = JSON.parse(result.result);
-      expect(contractsData).toBeDefined();
-      expect(contractsData).toHaveProperty('dataContracts');
-      expect(typeof contractsData.dataContracts).toBe('object');
-      
-      // Validate each contract using validateContractResult
-      Object.values(contractsData.dataContracts).forEach(contract => {
-        validateContractResult(JSON.stringify(contract));
-      });
-      
-      // If proof was enabled, verify split view
+      // If proof was enabled, verify new format with proof
       if (proofEnabled) {
-        validateSplitView(result);
-        console.log('✅ getDataContracts split view with proof confirmed');
+        validateResultWithProof(result);
+        // Extract data field for validation when in proof mode
+        const resultData = JSON.parse(result.result);
+        const contractsData = resultData.data;
+        expect(contractsData).toBeDefined();
+        expect(contractsData).toHaveProperty('dataContracts');
+        expect(typeof contractsData.dataContracts).toBe('object');
+        
+        // Validate each contract using validateContractResult
+        Object.values(contractsData.dataContracts).forEach(contract => {
+          validateContractResult(JSON.stringify(contract));
+        });
+        console.log('✅ getDataContracts with proof confirmed');
       } else {
+        validateResultWithoutProof(result);
+        // Multiple contracts result should be valid JSON
+        expect(() => JSON.parse(result.result)).not.toThrow();
+        const contractsData = JSON.parse(result.result);
+        expect(contractsData).toBeDefined();
+        expect(contractsData).toHaveProperty('dataContracts');
+        expect(typeof contractsData.dataContracts).toBe('object');
+        
+        // Validate each contract using validateContractResult
+        Object.values(contractsData.dataContracts).forEach(contract => {
+          validateContractResult(JSON.stringify(contract));
+        });
         console.log('⚠️ Proof was not enabled for getDataContracts query');
       }
     });
@@ -415,17 +455,22 @@ test.describe('WASM SDK Query Execution Tests', () => {
       // Validate basic result
       validateBasicQueryResult(result);
       
-      // Contract history should be valid JSON
-      expect(() => JSON.parse(result.result)).not.toThrow();
-      const historyData = JSON.parse(result.result);
-      expect(historyData).toBeDefined();
-      expect(Array.isArray(historyData) || typeof historyData === 'object').toBe(true);
-      
-      // If proof was enabled, verify split view
+      // If proof was enabled, verify proof
       if (proofEnabled) {
-        validateSplitView(result);
-        console.log('✅ getDataContractHistory split view with proof confirmed');
+        validateResultWithProof(result);
+        // Extract data field for validation when in proof mode
+        const resultData = JSON.parse(result.result);
+        const historyData = resultData.data;
+        expect(historyData).toBeDefined();
+        expect(Array.isArray(historyData) || typeof historyData === 'object').toBe(true);
+        console.log('✅ getDataContractHistory with proof confirmed');
       } else {
+        validateResultWithoutProof(result);
+        // Contract history should be valid JSON
+        expect(() => JSON.parse(result.result)).not.toThrow();
+        const historyData = JSON.parse(result.result);
+        expect(historyData).toBeDefined();
+        expect(Array.isArray(historyData) || typeof historyData === 'object').toBe(true);
         console.log('⚠️ Proof was not enabled for getDataContractHistory query');
       }
     });
@@ -434,6 +479,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
   test.describe('Document Queries', () => {
     test('should execute getDocuments query', async () => {
       await wasmSdkPage.setupQuery('document', 'getDocuments');
+      await wasmSdkPage.disableProofInfo();
       
       const success = await parameterInjector.injectParameters('document', 'getDocuments', 'testnet');
       expect(success).toBe(true);
@@ -442,14 +488,15 @@ test.describe('WASM SDK Query Execution Tests', () => {
       
       // Use helper functions for validation
       validateBasicQueryResult(result);
-      validateSingleView(result);
+      validateResultWithoutProof(result);
       validateDocumentResult(result.result);
       
-      console.log('✅ getDocuments single view without proof confirmed');
+      console.log('✅ getDocuments without proof confirmed');
     });
 
     test('should execute getDocument query for specific document', async () => {
       await wasmSdkPage.setupQuery('document', 'getDocument');
+      await wasmSdkPage.disableProofInfo();
       
       const success = await parameterInjector.injectParameters('document', 'getDocument', 'testnet');
       expect(success).toBe(true);
@@ -458,10 +505,10 @@ test.describe('WASM SDK Query Execution Tests', () => {
       
       // Use helper functions for validation
       validateBasicQueryResult(result);
-      validateSingleView(result);
+      validateResultWithoutProof(result);
       validateDocumentResult(result.result);
       
-      console.log('✅ getDocument single view without proof confirmed');
+      console.log('✅ getDocument without proof confirmed');
     });
 
     test('should execute getDocuments query with proof info', async () => {
@@ -475,13 +522,17 @@ test.describe('WASM SDK Query Execution Tests', () => {
       
       // Validate basic result
       validateBasicQueryResult(result);
-      validateDocumentResult(result.result);
       
-      // If proof was enabled, verify split view
+      // If proof was enabled, verify proof
       if (proofEnabled) {
-        validateSplitView(result);
-        console.log('✅ getDocuments split view with proof confirmed');
+        validateResultWithProof(result);
+        // Extract data field for validation when in proof mode
+        const resultData = JSON.parse(result.result);
+        validateDocumentResult(JSON.stringify(resultData.data));
+        console.log('✅ getDocuments with proof confirmed');
       } else {
+        validateResultWithoutProof(result);
+        validateDocumentResult(result.result);
         console.log('⚠️ Proof was not enabled for getDocuments query');
       }
     });
@@ -497,13 +548,17 @@ test.describe('WASM SDK Query Execution Tests', () => {
       
       // Validate basic result
       validateBasicQueryResult(result);
-      validateDocumentResult(result.result);
       
-      // If proof was enabled, verify split view
+      // If proof was enabled, verify proof
       if (proofEnabled) {
-        validateSplitView(result);
-        console.log('✅ getDocument split view with proof confirmed');
+        validateResultWithProof(result);
+        // Extract data field for validation when in proof mode
+        const resultData = JSON.parse(result.result);
+        validateDocumentResult(JSON.stringify(resultData.data));
+        console.log('✅ getDocument with proof confirmed');
       } else {
+        validateResultWithoutProof(result);
+        validateDocumentResult(result.result);
         console.log('⚠️ Proof was not enabled for getDocument query');
       }
     });
@@ -561,6 +616,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
       test.describe(`${name} query (parameterized)`, () => {
         test('without proof info', async () => {
           await wasmSdkPage.setupQuery('system', name);
+          await wasmSdkPage.disableProofInfo();
           
           if (needsParameters) {
             const success = await parameterInjector.injectParameters('system', name, 'testnet');
@@ -569,10 +625,10 @@ test.describe('WASM SDK Query Execution Tests', () => {
           
           const result = await wasmSdkPage.executeQueryAndGetResult();
           validateBasicQueryResult(result);
-          validateSingleView(result);
+          validateResultWithoutProof(result);
           validateFn(result.result);
           
-          console.log(`✅ ${name} single view without proof confirmed`);
+          console.log(`✅ ${name} without proof confirmed`);
         });
 
         if (hasProofSupport) {
@@ -588,13 +644,16 @@ test.describe('WASM SDK Query Execution Tests', () => {
             validateBasicQueryResult(result);
             
             if (proofEnabled) {
-              validateSplitView(result);
-              console.log(`✅ ${name} split view with proof confirmed`);
+              validateResultWithProof(result);
+              // Extract data field for validation when in proof mode
+              const resultData = JSON.parse(result.result);
+              validateFn(JSON.stringify(resultData.data));
+              console.log(`✅ ${name} with proof confirmed`);
             } else {
+              validateResultWithoutProof(result);
               console.log(`⚠️ Proof was not enabled for ${name} query`);
+              validateFn(result.result);
             }
-            
-            validateFn(result.result);
           });
         } else {
           test.skip('with proof info', async () => {
@@ -666,6 +725,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
       test.describe(`${name} query (parameterized)`, () => {
         test('without proof info', async () => {
           await wasmSdkPage.setupQuery('epoch', name);
+          await wasmSdkPage.disableProofInfo();
           
           if (needsParameters) {
             const success = await parameterInjector.injectParameters('epoch', name, 'testnet');
@@ -674,10 +734,10 @@ test.describe('WASM SDK Query Execution Tests', () => {
           
           const result = await wasmSdkPage.executeQueryAndGetResult();
           validateBasicQueryResult(result);
-          validateSingleView(result);
+          validateResultWithoutProof(result);
           validateFn(result.result);
           
-          console.log(`✅ ${name} single view without proof confirmed`);
+          console.log(`✅ ${name} without proof confirmed`);
         });
 
         if (hasProofSupport) {
@@ -693,13 +753,16 @@ test.describe('WASM SDK Query Execution Tests', () => {
             validateBasicQueryResult(result);
             
             if (proofEnabled) {
-              validateSplitView(result);
-              console.log(`✅ ${name} split view with proof confirmed`);
+              validateResultWithProof(result);
+              // Extract data field for validation when in proof mode
+              const resultData = JSON.parse(result.result);
+              validateFn(JSON.stringify(resultData.data));
+              console.log(`✅ ${name} with proof confirmed`);
             } else {
+              validateResultWithoutProof(result);
               console.log(`⚠️ Proof was not enabled for ${name} query`);
+              validateFn(result.result);
             }
-            
-            validateFn(result.result);
           });
         } else {
           test.skip('with proof info', async () => {
@@ -782,6 +845,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
       test.describe(`${name} query (parameterized)`, () => {
         test('without proof info', async () => {
           await wasmSdkPage.setupQuery('token', name);
+          await wasmSdkPage.disableProofInfo();
           
           if (needsParameters) {
             const success = await parameterInjector.injectParameters('token', name, 'testnet');
@@ -790,10 +854,10 @@ test.describe('WASM SDK Query Execution Tests', () => {
           
           const result = await wasmSdkPage.executeQueryAndGetResult();
           validateBasicQueryResult(result);
-          validateSingleView(result);
+          validateResultWithoutProof(result);
           validateFn(result.result);
           
-          console.log(`✅ ${name} single view without proof confirmed`);
+          console.log(`✅ ${name} without proof confirmed`);
         });
 
         if (hasProofSupport) {
@@ -809,13 +873,16 @@ test.describe('WASM SDK Query Execution Tests', () => {
             validateBasicQueryResult(result);
             
             if (proofEnabled) {
-              validateSplitView(result);
-              console.log(`✅ ${name} split view with proof confirmed`);
+              validateResultWithProof(result);
+              // Extract data field for validation when in proof mode
+              const resultData = JSON.parse(result.result);
+              validateFn(JSON.stringify(resultData.data));
+              console.log(`✅ ${name} with proof confirmed`);
             } else {
+              validateResultWithoutProof(result);
               console.log(`⚠️ Proof was not enabled for ${name} query`);
+              validateFn(result.result);
             }
-            
-            validateFn(result.result);
           });
         } else {
           test.skip('with proof info', async () => {
@@ -889,6 +956,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
       test.describe(`${name} query (parameterized)`, () => {
         test('without proof info', async () => {
           await wasmSdkPage.setupQuery('voting', name);
+          await wasmSdkPage.disableProofInfo();
           
           if (needsParameters) {
             const success = await parameterInjector.injectParameters('voting', name, 'testnet');
@@ -897,10 +965,10 @@ test.describe('WASM SDK Query Execution Tests', () => {
           
           const result = await wasmSdkPage.executeQueryAndGetResult();
           validateBasicQueryResult(result);
-          validateSingleView(result);
+          validateResultWithoutProof(result);
           validateFn(result.result);
           
-          console.log(`✅ ${name} single view without proof confirmed`);
+          console.log(`✅ ${name} without proof confirmed`);
         });
 
         if (hasProofSupport) {
@@ -916,13 +984,16 @@ test.describe('WASM SDK Query Execution Tests', () => {
             validateBasicQueryResult(result);
             
             if (proofEnabled) {
-              validateSplitView(result);
-              console.log(`✅ ${name} split view with proof confirmed`);
+              validateResultWithProof(result);
+              // Extract data field for validation when in proof mode
+              const resultData = JSON.parse(result.result);
+              validateFn(JSON.stringify(resultData.data));
+              console.log(`✅ ${name} with proof confirmed`);
             } else {
+              validateResultWithoutProof(result);
               console.log(`⚠️ Proof was not enabled for ${name} query`);
+              validateFn(result.result);
             }
-            
-            validateFn(result.result);
           });
         } else {
           test.skip('with proof info', async () => {
@@ -985,6 +1056,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
       test.describe(`${name} query (parameterized)`, () => {
         test('without proof info', async () => {
           await wasmSdkPage.setupQuery('group', name);
+          await wasmSdkPage.disableProofInfo();
           
           if (needsParameters) {
             const success = await parameterInjector.injectParameters('group', name, 'testnet');
@@ -993,10 +1065,10 @@ test.describe('WASM SDK Query Execution Tests', () => {
           
           const result = await wasmSdkPage.executeQueryAndGetResult();
           validateBasicQueryResult(result);
-          validateSingleView(result);
+          validateResultWithoutProof(result);
           validateFn(result.result);
           
-          console.log(`✅ ${name} single view without proof confirmed`);
+          console.log(`✅ ${name} without proof confirmed`);
         });
 
         if (hasProofSupport) {
@@ -1012,13 +1084,16 @@ test.describe('WASM SDK Query Execution Tests', () => {
             validateBasicQueryResult(result);
             
             if (proofEnabled) {
-              validateSplitView(result);
-              console.log(`✅ ${name} split view with proof confirmed`);
+              validateResultWithProof(result);
+              // Extract data field for validation when in proof mode
+              const resultData = JSON.parse(result.result);
+              validateFn(JSON.stringify(resultData.data));
+              console.log(`✅ ${name} with proof confirmed`);
             } else {
+              validateResultWithoutProof(result);
               console.log(`⚠️ Proof was not enabled for ${name} query`);
+              validateFn(result.result);
             }
-            
-            validateFn(result.result);
           });
         } else {
           test.skip('with proof info', async () => {
@@ -1131,6 +1206,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
       test.describe(`${name} query (parameterized)`, () => {
         test('without proof info', async () => {
           await wasmSdkPage.setupQuery('protocol', name);
+          await wasmSdkPage.disableProofInfo();
           
           if (needsParameters) {
             const success = await parameterInjector.injectParameters('protocol', name, 'testnet');
@@ -1139,10 +1215,10 @@ test.describe('WASM SDK Query Execution Tests', () => {
           
           const result = await wasmSdkPage.executeQueryAndGetResult();
           validateBasicQueryResult(result);
-          validateSingleView(result);
+          validateResultWithoutProof(result);
           validateFn(result.result);
           
-          console.log(`✅ ${name} single view without proof confirmed`);
+          console.log(`✅ ${name} without proof confirmed`);
         });
 
         if (hasProofSupport) {
@@ -1158,13 +1234,16 @@ test.describe('WASM SDK Query Execution Tests', () => {
             validateBasicQueryResult(result);
             
             if (proofEnabled) {
-              validateSplitView(result);
-              console.log(`✅ ${name} split view with proof confirmed`);
+              validateResultWithProof(result);
+              // Extract data field for validation when in proof mode
+              const resultData = JSON.parse(result.result);
+              validateFn(JSON.stringify(resultData.data));
+              console.log(`✅ ${name} with proof confirmed`);
             } else {
+              validateResultWithoutProof(result);
               console.log(`⚠️ Proof was not enabled for ${name} query`);
+              validateFn(result.result);
             }
-            
-            validateFn(result.result);
           });
         } else {
           test.skip('with proof info', async () => {
@@ -1237,6 +1316,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
       test.describe(`${name} query (parameterized)`, () => {
         test('without proof info', async () => {
           await wasmSdkPage.setupQuery('dpns', name);
+          await wasmSdkPage.disableProofInfo();
           
           if (needsParameters) {
             const success = await parameterInjector.injectParameters('dpns', name, 'testnet');
@@ -1245,10 +1325,10 @@ test.describe('WASM SDK Query Execution Tests', () => {
           
           const result = await wasmSdkPage.executeQueryAndGetResult();
           validateBasicDpnsQueryResult(result);
-          validateSingleView(result);
+          validateResultWithoutProof(result);
           validateFn(result.result);
           
-          console.log(`✅ ${name} single view without proof confirmed`);
+          console.log(`✅ ${name} without proof confirmed`);
         });
 
         if (hasProofSupport) {
@@ -1264,13 +1344,16 @@ test.describe('WASM SDK Query Execution Tests', () => {
             validateBasicDpnsQueryResult(result);
             
             if (proofEnabled) {
-              validateSplitView(result);
-              console.log(`✅ ${name} split view with proof confirmed`);
+              validateResultWithProof(result);
+              // Extract data field for validation when in proof mode
+              const resultData = JSON.parse(result.result);
+              validateFn(JSON.stringify(resultData.data));
+              console.log(`✅ ${name} with proof confirmed`);
             } else {
+              validateResultWithoutProof(result);
               console.log(`⚠️ Proof was not enabled for ${name} query`);
+              validateFn(result.result);
             }
-            
-            validateFn(result.result);
           });
         } else {
           test.skip('with proof info', async () => {
@@ -1313,7 +1396,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
           const result = await wasmSdkPage.executeQueryAndGetResult();
           validateBasicQueryResult(result);
           expect(result.result.length).toBeGreaterThan(0);
-          validateSingleView(result);
+          validateResultWithoutProof(result);
           validateFn(result.result);
           
           console.log(`✅ ${name} without proof - PASSED`);
@@ -1333,10 +1416,13 @@ test.describe('WASM SDK Query Execution Tests', () => {
             expect(result.result.length).toBeGreaterThan(0);
             
             if (proofEnabled) {
-              validateSplitView(result);
-              validateFn(result.result);
+              validateResultWithProof(result);
+              // Extract data field for validation when in proof mode
+              const resultData = JSON.parse(result.result);
+              validateFn(JSON.stringify(resultData.data));
               console.log(`✅ ${name} with proof - PASSED`);
             } else {
+              validateResultWithoutProof(result);
               console.log(`⚠️ Proof was not enabled for ${name} query`);
               validateFn(result.result);
             }

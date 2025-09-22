@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# WASM SDK UI Automation Test Runner
+# Evo SDK UI Automation Test Runner
 # This script sets up and runs the UI automation tests
 
 set -e
@@ -13,7 +13,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" 
-WASM_SDK_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+EVO_SDK_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 UI_TEST_DIR="$SCRIPT_DIR"
 
 # Debug mode flag
@@ -43,7 +43,7 @@ print_debug() {
 validate_paths() {
     print_debug "Validating directory paths..."
     print_debug "SCRIPT_DIR: $SCRIPT_DIR"
-    print_debug "WASM_SDK_DIR: $WASM_SDK_DIR"
+    print_debug "EVO_SDK_DIR: $EVO_SDK_DIR"
     print_debug "UI_TEST_DIR: $UI_TEST_DIR"
     
     # Check if UI test directory exists and contains expected files
@@ -62,14 +62,14 @@ validate_paths() {
         exit 1
     fi
     
-    # Check if WASM SDK directory exists
-    if [ ! -d "$WASM_SDK_DIR" ]; then
-        print_error "WASM SDK directory not found: $WASM_SDK_DIR"
+    # Check if Evo SDK directory exists
+    if [ ! -d "$EVO_SDK_DIR" ]; then
+        print_error "Evo SDK directory not found: $EVO_SDK_DIR"
         exit 1
     fi
     
-    if [ ! -f "$WASM_SDK_DIR/index.html" ]; then
-        print_error "index.html not found in WASM SDK directory: $WASM_SDK_DIR"
+    if [ ! -f "$EVO_SDK_DIR/public/index.html" ]; then
+        print_error "index.html not found in Evo SDK public directory: $EVO_SDK_DIR/public"
         exit 1
     fi
     
@@ -105,16 +105,13 @@ check_prerequisites() {
     PYTHON_VERSION=$(python3 --version 2>&1 | cut -d' ' -f2)
     print_debug "Python version: $PYTHON_VERSION ✓"
     
-    # Check if WASM SDK is built
-    if [ ! -f "$WASM_SDK_DIR/pkg/wasm_sdk.js" ]; then
-        print_warning "WASM SDK not found. Building..."
-        cd "$WASM_SDK_DIR"
-        if ! ./build.sh; then
-            print_error "Failed to build WASM SDK"
-            exit 1
-        fi
+    # Check if Evo SDK is built
+    if [ ! -f "$EVO_SDK_DIR/public/dist/sdk.js" ]; then
+        print_warning "Evo SDK not found at $EVO_SDK_DIR/public/dist/sdk.js"
+        print_warning "Please ensure the Evo SDK is properly built and available"
+        exit 1
     fi
-    print_debug "WASM SDK found ✓"
+    print_debug "Evo SDK found ✓"
     
     print_status "Prerequisites check passed ✓"
 }
@@ -265,8 +262,8 @@ main() {
         exit 0
     fi
     
-    print_status "Starting WASM SDK UI Automation Tests..."
-    print_status "Working directory: $WASM_SDK_DIR"
+    print_status "Starting Evo SDK UI Automation Tests..."
+    print_status "Working directory: $EVO_SDK_DIR"
     print_status "Test directory: $UI_TEST_DIR"
     
     check_prerequisites
