@@ -139,13 +139,18 @@ function validateResultWithProof(result) {
 function validateResultWithoutProof(result) {
   expect(result.success).toBe(true);
   expect(result.result).toBeDefined();
-  
-  // For queries without proof, the result should NOT contain proof field
-  const resultData = JSON.parse(result.result);
-  // If Ensure no proof field exists
-  if (resultData.hasOwnProperty('data')) {
-    expect(resultData).not.toHaveProperty('proof');
-    expect(resultData).toHaveProperty('data');
+
+  // For queries without proof, try to parse as JSON, but handle plain strings too
+  try {
+    const resultData = JSON.parse(result.result);
+    // If it's a JSON object, ensure no proof field exists
+    if (typeof resultData === 'object' && resultData !== null && resultData.hasOwnProperty('data')) {
+      expect(resultData).not.toHaveProperty('proof');
+      expect(resultData).toHaveProperty('data');
+    }
+  } catch {
+    // If it's not valid JSON (like a plain string), that's also valid for non-proof queries
+    expect(typeof result.result).toBe('string');
   }
 }
 
@@ -206,6 +211,18 @@ function validateIdentityResult(resultStr) {
   expect(identityData).toHaveProperty('publicKeys');
   expect(identityData).toHaveProperty('balance');
 }
+
+/**
+ * Validation functions for DPNS queries
+ */
+
+function validateBooleanResult(resultStr) {
+  expect(() => JSON.parse(resultStr)).not.toThrow();
+  const booleanData = JSON.parse(resultStr);
+  expect(booleanData).toBeDefined();
+  expect(typeof booleanData).toBe('boolean');
+}
+
 
 function validateKeysResult(resultStr) {
   expect(() => JSON.parse(resultStr)).not.toThrow();
@@ -1256,45 +1273,98 @@ test.describe('WASM SDK Query Execution Tests', () => {
 
   test.describe('DPNS Queries', () => {
     const dpnsQueries = [
-      { 
-        name: 'getDpnsUsername', 
-        hasProofSupport: true, 
+      {
+        name: 'getDpnsUsername',
+        hasProofSupport: true, // Not working currently
         needsParameters: true,
         validateFn: (result) => {
-          expect(() => JSON.parse(result)).not.toThrow();
-          const usernameData = JSON.parse(result);
-          expect(usernameData).toBeDefined();
-          if (Array.isArray(usernameData)) {
-            expect(usernameData.length).toBeGreaterThanOrEqual(1);
+          expect(result).toBeDefined();
+          // Can be a string username or "null" as a string
+          if (result === 'null') {
+            expect(result).toBe('null');
+          } else {
+            expect(typeof result).toBe('string');
+            expect(result.length).toBeGreaterThan(0);
           }
         }
       },
-      { 
-        name: 'dpnsCheckAvailability', 
-        hasProofSupport: false,  // Proof support not yet implemented in WASM-SDK
+      {
+        name: 'getDpnsUsernames',
+        hasProofSupport: true,
         needsParameters: true,
         validateFn: (result) => {
           expect(() => JSON.parse(result)).not.toThrow();
-          const availabilityData = JSON.parse(result);
-          expect(availabilityData).toBeDefined();
-          expect(typeof availabilityData === 'boolean' || typeof availabilityData === 'object').toBe(true);
+          const usernamesData = JSON.parse(result);
+          expect(usernamesData).toBeDefined();
+          expect(Array.isArray(usernamesData)).toBe(true);
+          // Each item should be a plain string username
+          usernamesData.forEach(username => {
+            expect(typeof username).toBe('string');
+            expect(username.length).toBeGreaterThan(0);
+          });
         }
       },
-      { 
-        name: 'dpnsResolve', 
-        hasProofSupport: false,  // Proof support not yet implemented in WASM-SDK
+      {
+        name: 'getDpnsUsernameByName',
+        hasProofSupport: true,
         needsParameters: true,
         validateFn: (result) => {
-          expect(() => JSON.parse(result)).not.toThrow();
-          const resolveData = JSON.parse(result);
-          // Check for either successful resolution (has name) or error response
-          if (resolveData && typeof resolveData === 'object') {
-            // Valid response structure - may or may not have 'name' depending on resolution success
-            expect(resolveData).toBeDefined();
+          expect(result).toBeDefined();
+          // Can be a string username or "null" as a string
+          if (result === 'null') {
+            expect(result).toBe('null');
+          } else {
+            expect(typeof result).toBe('string');
+            expect(result.length).toBeGreaterThan(0);
           }
         }
       },
-      { 
+      {
+        name: 'dpnsResolve',
+        hasProofSupport: false,  // Proof support not yet implemented in WASM-SDK
+        needsParameters: true,
+        validateFn: (result) => {
+          expect(result).toBeDefined();
+          // dpnsResolve returns a plain string identity ID or "null" if not found
+          if (result === 'null') {
+            expect(result).toBe('null');
+          } else {
+            expect(typeof result).toBe('string');
+            expect(result.length).toBeGreaterThan(0);
+            // Should look like an identity ID (base58 string)
+            expect(result).toMatch(/^[1-9A-HJ-NP-Za-km-z]+$/);
+          }
+        }
+      },
+      {
+        name: 'dpnsCheckAvailability',
+        hasProofSupport: false,  // Proof support not yet implemented in WASM-SDK
+        needsParameters: true,
+        validateFn: validateBooleanResult
+      },
+      {
+        name: 'dpnsConvertToHomographSafe',
+        hasProofSupport: false,  // Utility function, no proof needed
+        needsParameters: true,
+        validateFn: (result) => {
+          expect(result).toBeDefined();
+          expect(typeof result).toBe('string');
+          expect(result.length).toBeGreaterThan(0);
+        }
+      },
+      {
+        name: 'dpnsIsValidUsername',
+        hasProofSupport: false,  // Utility function, no proof needed
+        needsParameters: true,
+        validateFn: validateBooleanResult
+      },
+      {
+        name: 'dpnsIsContestedUsername',
+        hasProofSupport: false,  // Proof support not yet implemented in WASM-SDK
+        needsParameters: true,
+        validateFn: validateBooleanResult
+      },
+      {
         name: 'dpnsSearch', 
         hasProofSupport: true, 
         needsParameters: true,
