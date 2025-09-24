@@ -1,4 +1,4 @@
-import { EvoSDK } from './dist/sdk.js';
+import { EvoSDK } from './dist/evo-sdk.module.js';
 
 const identityIdInputEl = document.getElementById('identityId');
 const assetLockProofInputEl = document.getElementById('assetLockProof');
