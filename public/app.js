@@ -816,6 +816,83 @@ function collectAuthArgs(requirements) {
   return extras;
 }
 
+function buildContractDefinition(params) {
+  // Get document schemas JSON
+  if (!params.documentSchemas) {
+    throw new Error('Document Schemas JSON is required');
+  }
+
+  let documentSchemas;
+  try {
+    documentSchemas = typeof params.documentSchemas === 'string'
+      ? JSON.parse(params.documentSchemas)
+      : params.documentSchemas;
+  } catch (e) {
+    throw new Error(`Invalid JSON in Document Schemas field: ${e.message}`);
+  }
+
+  // Get optional JSON fields
+  let groups = {};
+  let tokens = {};
+
+  if (params.groups) {
+    try {
+      groups = typeof params.groups === 'string'
+        ? JSON.parse(params.groups)
+        : params.groups;
+    } catch (e) {
+      throw new Error(`Invalid JSON in Groups field: ${e.message}`);
+    }
+  }
+
+  if (params.tokens) {
+    try {
+      tokens = typeof params.tokens === 'string'
+        ? JSON.parse(params.tokens)
+        : params.tokens;
+    } catch (e) {
+      throw new Error(`Invalid JSON in Tokens field: ${e.message}`);
+    }
+  }
+
+  // Get keywords
+  const keywords = params.keywords ? params.keywords.split(',').map(k => k.trim()).filter(k => k) : [];
+
+  // Build the contract object
+  const contractData = {
+    "$format_version": "1",
+    "id": "11111111111111111111111111111111", // Will be replaced by SDK
+    "config": {
+      "$format_version": "1",
+      "canBeDeleted": params.canBeDeleted || false,
+      "readonly": params.readonly || false,
+      "keepsHistory": params.keepsHistory || false,
+      "documentsKeepHistoryContractDefault": params.documentsKeepHistoryContractDefault || false,
+      "documentsMutableContractDefault": params.documentsMutableContractDefault !== false, // Default true
+      "documentsCanBeDeletedContractDefault": params.documentsCanBeDeletedContractDefault !== false, // Default true
+      "requiresIdentityEncryptionBoundedKey": params.requiresIdentityEncryptionBoundedKey || null,
+      "requiresIdentityDecryptionBoundedKey": params.requiresIdentityDecryptionBoundedKey || null,
+      "sizedIntegerTypes": true
+    },
+    "version": 1,
+    "ownerId": params.ownerId,
+    "schemaDefs": null,
+    "documentSchemas": documentSchemas,
+    "createdAt": null,
+    "updatedAt": null,
+    "createdAtBlockHeight": null,
+    "updatedAtBlockHeight": null,
+    "createdAtEpoch": null,
+    "updatedAtEpoch": null,
+    "groups": groups,
+    "tokens": tokens,
+    "keywords": keywords,
+    "description": params.description || null
+  };
+
+  return JSON.stringify(contractData);
+}
+
 async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArgs = {}) {
   const n = { ...namedArgs(defs, args), ...(extraArgs || {}) };
   const c = client;
@@ -832,7 +909,10 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
     case 'getDataContract': return useProof ? c.contracts.fetchWithProof(n.id) : c.contracts.fetch(n.id);
     case 'getDataContractHistory': return useProof ? c.contracts.getHistoryWithProof({ contractId: n.dataContractId || n.id, limit: n.limit, startAtMs: n.startAtMs }) : c.contracts.getHistory({ contractId: n.dataContractId || n.id, limit: n.limit, startAtMs: n.startAtMs });
     case 'getDataContracts': return useProof ? c.contracts.getManyWithProof(n.ids) : c.contracts.getMany(n.ids);
-    case 'dataContractCreate': return c.contracts.create({ ownerId: n.ownerId, definition: n.definition, privateKeyWif: n.privateKeyWif, keyId: n.keyId });
+    case 'dataContractCreate': {
+      const definition = buildContractDefinition(n);
+      return c.contracts.create({ ownerId: n.ownerId, definition: definition, privateKeyWif: n.privateKeyWif, keyId: n.keyId });
+    }
     case 'dataContractUpdate': return c.contracts.update({ contractId: n.dataContractId || n.contractId, ownerId: n.ownerId, updates: n.updates, privateKeyWif: n.privateKeyWif, keyId: n.keyId });
     // Documents
     case 'getDocuments': return useProof ? c.documents.queryWithProof({ contractId: n.dataContractId || n.contractId, type: n.documentType, where: n.where, orderBy: n.orderBy, limit: n.limit, startAfter: n.startAfter, startAt: n.startAt }) : c.documents.query({ contractId: n.dataContractId || n.contractId, type: n.documentType, where: n.where, orderBy: n.orderBy, limit: n.limit, startAfter: n.startAfter, startAt: n.startAt });
