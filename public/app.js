@@ -1,4 +1,4 @@
-import { EvoSDK } from './dist/sdk.js';
+import { EvoSDK } from './dist/evo-sdk.module.js';
 
 const elements = {
   apiErrorBanner: document.getElementById('apiErrorBanner'),
@@ -41,15 +41,34 @@ const elements = {
 };
 
 const SUPPORTED_QUERIES = new Set([
-  'getIdentity', 'getIdentityKeys',
+  // Identity
+  'getIdentity', 'getIdentityUnproved', 'getIdentityKeys', 'getIdentitiesContractKeys',
+  'getIdentityNonce', 'getIdentityContractNonce', 'getIdentityBalance', 'getIdentitiesBalances',
+  'getIdentityBalanceAndRevision', 'getIdentityByPublicKeyHash', 'getIdentityByNonUniquePublicKeyHash',
+  'getIdentityTokenBalances', 'getIdentitiesTokenBalances', 'getIdentityTokenInfos', 'getIdentitiesTokenInfos',
+  // Data Contracts
   'getDataContract', 'getDataContractHistory', 'getDataContracts',
+  // Documents
   'getDocuments', 'getDocument',
-  'getDpnsUsername', 'getDpnsUsernames', 'dpnsResolve', 'dpnsCheckAvailability',
+  // DPNS
+  'getDpnsUsername', 'getDpnsUsernames', 'getDpnsUsernameByName', 'dpnsResolve', 'dpnsCheckAvailability',
+  'dpnsConvertToHomographSafe', 'dpnsIsValidUsername', 'dpnsIsContestedUsername',
+  // Epoch
   'getEpochsInfo', 'getCurrentEpoch', 'getFinalizedEpochInfos', 'getEvonodesProposedEpochBlocksByIds', 'getEvonodesProposedEpochBlocksByRange',
-  'getStatus', 'getCurrentQuorumsInfo', 'getTotalCreditsInPlatform', 'getPrefundedSpecializedBalance', 'getPathElements', 'waitForStateTransitionResult',
-  'getTokenStatuses', 'getTokenDirectPurchasePrices', 'getTokenContractInfo', 'getTokenPerpetualDistributionLastClaim', 'getTokenTotalSupply',
-  'getIdentitiesTokenInfos', 'getIdentityTokenInfos', 'getIdentitiesTokenBalances',
-  'getContestedResources', 'getContestedResourceVotersForIdentity', 'getContestedResourceVoteState', 'getContestedResourceIdentityVotes',
+  // Voting & Contested Resources
+  'getContestedResources', 'getContestedResourceVotersForIdentity', 'getContestedResourceVoteState',
+  'getContestedResourceIdentityVotes', 'getVotePollsByEndDate',
+  // Protocol
+  'getProtocolVersionUpgradeState', 'getProtocolVersionUpgradeVoteStatus',
+  // Tokens
+  'getTokenStatuses', 'getTokenDirectPurchasePrices', 'getTokenContractInfo', 'getTokenPerpetualDistributionLastClaim',
+  'getTokenTotalSupply', 'getTokenPriceByContract',
+  // Groups
+  'getGroupInfo', 'getGroupInfos', 'getGroupMembers', 'getGroupActions', 'getGroupActionSigners',
+  'getIdentityGroups', 'getGroupsDataContracts',
+  // System
+  'getStatus', 'getCurrentQuorumsInfo', 'getPrefundedSpecializedBalance', 'getTotalCreditsInPlatform', 'getPathElements',
+  'waitForStateTransitionResult',
 ]);
 
 const SUPPORTED_TRANSITIONS = new Set([
@@ -61,12 +80,32 @@ const SUPPORTED_TRANSITIONS = new Set([
 ]);
 
 const PROOF_CAPABLE = new Set([
-  'getIdentity', 'getDataContract', 'getDataContractHistory', 'getDataContracts', 'getDocuments', 'getDocument',
-  'getDpnsUsername', 'getDpnsUsernames', 'getEpochsInfo', 'getCurrentEpoch', 'getFinalizedEpochInfos',
-  'getEvonodesProposedEpochBlocksByIds', 'getEvonodesProposedEpochBlocksByRange', 'getTotalCreditsInPlatform',
-  'getPrefundedSpecializedBalance', 'getPathElements', 'getTokenStatuses', 'getTokenDirectPurchasePrices', 'getTokenContractInfo',
-  'getTokenPerpetualDistributionLastClaim', 'getTokenTotalSupply', 'getIdentitiesTokenInfos', 'getIdentityTokenInfos', 'getIdentitiesTokenBalances',
-  'getContestedResources', 'getContestedResourceVotersForIdentity', 'getContestedResourceVoteState', 'getContestedResourceIdentityVotes',
+  // Identity
+  'getIdentity', 'getIdentityKeys', 'getIdentitiesContractKeys', 'getIdentityNonce', 'getIdentityContractNonce',
+  'getIdentityBalance', 'getIdentitiesBalances', 'getIdentityBalanceAndRevision', 'getIdentityByPublicKeyHash',
+  'getIdentityByNonUniquePublicKeyHash', 'getIdentityTokenBalances', 'getIdentitiesTokenBalances', 'getIdentityTokenInfos',
+  'getIdentitiesTokenInfos',
+  // Data Contracts & Documents
+  'getDataContract', 'getDataContractHistory', 'getDataContracts', 'getDocuments', 'getDocument',
+  // DPNS
+  'getDpnsUsername', 'getDpnsUsernames', 'getDpnsUsernameByName',
+  // Epoch
+  'getEpochsInfo', 'getCurrentEpoch', 'getFinalizedEpochInfos', 'getEvonodesProposedEpochBlocksByIds',
+  'getEvonodesProposedEpochBlocksByRange',
+  // Voting & Contested Resources
+  'getContestedResources', 'getContestedResourceVotersForIdentity', 'getContestedResourceVoteState',
+  'getContestedResourceIdentityVotes', 'getVotePollsByEndDate',
+  // Protocol
+  'getProtocolVersionUpgradeState', 'getProtocolVersionUpgradeVoteStatus',
+  // Tokens
+  'getTokenStatuses', 'getTokenDirectPurchasePrices', 'getTokenContractInfo',
+  'getTokenPerpetualDistributionLastClaim', 'getTokenTotalSupply', 'getIdentitiesTokenInfos', 'getIdentityTokenInfos',
+  'getIdentitiesTokenBalances', 'getIdentityTokenBalances',
+  // Groups
+  'getGroupInfo', 'getGroupInfos', 'getGroupMembers', 'getGroupActions', 'getGroupActionSigners',
+  'getIdentityGroups', 'getGroupsDataContracts',
+  // System
+  'getPrefundedSpecializedBalance', 'getTotalCreditsInPlatform', 'getPathElements',
 ]);
 
 const SUPPORTED_INPUT_TYPES = new Set(['text', 'string', 'textarea', 'number', 'checkbox', 'json', 'select', 'multiselect', 'array']);
@@ -525,79 +564,427 @@ function namedArgs(defs, args) {
 async function callEvo(client, groupKey, itemKey, defs, args, useProof) {
   const n = namedArgs(defs, args);
   const c = client;
+
+  const toStringArray = (value) => {
+    if (!Array.isArray(value)) return [];
+    return value.filter(item => item !== undefined && item !== null && item !== '');
+  };
+
+  const toNumberArray = (value) => {
+    if (!Array.isArray(value)) return [];
+    return value
+      .map(item => {
+        const num = Number(item);
+        return Number.isFinite(num) ? num : null;
+      })
+      .filter(item => item !== null);
+  };
+
+  const toNumber = (value, fallback = null) => {
+    if (value === undefined || value === null || value === '') return fallback;
+    const num = Number(value);
+    return Number.isNaN(num) ? fallback : num;
+  };
+
   switch (itemKey) {
-    // Identities
-    case 'getIdentity': return useProof ? c.identities.fetchWithProof(n.id) : c.identities.fetch(n.id);
-    case 'getIdentityKeys': return c.identities.getKeys({ identityId: n.identityId, keyRequestType: n.keyRequestType, specificKeyIds: n.specificKeyIds, searchPurposeMap: n.searchPurposeMap, limit: n.limit, offset: n.offset });
-    case 'identityCreate': return c.identities.create({ assetLockProof: n.assetLockProof, assetLockPrivateKeyWif: n.assetLockPrivateKeyWif, publicKeys: n.publicKeys });
-    case 'identityTopUp': return c.identities.topUp({ identityId: n.identityId, assetLockProof: n.assetLockProof, assetLockPrivateKeyWif: n.assetLockPrivateKeyWif });
-    case 'identityCreditTransfer': return c.identities.creditTransfer({ senderId: n.senderId, recipientId: n.recipientId, amount: n.amount, privateKeyWif: n.privateKeyWif, keyId: n.keyId });
-    case 'identityCreditWithdrawal': return c.identities.creditWithdrawal({ identityId: n.identityId, toAddress: n.toAddress, amount: n.amount, coreFeePerByte: n.coreFeePerByte, privateKeyWif: n.privateKeyWif, keyId: n.keyId });
-    case 'identityUpdate': return c.identities.update({ identityId: n.identityId, addPublicKeys: n.addPublicKeys, disablePublicKeyIds: n.disablePublicKeyIds, privateKeyWif: n.privateKeyWif });
-    // Contracts
-    case 'getDataContract': return useProof ? c.contracts.fetchWithProof(n.id) : c.contracts.fetch(n.id);
-    case 'getDataContractHistory': return useProof ? c.contracts.getHistoryWithProof({ contractId: n.dataContractId || n.id, limit: n.limit, startAtMs: n.startAtMs }) : c.contracts.getHistory({ contractId: n.dataContractId || n.id, limit: n.limit, startAtMs: n.startAtMs });
-    case 'getDataContracts': return useProof ? c.contracts.getManyWithProof(n.ids) : c.contracts.getMany(n.ids);
-    case 'dataContractCreate': return c.contracts.create({ ownerId: n.ownerId, definition: n.definition, privateKeyWif: n.privateKeyWif, keyId: n.keyId });
-    case 'dataContractUpdate': return c.contracts.update({ contractId: n.dataContractId || n.contractId, ownerId: n.ownerId, updates: n.updates, privateKeyWif: n.privateKeyWif, keyId: n.keyId });
+    // Identity queries
+    case 'getIdentity':
+      return useProof ? c.identities.fetchWithProof(n.id) : c.identities.fetch(n.id);
+    case 'getIdentityUnproved':
+      return c.identities.fetchUnproved(n.id);
+    case 'getIdentityKeys': {
+      const specificKeyIds = toNumberArray(n.specificKeyIds);
+      if (useProof) {
+        if (n.keyRequestType === 'search') {
+          throw new Error('Identity key search does not support proof responses. Disable proof to search by purpose.');
+        }
+        return c.identities.getKeysWithProof({
+          identityId: n.identityId,
+          keyRequestType: n.keyRequestType,
+          specificKeyIds,
+          limit: n.limit ?? null,
+          offset: n.offset ?? null,
+        });
+      }
+      return c.identities.getKeys({
+        identityId: n.identityId,
+        keyRequestType: n.keyRequestType,
+        specificKeyIds,
+        searchPurposeMap: n.searchPurposeMap,
+        limit: n.limit ?? null,
+        offset: n.offset ?? null,
+      });
+    }
+    case 'getIdentitiesContractKeys': {
+      const identityIds = toStringArray(n.identityIds);
+      const purposes = toNumberArray(n.purposes);
+      const payload = {
+        identityIds,
+        contractId: n.contractId,
+        purposes,
+      };
+      return useProof ? c.identities.contractKeysWithProof(payload) : c.identities.contractKeys(payload);
+    }
+    case 'getIdentityNonce':
+      return useProof ? c.identities.nonceWithProof(n.identityId) : c.identities.nonce(n.identityId);
+    case 'getIdentityContractNonce':
+      return useProof ? c.identities.contractNonceWithProof(n.identityId, n.contractId) : c.identities.contractNonce(n.identityId, n.contractId);
+    case 'getIdentityBalance':
+      return useProof ? c.identities.balanceWithProof(n.identityId) : c.identities.balance(n.identityId);
+    case 'getIdentitiesBalances': {
+      const identityIds = toStringArray(n.identityIds);
+      return useProof ? c.identities.balancesWithProof(identityIds) : c.identities.balances(identityIds);
+    }
+    case 'getIdentityBalanceAndRevision':
+      return useProof ? c.identities.balanceAndRevisionWithProof(n.identityId) : c.identities.balanceAndRevision(n.identityId);
+    case 'getIdentityByPublicKeyHash':
+      return useProof ? c.identities.byPublicKeyHashWithProof(n.publicKeyHash) : c.identities.byPublicKeyHash(n.publicKeyHash);
+    case 'getIdentityByNonUniquePublicKeyHash': {
+      const opts = { startAfter: n.startAfter || null };
+      return useProof ? c.identities.byNonUniquePublicKeyHashWithProof(n.publicKeyHash, opts) : c.identities.byNonUniquePublicKeyHash(n.publicKeyHash, opts);
+    }
+    case 'getIdentityTokenBalances': {
+      const tokenIds = toStringArray(n.tokenIds);
+      return useProof ? c.identities.tokenBalancesWithProof(n.identityId, tokenIds) : c.identities.tokenBalances(n.identityId, tokenIds);
+    }
+    case 'getIdentitiesTokenBalances': {
+      const identityIds = toStringArray(n.identityIds);
+      return useProof ? c.tokens.balancesWithProof(identityIds, n.tokenId) : c.tokens.balances(identityIds, n.tokenId);
+    }
+    case 'getIdentityTokenInfos': {
+      const tokenIds = toStringArray(n.tokenIds);
+      if (useProof) {
+        return c.tokens.identityTokenInfosWithProof(n.identityId, tokenIds);
+      }
+      return c.tokens.identityTokenInfos(n.identityId, tokenIds, {
+        limit: n.limit ?? null,
+        offset: n.offset ?? null,
+      });
+    }
+    case 'getIdentitiesTokenInfos': {
+      const identityIds = toStringArray(n.identityIds);
+      return useProof ? c.tokens.identitiesTokenInfosWithProof(identityIds, n.tokenId) : c.tokens.identitiesTokenInfos(identityIds, n.tokenId);
+    }
+
+    // Identity transitions
+    case 'identityCreate':
+      return c.identities.create({ assetLockProof: n.assetLockProof, assetLockPrivateKeyWif: n.assetLockPrivateKeyWif, publicKeys: n.publicKeys });
+    case 'identityTopUp':
+      return c.identities.topUp({ identityId: n.identityId, assetLockProof: n.assetLockProof, assetLockPrivateKeyWif: n.assetLockPrivateKeyWif });
+    case 'identityCreditTransfer':
+      return c.identities.creditTransfer({ senderId: n.senderId, recipientId: n.recipientId, amount: n.amount, privateKeyWif: n.privateKeyWif, keyId: n.keyId });
+    case 'identityCreditWithdrawal':
+      return c.identities.creditWithdrawal({ identityId: n.identityId, toAddress: n.toAddress, amount: n.amount, coreFeePerByte: n.coreFeePerByte, privateKeyWif: n.privateKeyWif, keyId: n.keyId });
+    case 'identityUpdate':
+      return c.identities.update({ identityId: n.identityId, addPublicKeys: n.addPublicKeys, disablePublicKeyIds: n.disablePublicKeyIds, privateKeyWif: n.privateKeyWif });
+
+    // Data contracts
+    case 'getDataContract':
+      return useProof ? c.contracts.fetchWithProof(n.id) : c.contracts.fetch(n.id);
+    case 'getDataContractHistory':
+      return useProof
+        ? c.contracts.getHistoryWithProof({ contractId: n.dataContractId || n.id, limit: n.limit ?? null, startAtMs: n.startAtMs ?? null })
+        : c.contracts.getHistory({ contractId: n.dataContractId || n.id, limit: n.limit ?? null, startAtMs: n.startAtMs ?? null });
+    case 'getDataContracts':
+      return useProof ? c.contracts.getManyWithProof(n.ids) : c.contracts.getMany(n.ids);
+    case 'dataContractCreate':
+      return c.contracts.create({ ownerId: n.ownerId, definition: n.definition, privateKeyWif: n.privateKeyWif, keyId: n.keyId });
+    case 'dataContractUpdate':
+      return c.contracts.update({ contractId: n.dataContractId || n.contractId, ownerId: n.ownerId, updates: n.updates, privateKeyWif: n.privateKeyWif, keyId: n.keyId });
+
     // Documents
-    case 'getDocuments': return useProof ? c.documents.queryWithProof({ contractId: n.dataContractId || n.contractId, type: n.documentType, where: n.where, orderBy: n.orderBy, limit: n.limit, startAfter: n.startAfter, startAt: n.startAt }) : c.documents.query({ contractId: n.dataContractId || n.contractId, type: n.documentType, where: n.where, orderBy: n.orderBy, limit: n.limit, startAfter: n.startAfter, startAt: n.startAt });
-    case 'getDocument': return useProof ? c.documents.getWithProof(n.dataContractId || n.contractId, n.documentType, n.documentId) : c.documents.get(n.dataContractId || n.contractId, n.documentType, n.documentId);
-    case 'documentCreate': return c.documents.create({ contractId: n.contractId, type: n.documentType, ownerId: n.ownerId, data: n.data, entropyHex: n.entropyHex, privateKeyWif: n.privateKeyWif });
-    case 'documentReplace': return c.documents.replace({ contractId: n.contractId, type: n.documentType, documentId: n.documentId, ownerId: n.ownerId, data: n.data, revision: n.revision, privateKeyWif: n.privateKeyWif });
-    case 'documentDelete': return c.documents.delete({ contractId: n.contractId, type: n.documentType, documentId: n.documentId, ownerId: n.ownerId, privateKeyWif: n.privateKeyWif });
-    case 'documentTransfer': return c.documents.transfer({ contractId: n.contractId, type: n.documentType, documentId: n.documentId, ownerId: n.ownerId, recipientId: n.recipientId, privateKeyWif: n.privateKeyWif });
-    case 'documentPurchase': return c.documents.purchase({ contractId: n.contractId, type: n.documentType, documentId: n.documentId, buyerId: n.buyerId, price: n.price, privateKeyWif: n.privateKeyWif });
-    case 'documentSetPrice': return c.documents.setPrice({ contractId: n.contractId, type: n.documentType, documentId: n.documentId, ownerId: n.ownerId, price: n.price, privateKeyWif: n.privateKeyWif });
+    case 'getDocuments': {
+      const payload = {
+        contractId: n.dataContractId || n.contractId,
+        type: n.documentType,
+        where: n.where,
+        orderBy: n.orderBy,
+        limit: n.limit ?? null,
+        startAfter: n.startAfter ?? null,
+        startAt: n.startAt ?? null,
+      };
+      return useProof ? c.documents.queryWithProof(payload) : c.documents.query(payload);
+    }
+    case 'getDocument':
+      return useProof
+        ? c.documents.getWithProof(n.dataContractId || n.contractId, n.documentType, n.documentId)
+        : c.documents.get(n.dataContractId || n.contractId, n.documentType, n.documentId);
+    case 'documentCreate':
+      return c.documents.create({ contractId: n.contractId, type: n.documentType, ownerId: n.ownerId, data: n.data, entropyHex: n.entropyHex, privateKeyWif: n.privateKeyWif });
+    case 'documentReplace':
+      return c.documents.replace({ contractId: n.contractId, type: n.documentType, documentId: n.documentId, ownerId: n.ownerId, data: n.data, revision: n.revision, privateKeyWif: n.privateKeyWif });
+    case 'documentDelete':
+      return c.documents.delete({ contractId: n.contractId, type: n.documentType, documentId: n.documentId, ownerId: n.ownerId, privateKeyWif: n.privateKeyWif });
+    case 'documentTransfer':
+      return c.documents.transfer({ contractId: n.contractId, type: n.documentType, documentId: n.documentId, ownerId: n.ownerId, recipientId: n.recipientId, privateKeyWif: n.privateKeyWif });
+    case 'documentPurchase':
+      return c.documents.purchase({ contractId: n.contractId, type: n.documentType, documentId: n.documentId, buyerId: n.buyerId, price: n.price, privateKeyWif: n.privateKeyWif });
+    case 'documentSetPrice':
+      return c.documents.setPrice({ contractId: n.contractId, type: n.documentType, documentId: n.documentId, ownerId: n.ownerId, price: n.price, privateKeyWif: n.privateKeyWif });
+
     // DPNS
-    case 'getDpnsUsername': return useProof ? c.dpns.usernameWithProof(n.identityId) : c.dpns.username(n.identityId);
-    case 'getDpnsUsernames': return useProof ? c.dpns.usernamesWithProof(n.identityId, { limit: n.limit }) : c.dpns.usernames(n.identityId, { limit: n.limit });
-    case 'dpnsResolve': return c.dpns.resolveName(n.name);
-    case 'dpnsCheckAvailability': return c.dpns.isNameAvailable(n.label);
+    case 'getDpnsUsername':
+      return useProof ? c.dpns.usernameWithProof(n.identityId) : c.dpns.username(n.identityId);
+    case 'getDpnsUsernames':
+      return useProof ? c.dpns.usernamesWithProof(n.identityId, { limit: n.limit ?? null }) : c.dpns.usernames(n.identityId, { limit: n.limit ?? null });
+    case 'getDpnsUsernameByName':
+      return useProof ? c.dpns.getUsernameByNameWithProof(n.username) : c.dpns.getUsernameByName(n.username);
+    case 'dpnsResolve':
+      return c.dpns.resolveName(n.name);
+    case 'dpnsCheckAvailability':
+      return c.dpns.isNameAvailable(n.label);
+    case 'dpnsConvertToHomographSafe':
+      return c.dpns.convertToHomographSafe(n.name);
+    case 'dpnsIsValidUsername':
+      return c.dpns.isValidUsername(n.label);
+    case 'dpnsIsContestedUsername':
+      return c.dpns.isContestedUsername(n.label);
+
     // Epoch
-    case 'getEpochsInfo': return useProof ? c.epoch.epochsInfoWithProof({ startEpoch: n.startEpoch, count: n.count, ascending: n.ascending }) : c.epoch.epochsInfo({ startEpoch: n.startEpoch, count: n.count, ascending: n.ascending });
-    case 'getCurrentEpoch': return useProof ? c.epoch.currentWithProof() : c.epoch.current();
-    case 'getFinalizedEpochInfos': return useProof ? c.epoch.finalizedInfosWithProof({ startEpoch: n.startEpoch, count: n.count, ascending: n.ascending }) : c.epoch.finalizedInfos({ startEpoch: n.startEpoch, count: n.count, ascending: n.ascending });
-    case 'getEvonodesProposedEpochBlocksByIds': return useProof ? c.epoch.evonodesProposedBlocksByIdsWithProof(n.epoch, n.ids) : c.epoch.evonodesProposedBlocksByIds(n.epoch, n.ids);
-    case 'getEvonodesProposedEpochBlocksByRange': return useProof ? c.epoch.evonodesProposedBlocksByRangeWithProof(n.epoch, { limit: n.limit, startAfter: n.startAfter, orderAscending: n.orderAscending }) : c.epoch.evonodesProposedBlocksByRange(n.epoch, { limit: n.limit, startAfter: n.startAfter, orderAscending: n.orderAscending });
-    // System
-    case 'getStatus': return c.system.status();
-    case 'getCurrentQuorumsInfo': return c.system.currentQuorumsInfo();
-    case 'getTotalCreditsInPlatform': return useProof ? c.system.totalCreditsInPlatformWithProof() : c.system.totalCreditsInPlatform();
-    case 'getPrefundedSpecializedBalance': return useProof ? c.system.prefundedSpecializedBalanceWithProof(n.identityId) : c.system.prefundedSpecializedBalance(n.identityId);
-    case 'getPathElements': return useProof ? c.system.pathElementsWithProof(n.path, n.keys) : c.system.pathElements(n.path, n.keys);
-    case 'waitForStateTransitionResult': return c.system.waitForStateTransitionResult(n.stateTransitionHash || n.hash);
+    case 'getEpochsInfo':
+      return useProof
+        ? c.epoch.epochsInfoWithProof({ startEpoch: n.startEpoch ?? null, count: n.count ?? null, ascending: n.ascending ?? null })
+        : c.epoch.epochsInfo({ startEpoch: n.startEpoch ?? null, count: n.count ?? null, ascending: n.ascending ?? null });
+    case 'getCurrentEpoch':
+      return useProof ? c.epoch.currentWithProof() : c.epoch.current();
+    case 'getFinalizedEpochInfos':
+      return useProof
+        ? c.epoch.finalizedInfosWithProof({ startEpoch: n.startEpoch ?? null, count: n.count ?? null, ascending: n.ascending ?? null })
+        : c.epoch.finalizedInfos({ startEpoch: n.startEpoch ?? null, count: n.count ?? null, ascending: n.ascending ?? null });
+    case 'getEvonodesProposedEpochBlocksByIds':
+      return useProof ? c.epoch.evonodesProposedBlocksByIdsWithProof(n.epoch, toStringArray(n.ids)) : c.epoch.evonodesProposedBlocksByIds(n.epoch, toStringArray(n.ids));
+    case 'getEvonodesProposedEpochBlocksByRange':
+      return useProof
+        ? c.epoch.evonodesProposedBlocksByRangeWithProof(n.epoch, { limit: n.limit ?? null, startAfter: n.startAfter ?? null, orderAscending: n.orderAscending ?? null })
+        : c.epoch.evonodesProposedBlocksByRange(n.epoch, { limit: n.limit ?? null, startAfter: n.startAfter ?? null, orderAscending: n.orderAscending ?? null });
+
+    // Protocol
+    case 'getProtocolVersionUpgradeState':
+      return useProof ? c.protocol.versionUpgradeStateWithProof() : c.protocol.versionUpgradeState();
+    case 'getProtocolVersionUpgradeVoteStatus':
+      return useProof
+        ? c.protocol.versionUpgradeVoteStatusWithProof({ startProTxHash: n.startProTxHash ?? null, count: n.count ?? null })
+        : c.protocol.versionUpgradeVoteStatus({ startProTxHash: n.startProTxHash ?? null, count: n.count ?? null });
+
     // Tokens
-    case 'getTokenStatuses': return useProof ? c.tokens.statusesWithProof(n.tokenIds) : c.tokens.statuses(n.tokenIds);
-    case 'getTokenDirectPurchasePrices': return useProof ? c.tokens.directPurchasePricesWithProof(n.tokenIds) : c.tokens.directPurchasePrices(n.tokenIds);
-    case 'getTokenContractInfo': return useProof ? c.tokens.contractInfoWithProof(n.dataContractId || n.contractId) : c.tokens.contractInfo(n.dataContractId || n.contractId);
-    case 'getTokenPerpetualDistributionLastClaim': return useProof ? c.tokens.perpetualDistributionLastClaimWithProof(n.identityId, n.tokenId) : c.tokens.perpetualDistributionLastClaim(n.identityId, n.tokenId);
-    case 'getTokenTotalSupply': return useProof ? c.tokens.totalSupplyWithProof(n.tokenId) : c.tokens.totalSupply(n.tokenId);
-    case 'getIdentitiesTokenInfos': return useProof ? c.tokens.identitiesTokenInfosWithProof(n.identityIds, n.tokenId) : c.tokens.identitiesTokenInfos(n.identityIds, n.tokenId);
-    case 'getIdentityTokenInfos': return useProof ? c.tokens.identityTokenInfosWithProof(n.identityId, n.tokenIds) : c.tokens.identityTokenInfos(n.identityId, n.tokenIds, { limit: n.limit, offset: n.offset });
-    case 'getIdentitiesTokenBalances': return useProof ? c.tokens.balancesWithProof(n.identityIds, n.tokenId) : c.tokens.balances(n.identityIds, n.tokenId);
-    case 'tokenMint': return c.tokens.mint({ contractId: n.contractId, tokenPosition: n.tokenPosition, amount: n.amount, identityId: n.identityId, privateKeyWif: n.privateKeyWif, recipientId: n.recipientId, publicNote: n.publicNote });
-    case 'tokenBurn': return c.tokens.burn({ contractId: n.contractId, tokenPosition: n.tokenPosition, amount: n.amount, identityId: n.identityId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
-    case 'tokenTransfer': return c.tokens.transfer({ contractId: n.contractId, tokenPosition: n.tokenPosition, amount: n.amount, senderId: n.senderId, recipientId: n.recipientId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
-    case 'tokenFreeze': return c.tokens.freeze({ contractId: n.contractId, tokenPosition: n.tokenPosition, identityToFreeze: n.identityToFreeze, freezerId: n.freezerId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
-    case 'tokenUnfreeze': return c.tokens.unfreeze({ contractId: n.contractId, tokenPosition: n.tokenPosition, identityToUnfreeze: n.identityToUnfreeze, unfreezerId: n.unfreezerId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
-    case 'tokenDestroyFrozen': return c.tokens.destroyFrozen({ contractId: n.contractId, tokenPosition: n.tokenPosition, identityId: n.frozenIdentityId || n.identityId, destroyerId: n.destroyerId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
-    case 'tokenSetPriceForDirectPurchase': return c.tokens.setPriceForDirectPurchase({ contractId: n.contractId, tokenPosition: n.tokenPosition, identityId: n.identityId, priceType: n.priceType, priceData: n.priceData, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
-    case 'tokenDirectPurchase': return c.tokens.directPurchase({ contractId: n.contractId, tokenPosition: n.tokenPosition, amount: n.amount, identityId: n.identityId, totalAgreedPrice: n.totalAgreedPrice, privateKeyWif: n.privateKeyWif });
-    case 'tokenClaim': return c.tokens.claim({ contractId: n.contractId, tokenPosition: n.tokenPosition, distributionType: n.distributionType, identityId: n.identityId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
-    case 'tokenConfigUpdate': return c.tokens.configUpdate({ contractId: n.contractId, tokenPosition: n.tokenPosition, configItemType: n.configItemType, configValue: n.configValue, identityId: n.identityId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
-    // Group & Voting
-    case 'getContestedResources': return useProof ? c.group.contestedResourcesWithProof({ documentTypeName: n.documentTypeName, contractId: n.dataContractId || n.contractId, indexName: n.indexName, startAtValue: n.startAtValue, limit: n.limit, orderAscending: n.orderAscending }) : c.group.contestedResources({ documentTypeName: n.documentTypeName, contractId: n.dataContractId || n.contractId, indexName: n.indexName, startAtValue: n.startAtValue, limit: n.limit, orderAscending: n.orderAscending });
-    case 'getContestedResourceVotersForIdentity': return useProof ? c.group.contestedResourceVotersForIdentityWithProof({ contractId: n.dataContractId || n.contractId, documentTypeName: n.documentTypeName, indexName: n.indexName, indexValues: n.indexValues, contestantId: n.contestantId, startAtIdentifierInfo: n.startAtIdentifierInfo, count: n.count, orderAscending: n.orderAscending }) : c.group.contestedResourceVotersForIdentity({ contractId: n.dataContractId || n.contractId, documentTypeName: n.documentTypeName, indexName: n.indexName, indexValues: n.indexValues, contestantId: n.contestantId, startAtVoterInfo: n.startAtVoterInfo, limit: n.limit, orderAscending: n.orderAscending });
-    case 'getContestedResourceVoteState': return useProof ? c.voting.contestedResourceVoteStateWithProof({ contractId: n.dataContractId || n.contractId, documentTypeName: n.documentTypeName, indexName: n.indexName, indexValues: n.indexValues, resultType: n.resultType, allowIncludeLockedAndAbstainingVoteTally: n.allowIncludeLockedAndAbstainingVoteTally, startAtIdentifierInfo: n.startAtIdentifierInfo, count: n.count, orderAscending: n.orderAscending }) : c.voting.contestedResourceVoteState({ contractId: n.dataContractId || n.contractId, documentTypeName: n.documentTypeName, indexName: n.indexName, indexValues: n.indexValues, resultType: n.resultType, allowIncludeLockedAndAbstainingVoteTally: n.allowIncludeLockedAndAbstainingVoteTally, startAtIdentifierInfo: n.startAtIdentifierInfo, count: n.count, orderAscending: n.orderAscending });
-    case 'getContestedResourceIdentityVotes': return useProof ? c.voting.contestedResourceIdentityVotesWithProof(n.identityId, { limit: n.limit, offset: n.offset, orderAscending: n.orderAscending }) : c.voting.contestedResourceIdentityVotes(n.identityId, { limit: n.limit, startAtVotePollIdInfo: n.startAtVotePollIdInfo, orderAscending: n.orderAscending });
-    case 'masternodeVote': return c.voting.masternodeVote({ masternodeProTxHash: n.masternodeProTxHash, contractId: n.contractId, documentTypeName: n.documentTypeName, indexName: n.indexName, indexValues: n.indexValues, voteChoice: n.voteChoice, votingKeyWif: n.votingKeyWif });
+    case 'getTokenStatuses':
+      return useProof ? c.tokens.statusesWithProof(toStringArray(n.tokenIds)) : c.tokens.statuses(toStringArray(n.tokenIds));
+    case 'getTokenDirectPurchasePrices':
+      return useProof ? c.tokens.directPurchasePricesWithProof(toStringArray(n.tokenIds)) : c.tokens.directPurchasePrices(toStringArray(n.tokenIds));
+    case 'getTokenContractInfo': {
+      const contractId = n.dataContractId || n.contractId;
+      return useProof ? c.tokens.contractInfoWithProof(contractId) : c.tokens.contractInfo(contractId);
+    }
+    case 'getTokenPerpetualDistributionLastClaim':
+      return useProof ? c.tokens.perpetualDistributionLastClaimWithProof(n.identityId, n.tokenId) : c.tokens.perpetualDistributionLastClaim(n.identityId, n.tokenId);
+    case 'getTokenTotalSupply':
+      return useProof ? c.tokens.totalSupplyWithProof(n.tokenId) : c.tokens.totalSupply(n.tokenId);
+    case 'getTokenPriceByContract': {
+      const contractId = n.dataContractId || n.contractId;
+      const tokenPosition = toNumber(n.tokenPosition, 0);
+      return c.tokens.priceByContract(contractId, tokenPosition);
+    }
+    case 'getIdentitiesTokenInfos': {
+      const identityIds = toStringArray(n.identityIds);
+      return useProof ? c.tokens.identitiesTokenInfosWithProof(identityIds, n.tokenId) : c.tokens.identitiesTokenInfos(identityIds, n.tokenId);
+    }
+    case 'getIdentityTokenInfos': {
+      const tokenIds = toStringArray(n.tokenIds);
+      if (useProof) {
+        return c.tokens.identityTokenInfosWithProof(n.identityId, tokenIds);
+      }
+      return c.tokens.identityTokenInfos(n.identityId, tokenIds, { limit: n.limit ?? null, offset: n.offset ?? null });
+    }
+    case 'getIdentitiesTokenBalances': {
+      const identityIds = toStringArray(n.identityIds);
+      return useProof ? c.tokens.balancesWithProof(identityIds, n.tokenId) : c.tokens.balances(identityIds, n.tokenId);
+    }
+
+    case 'tokenMint':
+      return c.tokens.mint({ contractId: n.contractId, tokenPosition: n.tokenPosition, amount: n.amount, identityId: n.identityId, privateKeyWif: n.privateKeyWif, recipientId: n.recipientId, publicNote: n.publicNote });
+    case 'tokenBurn':
+      return c.tokens.burn({ contractId: n.contractId, tokenPosition: n.tokenPosition, amount: n.amount, identityId: n.identityId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
+    case 'tokenTransfer':
+      return c.tokens.transfer({ contractId: n.contractId, tokenPosition: n.tokenPosition, amount: n.amount, senderId: n.senderId, recipientId: n.recipientId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
+    case 'tokenFreeze':
+      return c.tokens.freeze({ contractId: n.contractId, tokenPosition: n.tokenPosition, identityToFreeze: n.identityToFreeze, freezerId: n.freezerId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
+    case 'tokenUnfreeze':
+      return c.tokens.unfreeze({ contractId: n.contractId, tokenPosition: n.tokenPosition, identityToUnfreeze: n.identityToUnfreeze, unfreezerId: n.unfreezerId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
+    case 'tokenDestroyFrozen':
+      return c.tokens.destroyFrozen({ contractId: n.contractId, tokenPosition: n.tokenPosition, identityId: n.identityId, destroyerId: n.destroyerId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
+    case 'tokenSetPriceForDirectPurchase':
+      return c.tokens.setPriceForDirectPurchase({ contractId: n.contractId, tokenPosition: n.tokenPosition, identityId: n.identityId, priceType: n.priceType, priceData: n.priceData, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
+    case 'tokenDirectPurchase':
+      return c.tokens.directPurchase({ contractId: n.contractId, tokenPosition: n.tokenPosition, amount: n.amount, identityId: n.identityId, totalAgreedPrice: n.totalAgreedPrice, privateKeyWif: n.privateKeyWif });
+    case 'tokenClaim':
+      return c.tokens.claim({ contractId: n.contractId, tokenPosition: n.tokenPosition, distributionType: n.distributionType, identityId: n.identityId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
+    case 'tokenConfigUpdate':
+      return c.tokens.configUpdate({ contractId: n.contractId, tokenPosition: n.tokenPosition, configItemType: n.configItemType, configValue: n.configValue, identityId: n.identityId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
+
+    // Group queries
+    case 'getGroupInfo': {
+      const contractId = n.dataContractId || n.contractId;
+      const position = toNumber(n.groupContractPosition, 0);
+      return useProof ? c.group.infoWithProof(contractId, position) : c.group.info(contractId, position);
+    }
+    case 'getGroupInfos': {
+      const contractId = n.dataContractId || n.contractId;
+      return useProof ? c.group.infosWithProof(contractId, n.startAtInfo ?? null, n.count ?? null) : c.group.infos(contractId, n.startAtInfo ?? null, n.count ?? null);
+    }
+    case 'getGroupMembers': {
+      const contractId = n.dataContractId || n.contractId;
+      const position = toNumber(n.groupContractPosition, 0);
+      const memberIds = toStringArray(n.memberIds);
+      const opts = { memberIds: memberIds.length ? memberIds : null, startAt: n.startAt ?? null, limit: n.limit ?? null };
+      return useProof ? c.group.membersWithProof(contractId, position, opts) : c.group.members(contractId, position, opts);
+    }
+    case 'getGroupActions': {
+      const contractId = n.dataContractId || n.contractId;
+      const position = toNumber(n.groupContractPosition, 0);
+      const opts = { startAtInfo: n.startAtInfo ?? null, count: n.count ?? null };
+      return useProof ? c.group.actionsWithProof(contractId, position, n.status, opts) : c.group.actions(contractId, position, n.status, opts);
+    }
+    case 'getGroupActionSigners': {
+      const contractId = n.dataContractId || n.contractId;
+      const position = toNumber(n.groupContractPosition, 0);
+      return useProof
+        ? c.group.actionSignersWithProof(contractId, position, n.status, n.actionId)
+        : c.group.actionSigners(contractId, position, n.status, n.actionId);
+    }
+    case 'getIdentityGroups': {
+      const memberDataContracts = toStringArray(n.memberDataContracts);
+      const ownerDataContracts = toStringArray(n.ownerDataContracts);
+      const moderatorDataContracts = toStringArray(n.moderatorDataContracts);
+      const opts = {
+        memberDataContracts: memberDataContracts.length ? memberDataContracts : null,
+        ownerDataContracts: ownerDataContracts.length ? ownerDataContracts : null,
+        moderatorDataContracts: moderatorDataContracts.length ? moderatorDataContracts : null,
+      };
+      return useProof ? c.group.identityGroupsWithProof(n.identityId, opts) : c.group.identityGroups(n.identityId, opts);
+    }
+    case 'getGroupsDataContracts': {
+      const contractIds = toStringArray(n.dataContractIds || n.contractIds);
+      return useProof ? c.group.groupsDataContractsWithProof(contractIds) : c.group.groupsDataContracts(contractIds);
+    }
+
+    // Contested resources & voting
+    case 'getContestedResources': {
+      const contractId = n.dataContractId || n.contractId;
+      const payload = {
+        documentTypeName: n.documentTypeName,
+        contractId,
+        indexName: n.indexName,
+        startAtValue: n.startAtValue ?? null,
+        limit: n.limit ?? null,
+        orderAscending: n.orderAscending ?? null,
+      };
+      return useProof ? c.group.contestedResourcesWithProof(payload) : c.group.contestedResources(payload);
+    }
+    case 'getContestedResourceVotersForIdentity': {
+      const contractId = n.dataContractId || n.contractId;
+      const payload = {
+        contractId,
+        documentTypeName: n.documentTypeName,
+        indexName: n.indexName,
+        indexValues: toStringArray(n.indexValues),
+        contestantId: n.contestantId,
+        orderAscending: n.orderAscending ?? null,
+      };
+      if (useProof) {
+        return c.group.contestedResourceVotersForIdentityWithProof({
+          ...payload,
+          startAtIdentifierInfo: n.startAtIdentifierInfo ?? null,
+          count: n.count ?? null,
+        });
+      }
+      return c.group.contestedResourceVotersForIdentity({
+        ...payload,
+        startAtVoterInfo: n.startAtVoterInfo ?? null,
+        limit: n.limit ?? null,
+      });
+    }
+    case 'getContestedResourceVoteState': {
+      const contractId = n.dataContractId || n.contractId;
+      const payload = {
+        contractId,
+        documentTypeName: n.documentTypeName,
+        indexName: n.indexName,
+        indexValues: toStringArray(n.indexValues),
+        resultType: n.resultType,
+        allowIncludeLockedAndAbstainingVoteTally: n.allowIncludeLockedAndAbstainingVoteTally ?? null,
+        startAtIdentifierInfo: n.startAtIdentifierInfo ?? null,
+        count: n.count ?? null,
+        orderAscending: n.orderAscending ?? null,
+      };
+      return useProof ? c.voting.contestedResourceVoteStateWithProof(payload) : c.voting.contestedResourceVoteState(payload);
+    }
+    case 'getContestedResourceIdentityVotes': {
+      if (useProof) {
+        return c.voting.contestedResourceIdentityVotesWithProof(n.identityId, {
+          limit: n.limit ?? null,
+          offset: n.offset ?? null,
+          orderAscending: n.orderAscending ?? null,
+        });
+      }
+      return c.voting.contestedResourceIdentityVotes(n.identityId, {
+        limit: n.limit ?? null,
+        startAtVotePollIdInfo: n.startAtVotePollIdInfo ?? null,
+        orderAscending: n.orderAscending ?? null,
+      });
+    }
+    case 'getVotePollsByEndDate': {
+      if (useProof) {
+        return c.voting.votePollsByEndDateWithProof({
+          startTimeMs: n.startTimeMs ?? null,
+          endTimeMs: n.endTimeMs ?? null,
+          limit: n.limit ?? null,
+          offset: n.offset ?? null,
+          orderAscending: n.orderAscending ?? null,
+        });
+      }
+      return c.voting.votePollsByEndDate({
+        startTimeInfo: n.startTimeInfo ?? null,
+        endTimeInfo: n.endTimeInfo ?? null,
+        limit: n.limit ?? null,
+        orderAscending: n.orderAscending ?? null,
+      });
+    }
+
+    case 'masternodeVote':
+      return c.voting.masternodeVote({
+        masternodeProTxHash: n.masternodeProTxHash,
+        contractId: n.contractId,
+        documentTypeName: n.documentTypeName,
+        indexName: n.indexName,
+        indexValues: toStringArray(n.indexValues),
+        voteChoice: n.voteChoice,
+        votingKeyWif: n.votingKeyWif,
+      });
+
+    // System
+    case 'getStatus':
+      return c.system.status();
+    case 'getCurrentQuorumsInfo':
+      return c.system.currentQuorumsInfo();
+    case 'getTotalCreditsInPlatform':
+      return useProof ? c.system.totalCreditsInPlatformWithProof() : c.system.totalCreditsInPlatform();
+    case 'getPrefundedSpecializedBalance':
+      return useProof ? c.system.prefundedSpecializedBalanceWithProof(n.identityId) : c.system.prefundedSpecializedBalance(n.identityId);
+    case 'getPathElements': {
+      const path = toStringArray(n.path);
+      const keys = toStringArray(n.keys);
+      return useProof ? c.system.pathElementsWithProof(path, keys) : c.system.pathElements(path, keys);
+    }
+    case 'waitForStateTransitionResult':
+      return c.system.waitForStateTransitionResult(n.stateTransitionHash);
+
+    default:
+      throw new Error(`Operation ${itemKey} is not supported in the demo UI.`);
   }
-  throw new Error(`Operation ${itemKey} is not supported by Evo SDK Demo`);
 }
 
 function formatResult(value) {
-  if (value === undefined) return 'undefined';
+  if (value === undefined) return 'Completed (no result returned)';
   if (value === null) return 'null';
   if (typeof value === 'string') return value;
   try {
@@ -616,7 +1003,9 @@ async function executeSelected() {
     const { definition } = state.selected;
     const args = collectArgs(definition);
     const client = await ensureClient();
-    const useProof = elements.proofToggleContainer.style.display !== 'none' && elements.proofToggle.checked && state.selected.type === 'queries';
+    const useProof = elements.proofToggleContainer.style.display !== 'none'
+      && elements.proofToggle.checked
+      && state.selected.type === 'queries';
     setStatus(`Running ${state.selected.operationKey}${useProof ? ' (proof)' : ''}...`, 'loading');
     const result = await callEvo(client, state.selected.categoryKey, state.selected.operationKey, definition.inputs || [], args, useProof);
     const formatted = formatResult(result);

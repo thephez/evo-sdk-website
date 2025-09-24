@@ -7,7 +7,7 @@ const urlsToCache = [
   '/index.html',
   '/index.css',
   '/app.js',
-  '/dist/sdk.js'
+  '/dist/evo-sdk.module.js'
 ];
 
 // Install event - pre-cache resources

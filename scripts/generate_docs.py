@@ -38,6 +38,16 @@ def copy_node_modules_dist(package: str, destination: Path) -> bool:
     shutil.copytree(dist_path, destination)
     return True
 
+
+def rewrite_wasm_wrapper(wasm_file: Path) -> None:
+    """Replace bare module specifiers with local relative paths for browser usage."""
+    if not wasm_file.exists():
+        return
+    contents = wasm_file.read_text(encoding='utf-8')
+    replacement = contents.replace("@dashevo/wasm-sdk/compressed", "./sdk.compressed.js")
+    if replacement != contents:
+        wasm_file.write_text(replacement, encoding='utf-8')
+
 TESTNET_TEST_DATA = {
     'identity_id': DEFAULT_TEST_IDENTITY,
     'specialized_balance_id': 'AzaU7zqCT7X1kxh8yWxkT9PxAgNqWDu4Gz13emwcRyAT',
@@ -73,12 +83,21 @@ def evo_example_for_query(key: str, inputs: List[dict]):
         'getIdentity': example(f"""
             return await sdk.identities.fetch('{data['identity_id']}')
         """),
+        'getIdentityUnproved': example(f"""
+            return await sdk.identities.fetchUnproved('{data['identity_id']}')
+        """),
         'getIdentityKeys': example(f"""
             return await sdk.identities.getKeys({{
                 identityId: '{data['identity_id']}',
                 keyRequestType: 'all',
                 limit: 10,
                 offset: 0
+            }})
+        """),
+        'getIdentitiesContractKeys': example(f"""
+            return await sdk.identities.contractKeys({{
+                identityIds: ['{data['identity_id']}'],
+                contractId: '{data['data_contract_id']}'
             }})
         """),
         'getDataContract': example(f"""
@@ -125,6 +144,15 @@ def evo_example_for_query(key: str, inputs: List[dict]):
         'dpnsResolve': example("""
             return await sdk.dpns.resolveName('alice.dash')
         """),
+        'dpnsConvertToHomographSafe': example("""
+            return sdk.dpns.convertToHomographSafe('ąlice')
+        """),
+        'dpnsIsValidUsername': example("""
+            return sdk.dpns.isValidUsername('alice')
+        """),
+        'dpnsIsContestedUsername': example("""
+            return sdk.dpns.isContestedUsername('alice')
+        """),
         'getContestedResources': example(f"""
             return await sdk.group.contestedResources({{
                 contractId: '{data['data_contract_id']}',
@@ -163,8 +191,13 @@ def evo_example_for_query(key: str, inputs: List[dict]):
                 {{ limit: 10, orderAscending: true }}
             )
         """),
-        'getVotePollsByEndDate': example(f"""
-            return await sdk.wasm.getVotePollsByEndDate({data['epoch']}, 10, null, true)
+        'getVotePollsByEndDate': example("""
+            return await sdk.voting.votePollsByEndDate({
+                startTimeInfo: null,
+                endTimeInfo: null,
+                limit: 10,
+                orderAscending: true,
+            })
         """),
         'getProtocolVersionUpgradeState': example("""
             return await sdk.protocol.versionUpgradeState()
@@ -218,6 +251,9 @@ def evo_example_for_query(key: str, inputs: List[dict]):
         'getTokenContractInfo': example(f"""
             return await sdk.tokens.contractInfo('{data['token_contract_id']}')
         """),
+        'getTokenPriceByContract': example(f"""
+            return await sdk.tokens.priceByContract('{data['token_contract_id']}', 0)
+        """),
         'getTokenPerpetualDistributionLastClaim': example(f"""
             return await sdk.tokens.perpetualDistributionLastClaim(
                 '{data['identity_id']}',
@@ -228,16 +264,25 @@ def evo_example_for_query(key: str, inputs: List[dict]):
             return await sdk.tokens.totalSupply('{data['token_id']}')
         """),
         'getGroupInfo': example(f"""
-            return await sdk.wasm.getGroupInfo('{data['group_contract_id']}', 0)
+            return await sdk.group.info('{data['group_contract_id']}', 0)
         """),
         'getGroupInfos': example(f"""
-            return await sdk.wasm.getGroupInfos('{data['group_contract_id']}', 0, false, 10)
+            return await sdk.group.infos('{data['group_contract_id']}', null, 10)
+        """),
+        'getGroupMembers': example(f"""
+            return await sdk.group.members('{data['group_contract_id']}', 0, {{ limit: 10 }})
         """),
         'getGroupActions': example(f"""
-            return await sdk.wasm.getGroupActions('{data['group_contract_id']}', 0, 'ACTIVE', '0', false, 10)
+            return await sdk.group.actions('{data['group_contract_id']}', 0, 'ACTIVE', {{ count: 10 }})
         """),
         'getGroupActionSigners': example(f"""
-            return await sdk.wasm.getGroupActionSigners('{data['group_contract_id']}', 0, 'ACTIVE', '6XJzL6Qb8Zhwxt4HFwh8NAn7q1u4dwdoUf8EmgzDudFZ')
+            return await sdk.group.actionSigners('{data['group_contract_id']}', 0, 'ACTIVE', '6XJzL6Qb8Zhwxt4HFwh8NAn7q1u4dwdoUf8EmgzDudFZ')
+        """),
+        'getIdentityGroups': example(f"""
+            return await sdk.group.identityGroups('{data['identity_id']}', {{}})
+        """),
+        'getGroupsDataContracts': example(f"""
+            return await sdk.group.groupsDataContracts(['{data['data_contract_id']}'])
         """),
         'getStatus': example("""
             return await sdk.system.status()
@@ -258,7 +303,7 @@ def evo_example_for_query(key: str, inputs: List[dict]):
             return await sdk.system.waitForStateTransitionResult('0000000000000000000000000000000000000000000000000000000000000000')
         """),
         'getIdentityTokenBalances': example(f"""
-            return await sdk.wasm.getIdentityTokenBalances('{data['identity_id']}', ['{data['token_id']}'])
+            return await sdk.identities.tokenBalances('{data['identity_id']}', ['{data['token_id']}'])
         """),
         'getIdentitiesTokenBalances': example(f"""
             return await sdk.tokens.balances(['{data['identity_id']}'], '{data['token_id']}')
@@ -270,25 +315,25 @@ def evo_example_for_query(key: str, inputs: List[dict]):
             return await sdk.tokens.identitiesTokenInfos(['{data['identity_id']}'], '{data['token_id']}')
         """),
         'getIdentityNonce': example(f"""
-            return await sdk.wasm.getIdentityNonce('{data['identity_id']}')
+            return await sdk.identities.nonce('{data['identity_id']}')
         """),
         'getIdentityContractNonce': example(f"""
-            return await sdk.wasm.getIdentityContractNonce('{data['identity_id']}', '{data['data_contract_id']}')
+            return await sdk.identities.contractNonce('{data['identity_id']}', '{data['data_contract_id']}')
         """),
         'getIdentityBalance': example(f"""
-            return await sdk.wasm.getIdentityBalance('{data['identity_id']}')
+            return await sdk.identities.balance('{data['identity_id']}')
         """),
         'getIdentitiesBalances': example(f"""
-            return await sdk.wasm.getIdentitiesBalances(['{data['identity_id']}'])
+            return await sdk.identities.balances(['{data['identity_id']}'])
         """),
         'getIdentityBalanceAndRevision': example(f"""
-            return await sdk.wasm.getIdentityBalanceAndRevision('{data['identity_id']}')
+            return await sdk.identities.balanceAndRevision('{data['identity_id']}')
         """),
         'getIdentityByPublicKeyHash': example(f"""
-            return await sdk.wasm.getIdentityByPublicKeyHash('{data['public_key_hash_unique']}')
+            return await sdk.identities.byPublicKeyHash('{data['public_key_hash_unique']}')
         """),
         'getIdentityByNonUniquePublicKeyHash': example(f"""
-            return await sdk.wasm.getIdentityByNonUniquePublicKeyHash('{data['public_key_hash_non_unique']}', null)
+            return await sdk.identities.byNonUniquePublicKeyHash('{data['public_key_hash_non_unique']}', {{ startAfter: null }})
         """),
     }
     return examples.get(key)
@@ -487,7 +532,7 @@ def render_categories(
 
 def generate_docs_script() -> str:
     script = """
-        import { EvoSDK } from './dist/sdk.js';
+        import { EvoSDK } from './dist/evo-sdk.module.js';
 
         let client = null;
         let clientPromise = null;
@@ -992,6 +1037,7 @@ def main() -> None:
     public_dist = PUBLIC_DIR / 'dist'
     if copy_node_modules_dist('@dashevo/evo-sdk', public_dist):
         print('Copied Evo SDK dist from node_modules into public/dist')
+        rewrite_wasm_wrapper(public_dist / 'wasm.js')
     else:
         print('Warning: Evo SDK dist not found; ensure dependencies are installed or build the workspace package.')
 
