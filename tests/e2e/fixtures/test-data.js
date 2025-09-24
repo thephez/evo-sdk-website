@@ -321,17 +321,26 @@ const testData = {
     dpns: {
       getDpnsUsername: {
         testnet: [
-          { 
-            identityId: "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk",
-            limit: 10
+          {
+            identityId: "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk"
           }
         ]
       },
-      dpnsCheckAvailability: {
+      getDpnsUsernames: {
         testnet: [
-          { label: "alice" },
-          { label: "test-username" },
-          { label: "available-name" }
+          {
+            identityId: "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk",
+            limit: 10
+          },
+          {
+            identityId: "5RG84o6KsTaZudDqS8ytbaRB8QP4YYQ2uwzb6Hj8cfjX",
+            limit: 5
+          }
+        ]
+      },
+      getDpnsUsernameByName: {
+        testnet: [
+          { username: "therea1s11mshaddy5.dash" }
         ]
       },
       dpnsResolve: {
@@ -341,9 +350,39 @@ const testData = {
           { name: "test-name" }
         ]
       },
+      dpnsCheckAvailability: {
+        testnet: [
+          { label: "alice" },
+          { label: "test-username" },
+          { label: "available-name" }
+        ]
+      },
+      dpnsConvertToHomographSafe: {
+        testnet: [
+          { name: "ąlice" },
+          { name: "tëst" },
+          { name: "ñame" }
+        ]
+      },
+      dpnsIsValidUsername: {
+        testnet: [
+          { label: "alice" },
+          { label: "test123" },
+          { label: "valid-name" },
+          { label: "a" }, // Edge case: single character
+          { label: "invalid space" } // Edge case: invalid format
+        ]
+      },
+      dpnsIsContestedUsername: {
+        testnet: [
+          { label: "alice" },
+          { label: "contested" },
+          { label: "available" }
+        ]
+      },
       dpnsSearch: {
         testnet: [
-          { 
+          {
             prefix: "the",
             limit: 10
           },
