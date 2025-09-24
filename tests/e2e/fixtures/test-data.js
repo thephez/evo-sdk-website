@@ -95,7 +95,7 @@ const testData = {
       },
       getIdentityBalance: {
         testnet: [
-          { id: "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk" }
+          { identityId: "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk" }
         ]
       },
       getIdentityByPublicKeyHash: {
@@ -106,7 +106,7 @@ const testData = {
       getIdentitiesContractKeys: {
         testnet: [
           {
-            identitiesIds: [
+            identityIds: [
               "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk",
               "5RG84o6KsTaZudDqS8ytbaRB8QP4YYQ2uwzb6Hj8cfjX"
             ],
@@ -140,7 +140,7 @@ const testData = {
       },
       getIdentityBalanceAndRevision: {
         testnet: [
-          { id: "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk" }
+          { identityId: "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk" }
         ]
       },
       getIdentityByNonUniquePublicKeyHash: {
@@ -214,7 +214,7 @@ const testData = {
       getDataContractHistory: {
         testnet: [
           { 
-            id: "HLY575cNazmc5824FxqaEMEBuzFeE4a98GDRNKbyJqCM",
+            dataContractId: "HLY575cNazmc5824FxqaEMEBuzFeE4a98GDRNKbyJqCM",
             limit: 10,
             offset: 0
           }
@@ -373,15 +373,15 @@ const testData = {
       getTokenContractInfo: {
         testnet: [
           {
-            dataContractId: "H7FRpZJqZK933r9CzZMsCuf1BM34NT5P2wSJyjDkprqy"
+            contractId: "H7FRpZJqZK933r9CzZMsCuf1BM34NT5P2wSJyjDkprqy"
           }
         ]
       },
       getTokenPerpetualDistributionLastClaim: {
         testnet: [
           {
-            identityId: "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk",
-            tokenId: "Hqyu8WcRwXCTwbNxdga4CN5gsVEGc67wng4TFzceyLUv"
+            identityId: "7XcruVSsGQVSgTcmPewaE4tXLutnW1F6PXxwMbo8GYQC",
+            tokenId: "Bu2749WKcP5HFNm8v3k5kshRKDSVyfsJMqoWnXmK4q7h"
           }
         ]
       },
@@ -399,7 +399,7 @@ const testData = {
         testnet: [
           {
             documentTypeName: "domain",
-            dataContractId: "GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec",
+            contractId: "GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec",
             indexName: "parentNameAndLabel",
             limit: 10,
             offset: 0,
@@ -410,7 +410,7 @@ const testData = {
       getContestedResourceVoteState: {
         testnet: [
           {
-            dataContractId: "GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec",
+            contractId: "GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec",
             documentTypeName: "domain",
             indexName: "parentNameAndLabel",
             indexValues: ["dash", "alice"],
@@ -424,7 +424,7 @@ const testData = {
       getContestedResourceVotersForIdentity: {
         testnet: [
           {
-            dataContractId: "GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec",
+            contractId: "GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec",
             documentTypeName: "domain",
             indexName: "parentNameAndLabel",
             indexValues: ["dash", "alice"],

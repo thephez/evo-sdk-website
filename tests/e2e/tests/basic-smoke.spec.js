@@ -59,7 +59,7 @@ test.describe('WASM SDK Basic Smoke Tests', () => {
       'DPNS Queries',
       'Voting & Contested Resources',
       'Protocol & Version',
-      'Epoch & Block',
+      'Epoch & Block Queries',
       'Token Queries',
       'Group Queries',
       'System & Utility'
