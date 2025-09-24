@@ -1,6 +1,6 @@
 {
-  "version": "1.0.3",
-  "generated_at": "2025-08-13T17:10:00.000000",
+  "version": "1.1.0",
+  "generated_at": "2025-09-24T16:32:41+00:00",
   "source": "index.html",
   "queries": {
     "identity": {
@@ -8,115 +8,140 @@
       "queries": {
         "getIdentity": {
           "label": "Get Identity",
-          "description": "Fetch an identity by its identifier",
+          "description": "Fetch an identity by its identifier.",
           "inputs": [
             {
               "name": "id",
               "type": "text",
               "label": "Identity ID",
-              "required": true
+              "required": true,
+              "placeholder": "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk"
+            }
+          ]
+        },
+        "getIdentityUnproved": {
+          "label": "Get Identity (Unproved)",
+          "description": "Fetch an identity without requesting cryptographic proofs.",
+          "inputs": [
+            {
+              "name": "id",
+              "type": "text",
+              "label": "Identity ID",
+              "required": true,
+              "placeholder": "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk"
             }
           ]
         },
         "getIdentityKeys": {
           "label": "Get Identity Keys",
-          "description": "Retrieve keys associated with an identity",
+          "description": "Retrieve public keys for an identity, including support for specific key IDs or purpose searches.",
           "inputs": [
             {
               "name": "identityId",
               "type": "text",
               "label": "Identity ID",
-              "required": true
+              "required": true,
+              "placeholder": "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk"
             },
             {
               "name": "keyRequestType",
               "type": "select",
               "label": "Key Request Type",
-              "required": false,
+              "required": true,
               "options": [
                 {
                   "value": "all",
-                  "label": "All Keys (AllKeys {}) - Get all keys for the identity"
+                  "label": "All Keys"
                 },
                 {
                   "value": "specific",
-                  "label": "Specific Keys (SpecificKeys with key_ids) - Get specific keys by ID [🚧 Work in Progress]"
+                  "label": "Specific Key IDs"
                 },
                 {
                   "value": "search",
-                  "label": "Search Keys (SearchKey with purpose_map) - Search by purpose and security level [🚧 Work in Progress]"
+                  "label": "Search by Purpose Map"
                 }
               ]
             },
             {
               "name": "specificKeyIds",
               "type": "array",
-              "label": "Specific Key IDs (required for 'specific' type)",
-              "required": false,
-              "placeholder": "0,1,2"
+              "label": "Specific Key IDs",
+              "placeholder": "[0,1,2]",
+              "dependsOn": {
+                "field": "keyRequestType",
+                "values": [
+                  "specific"
+                ]
+              }
             },
             {
               "name": "searchPurposeMap",
-              "type": "text",
-              "label": "Search Purpose Map JSON (required for 'search' type)",
-              "required": false,
-              "placeholder": "{\"0\": {\"0\": \"current\"}, \"1\": {\"0\": \"all\"}}"
+              "type": "json",
+              "label": "Search Purpose Map",
+              "help": "JSON map of purpose -> security level -> filter (e.g. {\"0\": {\"0\": \"current\"}}).",
+              "placeholder": "{\"0\": {\"0\": \"current\"}}",
+              "dependsOn": {
+                "field": "keyRequestType",
+                "values": [
+                  "search"
+                ]
+              }
             },
             {
               "name": "limit",
               "type": "number",
-              "label": "Limit",
-              "required": false
+              "label": "Limit"
             },
             {
               "name": "offset",
               "type": "number",
-              "label": "Offset",
-              "required": false
+              "label": "Offset"
             }
           ]
         },
         "getIdentitiesContractKeys": {
-          "label": "Get Identities Contract Keys",
-          "description": "Get keys for multiple identities related to a specific contract",
+          "label": "Get Contract Keys for Identities",
+          "description": "Fetch contract-specific keys for one or more identities.",
           "inputs": [
             {
-              "name": "identitiesIds",
+              "name": "identityIds",
               "type": "array",
               "label": "Identity IDs",
-              "required": true
+              "required": true,
+              "placeholder": "[\"5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk\"]"
             },
             {
               "name": "contractId",
               "type": "text",
               "label": "Contract ID",
-              "required": true
+              "required": true,
+              "placeholder": "GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec"
             },
             {
               "name": "purposes",
               "type": "multiselect",
               "label": "Key Purposes",
-              "required": false,
               "options": [
                 {
                   "value": "0",
-                  "label": "Authentication"
+                  "label": "Authentication (0)"
                 },
                 {
-                  "value": "1", 
-                  "label": "Encryption"
+                  "value": "1",
+                  "label": "Encryption (1)"
                 },
                 {
                   "value": "2",
-                  "label": "Decryption"
+                  "label": "Decryption (2)"
                 },
                 {
                   "value": "3",
-                  "label": "Transfer"
+                  "label": "Transfer (3)"
                 },
                 {
                   "value": "5",
-                  "label": "Voting"
+                  "label": "Voting (5)"
                 }
               ]
             }
@@ -124,73 +149,79 @@
         },
         "getIdentityNonce": {
           "label": "Get Identity Nonce",
-          "description": "Get the current nonce for an identity",
+          "description": "Retrieve the global nonce associated with an identity.",
           "inputs": [
             {
               "name": "identityId",
               "type": "text",
               "label": "Identity ID",
-              "required": true
+              "required": true,
+              "placeholder": "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk"
             }
           ]
         },
         "getIdentityContractNonce": {
           "label": "Get Identity Contract Nonce",
-          "description": "Get the nonce for an identity in relation to a specific contract",
+          "description": "Retrieve the per-contract nonce for an identity.",
           "inputs": [
             {
               "name": "identityId",
               "type": "text",
               "label": "Identity ID",
-              "required": true
+              "required": true,
+              "placeholder": "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk"
             },
             {
               "name": "contractId",
               "type": "text",
               "label": "Contract ID",
-              "required": true
+              "required": true,
+              "placeholder": "GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec"
             }
           ]
         },
         "getIdentityBalance": {
           "label": "Get Identity Balance",
-          "description": "Get the credit balance of an identity",
+          "description": "Fetch the credit balance for an identity.",
           "inputs": [
             {
-              "name": "id",
+              "name": "identityId",
               "type": "text",
               "label": "Identity ID",
-              "required": true
+              "required": true,
+              "placeholder": "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk"
             }
           ]
         },
         "getIdentitiesBalances": {
-          "label": "Get Identities Balances",
-          "description": "Get balances for multiple identities",
+          "label": "Get Multiple Identity Balances",
+          "description": "Fetch balances for multiple identities in a single request.",
           "inputs": [
             {
-              "name": "ids",
+              "name": "identityIds",
               "type": "array",
               "label": "Identity IDs",
-              "required": true
+              "required": true,
+              "placeholder": "[\"5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk\"]"
             }
           ]
         },
         "getIdentityBalanceAndRevision": {
-          "label": "Get Identity Balance and Revision",
-          "description": "Get both balance and revision number for an identity",
+          "label": "Get Identity Balance & Revision",
+          "description": "Retrieve both the balance and revision number for an identity.",
           "inputs": [
             {
-              "name": "id",
+              "name": "identityId",
               "type": "text",
               "label": "Identity ID",
-              "required": true
+              "required": true,
+              "placeholder": "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk"
             }
           ]
         },
         "getIdentityByPublicKeyHash": {
           "label": "Get Identity by Unique Public Key Hash",
-          "description": "Find an identity by its unique public key hash",
+          "description": "Lookup an identity via its unique public key hash.",
           "inputs": [
             {
               "name": "publicKeyHash",
@@ -203,7 +234,7 @@
         },
         "getIdentityByNonUniquePublicKeyHash": {
           "label": "Get Identity by Non-Unique Public Key Hash",
-          "description": "Find identities by non-unique public key hash",
+          "description": "Lookup identities that match a non-unique public key hash.",
           "inputs": [
             {
               "name": "publicKeyHash",
@@ -215,38 +246,41 @@
             {
               "name": "startAfter",
               "type": "text",
-              "label": "Start After",
-              "required": false
+              "label": "Start After (Key ID)",
+              "help": "Resume pagination using the previous key identifier."
             }
           ]
         },
         "getIdentityTokenBalances": {
           "label": "Get Identity Token Balances",
-          "description": "Get token balances for an identity",
+          "description": "Retrieve balances for a set of token IDs held by an identity.",
           "inputs": [
             {
               "name": "identityId",
               "type": "text",
               "label": "Identity ID",
-              "required": true
+              "required": true,
+              "placeholder": "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk"
             },
             {
               "name": "tokenIds",
               "type": "array",
               "label": "Token IDs",
-              "required": true
+              "required": true,
+              "placeholder": "[\"Hqyu8WcRwXCTwbNxdga4CN5gsVEGc67wng4TFzceyLUv\"]"
             }
           ]
         },
         "getIdentitiesTokenBalances": {
-          "label": "Get Identities Token Balances",
-          "description": "Get token balance for multiple identities",
+          "label": "Get Token Balances for Identities",
+          "description": "Fetch balances for multiple identities for a single token.",
           "inputs": [
             {
               "name": "identityIds",
               "type": "array",
               "label": "Identity IDs",
-              "required": true
+              "required": true,
+              "placeholder": "[\"5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk\"]"
             },
             {
               "name": "tokenId",
@@ -259,44 +293,43 @@
         },
         "getIdentityTokenInfos": {
           "label": "Get Identity Token Info",
-          "description": "Get token information for an identity's tokens",
+          "description": "Retrieve token metadata and balances for an identity.",
           "inputs": [
             {
               "name": "identityId",
               "type": "text",
               "label": "Identity ID",
-              "required": true
+              "required": true,
+              "placeholder": "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk"
             },
             {
               "name": "tokenIds",
               "type": "array",
               "label": "Token IDs (optional)",
-              "required": false,
               "placeholder": "[\"Hqyu8WcRwXCTwbNxdga4CN5gsVEGc67wng4TFzceyLUv\"]"
             },
             {
               "name": "limit",
               "type": "number",
-              "label": "Limit",
-              "required": false
+              "label": "Limit"
             },
             {
               "name": "offset",
               "type": "number",
-              "label": "Offset",
-              "required": false
+              "label": "Offset"
             }
           ]
         },
         "getIdentitiesTokenInfos": {
-          "label": "Get Identities Token Info",
-          "description": "Get token information for multiple identities with a specific token",
+          "label": "Get Token Info for Identities",
+          "description": "Retrieve token metadata for multiple identities for a single token.",
           "inputs": [
             {
               "name": "identityIds",
               "type": "array",
               "label": "Identity IDs",
-              "required": true
+              "required": true,
+              "placeholder": "[\"5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk\"]"
             },
             {
               "name": "tokenId",
@@ -314,7 +347,7 @@
       "queries": {
         "getDataContract": {
           "label": "Get Data Contract",
-          "description": "Fetch a data contract by its identifier",
+          "description": "Fetch a data contract by its identifier.",
           "inputs": [
             {
               "name": "id",
@@ -327,10 +360,10 @@
         },
         "getDataContractHistory": {
           "label": "Get Data Contract History",
-          "description": "Get the version history of a data contract",
+          "description": "Retrieve the version history for a data contract.",
           "inputs": [
             {
-              "name": "id",
+              "name": "dataContractId",
               "type": "text",
               "label": "Data Contract ID",
               "required": true,
@@ -339,33 +372,25 @@
             {
               "name": "limit",
               "type": "number",
-              "label": "Limit",
-              "required": false
-            },
-            {
-              "name": "offset",
-              "type": "number",
-              "label": "Offset",
-              "required": false
+              "label": "Limit"
             },
             {
               "name": "startAtMs",
               "type": "number",
-              "label": "Start At Timestamp (ms)",
-              "required": false
+              "label": "Start Timestamp (ms)"
             }
           ]
         },
         "getDataContracts": {
           "label": "Get Data Contracts",
-          "description": "Fetch multiple data contracts by their identifiers",
+          "description": "Fetch multiple data contracts by their identifiers.",
           "inputs": [
             {
               "name": "ids",
               "type": "array",
               "label": "Data Contract IDs",
               "required": true,
-              "placeholder": "[\"GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec\", \"ALybvzfcCwMs7sinDwmtumw17NneuW7RgFtFHgjKmF3A\"]"
+              "placeholder": "[\"GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec\",\"ALybvzfcCwMs7sinDwmtumw17NneuW7RgFtFHgjKmF3A\"]"
             }
           ]
         }
@@ -376,7 +401,7 @@
       "queries": {
         "getDocuments": {
           "label": "Get Documents",
-          "description": "Query documents from a data contract",
+          "description": "Query documents from a data contract using optional filters.",
           "inputs": [
             {
               "name": "dataContractId",
@@ -396,27 +421,36 @@
               "name": "where",
               "type": "json",
               "label": "Where Clause (JSON)",
-              "required": false,
-              "placeholder": "[[\"normalizedParentDomainName\", \"==\", \"dash\"], [\"normalizedLabel\", \"==\", \"therea1s11mshaddy5\"]]"
+              "placeholder": "[[\"normalizedParentDomainName\",\"==\",\"dash\"]]"
             },
             {
               "name": "orderBy",
               "type": "json",
               "label": "Order By (JSON)",
-              "required": false,
-              "placeholder": "[[\"$createdAt\", \"desc\"]]"
+              "placeholder": "[[\"$createdAt\",\"desc\"]]"
             },
             {
               "name": "limit",
               "type": "number",
-              "label": "Limit",
-              "required": false
+              "label": "Limit"
+            },
+            {
+              "name": "startAfter",
+              "type": "text",
+              "label": "Start After",
+              "help": "Document ID or index value to resume from."
+            },
+            {
+              "name": "startAt",
+              "type": "text",
+              "label": "Start At",
+              "help": "Explicit starting index value (JSON string)."
             }
           ]
         },
         "getDocument": {
           "label": "Get Document",
-          "description": "Fetch a specific document by ID",
+          "description": "Fetch a specific document by ID.",
           "inputs": [
             {
               "name": "dataContractId",
@@ -447,58 +481,111 @@
       "label": "DPNS Queries",
       "queries": {
         "getDpnsUsername": {
-          "label": "Get DPNS Usernames",
-          "description": "Get DPNS usernames for an identity",
+          "label": "Get Primary Username",
+          "description": "Fetch the primary DPNS username for an identity.",
           "inputs": [
             {
               "name": "identityId",
               "type": "text",
               "label": "Identity ID",
-              "required": true
+              "required": true,
+              "placeholder": "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk"
+            }
+          ]
+        },
+        "getDpnsUsernames": {
+          "label": "List Usernames for Identity",
+          "description": "Fetch all DPNS usernames owned by an identity.",
+          "inputs": [
+            {
+              "name": "identityId",
+              "type": "text",
+              "label": "Identity ID",
+              "required": true,
+              "placeholder": "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk"
+            },
+            {
+              "name": "limit",
+              "type": "number",
+              "label": "Limit"
+            }
+          ]
+        },
+        "getDpnsUsernameByName": {
+          "label": "Get Username by Name",
+          "description": "Fetch DPNS username details by full name.",
+          "inputs": [
+            {
+              "name": "username",
+              "type": "text",
+              "label": "Username",
+              "required": true,
+              "placeholder": "alice.dash"
+            }
+          ]
+        },
+        "dpnsResolve": {
+          "label": "Resolve DPNS Name",
+          "description": "Resolve a DPNS name to its identity information.",
+          "inputs": [
+            {
+              "name": "name",
+              "type": "text",
+              "label": "DPNS Name",
+              "required": true,
+              "placeholder": "alice.dash"
             }
           ]
         },
         "dpnsCheckAvailability": {
-          "label": "DPNS Check Availability",
-          "description": "Check if a DPNS username is available",
+          "label": "Check DPNS Availability",
+          "description": "Check if a DPNS label is available for registration.",
           "inputs": [
             {
               "name": "label",
               "type": "text",
               "label": "Label (Username)",
-              "required": true
+              "required": true,
+              "placeholder": "alice"
             }
           ]
         },
-        "dpnsResolve": {
-          "label": "DPNS Resolve Name",
-          "description": "Resolve a DPNS name to an identity ID",
+        "dpnsConvertToHomographSafe": {
+          "label": "Convert to Homograph Safe",
+          "description": "Convert a label to its homograph-safe representation.",
           "inputs": [
             {
               "name": "name",
               "type": "text",
-              "label": "Name",
-              "required": true
+              "label": "Label",
+              "required": true,
+              "placeholder": "\u0105lice"
             }
           ]
         },
-        "dpnsSearch": {
-          "label": "DPNS Search Name",
-          "description": "Search for DPNS names that start with a given prefix",
+        "dpnsIsValidUsername": {
+          "label": "Validate Username",
+          "description": "Validate whether a label conforms to DPNS username rules.",
           "inputs": [
             {
-              "name": "prefix",
+              "name": "label",
               "type": "text",
-              "label": "Name Prefix",
+              "label": "Label",
               "required": true,
-              "placeholder": "Enter prefix (e.g., ali)"
-            },
+              "placeholder": "alice"
+            }
+          ]
+        },
+        "dpnsIsContestedUsername": {
+          "label": "Is Contested Username",
+          "description": "Check if a label is currently part of a contested DPNS registration.",
+          "inputs": [
             {
-              "name": "limit",
-              "type": "number",
-              "label": "Limit",
-              "required": false,
-              "placeholder": "Default: 10"
+              "name": "label",
+              "type": "text",
+              "label": "Label",
+              "required": true,
+              "placeholder": "alice"
             }
           ]
         }
@@ -509,19 +596,21 @@
       "queries": {
         "getContestedResources": {
           "label": "Get Contested Resources",
-          "description": "Get list of contested resources",
+          "description": "List contested resources for a document type and index.",
           "inputs": [
             {
               "name": "documentTypeName",
               "type": "text",
               "label": "Document Type",
-              "required": true
+              "required": true,
+              "placeholder": "domain"
             },
             {
-              "name": "dataContractId",
+              "name": "contractId",
               "type": "text",
               "label": "Data Contract ID",
-              "required": true
+              "required": true,
+              "placeholder": "GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec"
             },
             {
               "name": "indexName",
@@ -532,44 +621,37 @@
             {
               "name": "startAtValue",
               "type": "text",
-              "label": "Start At Value",
-              "required": false
+              "label": "Start At Value"
             },
             {
               "name": "limit",
               "type": "number",
-              "label": "Limit",
-              "required": false
-            },
-            {
-              "name": "offset",
-              "type": "number",
-              "label": "Offset",
-              "required": false
+              "label": "Limit"
             },
             {
               "name": "orderAscending",
               "type": "checkbox",
-              "label": "Order Ascending",
-              "required": false
+              "label": "Order Ascending"
             }
           ]
         },
         "getContestedResourceVoteState": {
           "label": "Get Contested Resource Vote State",
-          "description": "Get the current vote state for a contested resource",
+          "description": "Retrieve vote tallies for a contested resource.",
           "inputs": [
             {
-              "name": "dataContractId",
+              "name": "contractId",
               "type": "text",
               "label": "Data Contract ID",
-              "required": true
+              "required": true,
+              "placeholder": "GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec"
             },
             {
               "name": "documentTypeName",
               "type": "text",
               "label": "Document Type",
-              "required": true
+              "required": true,
+              "placeholder": "domain"
             },
             {
               "name": "indexName",
@@ -582,55 +664,54 @@
               "type": "array",
               "label": "Index Values",
               "required": true,
-              "placeholder": "[\"dash\", \"alice\"]"
+              "placeholder": "[\"dash\",\"alice\"]"
             },
             {
               "name": "resultType",
               "type": "text",
               "label": "Result Type",
-              "required": true
+              "required": true,
+              "placeholder": "documents"
             },
             {
               "name": "allowIncludeLockedAndAbstainingVoteTally",
               "type": "checkbox",
-              "label": "Allow Include Locked and Abstaining Vote Tally",
-              "required": false
+              "label": "Include Locked & Abstaining Tallies"
             },
             {
               "name": "startAtIdentifierInfo",
               "type": "text",
-              "label": "Start At Identifier Info",
-              "required": false
+              "label": "Start At Identifier Info"
             },
             {
               "name": "count",
               "type": "number",
-              "label": "Count",
-              "required": false
+              "label": "Count"
             },
             {
               "name": "orderAscending",
               "type": "checkbox",
-              "label": "Order Ascending",
-              "required": false
+              "label": "Order Ascending"
             }
           ]
         },
         "getContestedResourceVotersForIdentity": {
-          "label": "Get Contested Resource Voters for Identity",
-          "description": "Get voters who voted for a specific identity in a contested resource",
+          "label": "Get Voters for Identity",
+          "description": "List voters that voted for a specific identity in a contested resource.",
           "inputs": [
             {
-              "name": "dataContractId",
+              "name": "contractId",
               "type": "text",
-              "label": "Contract ID",
-              "required": true
+              "label": "Data Contract ID",
+              "required": true,
+              "placeholder": "GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec"
             },
             {
               "name": "documentTypeName",
               "type": "text",
               "label": "Document Type",
-              "required": true
+              "required": true,
+              "placeholder": "domain"
             },
             {
               "name": "indexName",
@@ -643,100 +724,117 @@
               "type": "array",
               "label": "Index Values",
               "required": true,
-              "placeholder": "[\"dash\", \"alice\"]"
+              "placeholder": "[\"dash\",\"alice\"]"
             },
             {
               "name": "contestantId",
               "type": "text",
               "label": "Contestant Identity ID",
-              "required": true
+              "required": true,
+              "placeholder": "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk"
+            },
+            {
+              "name": "startAtVoterInfo",
+              "type": "text",
+              "label": "Start At Voter Info"
             },
             {
               "name": "startAtIdentifierInfo",
               "type": "text",
-              "label": "Start At Identifier Info",
-              "required": false
+              "label": "Start At Identifier Info (Proof)"
+            },
+            {
+              "name": "limit",
+              "type": "number",
+              "label": "Limit"
             },
             {
               "name": "count",
               "type": "number",
-              "label": "Count",
-              "required": false,
-              "placeholder": "Default: 100"
+              "label": "Count (Proof)"
             },
             {
               "name": "orderAscending",
               "type": "checkbox",
-              "label": "Order Ascending",
-              "required": false
+              "label": "Order Ascending"
             }
           ]
         },
         "getContestedResourceIdentityVotes": {
-          "label": "Get Contested Resource Identity Votes",
-          "description": "Get all votes cast by a specific identity",
+          "label": "Get Identity Votes",
+          "description": "Fetch contested resource votes submitted by a particular identity.",
           "inputs": [
             {
               "name": "identityId",
               "type": "text",
               "label": "Identity ID",
-              "required": true
+              "required": true,
+              "placeholder": "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk"
             },
             {
               "name": "limit",
               "type": "number",
-              "label": "Limit",
-              "required": false
+              "label": "Limit"
+            },
+            {
+              "name": "startAtVotePollIdInfo",
+              "type": "text",
+              "label": "Start At Vote Poll Info"
             },
             {
               "name": "offset",
               "type": "number",
-              "label": "Offset",
-              "required": false
+              "label": "Offset (Proof)"
             },
             {
               "name": "orderAscending",
               "type": "checkbox",
-              "label": "Order Ascending",
-              "required": false
+              "label": "Order Ascending"
             }
           ]
         },
         "getVotePollsByEndDate": {
           "label": "Get Vote Polls by End Date",
-          "description": "Get vote polls within a time range",
+          "description": "Fetch vote polls filtered by end time. Use JSON time info for standard responses or millisecond timestamps with proof.",
           "inputs": [
+            {
+              "name": "startTimeInfo",
+              "type": "json",
+              "label": "Start Time Info (JSON)",
+              "help": "Used when proofs are disabled."
+            },
+            {
+              "name": "endTimeInfo",
+              "type": "json",
+              "label": "End Time Info (JSON)",
+              "help": "Used when proofs are disabled."
+            },
             {
               "name": "startTimeMs",
               "type": "number",
               "label": "Start Time (ms)",
-              "required": false,
-              "placeholder": "Timestamp in milliseconds as string (e.g., 1650000000000)"
+              "help": "Used when proofs are enabled."
             },
             {
               "name": "endTimeMs",
               "type": "number",
               "label": "End Time (ms)",
-              "required": false,
-              "placeholder": "Timestamp in milliseconds as string (e.g., 1650086400000)"
+              "help": "Used when proofs are enabled."
             },
             {
               "name": "limit",
               "type": "number",
-              "label": "Limit",
-              "required": false
+              "label": "Limit"
             },
             {
               "name": "offset",
               "type": "number",
-              "label": "Offset",
-              "required": false
+              "label": "Offset (Proof)"
             },
             {
               "name": "orderAscending",
               "type": "checkbox",
-              "label": "Order Ascending",
-              "required": false
+              "label": "Order Ascending"
             }
           ]
         }
@@ -747,90 +845,81 @@
       "queries": {
         "getProtocolVersionUpgradeState": {
           "label": "Get Protocol Version Upgrade State",
-          "description": "Get the current state of protocol version upgrades",
+          "description": "Retrieve protocol upgrade vote tallies.",
           "inputs": []
         },
         "getProtocolVersionUpgradeVoteStatus": {
-          "label": "Get Protocol Version Upgrade Vote Status",
-          "description": "Get voting status for protocol version upgrades",
+          "label": "Get Protocol Version Vote Status",
+          "description": "Fetch voting status for masternodes on protocol upgrades.",
           "inputs": [
             {
               "name": "startProTxHash",
               "type": "text",
-              "label": "Start ProTx Hash",
-              "required": true,
+              "label": "Start ProTxHash",
               "placeholder": "143dcd6a6b7684fde01e88a10e5d65de9a29244c5ecd586d14a342657025f113"
             },
             {
               "name": "count",
               "type": "number",
-              "label": "Count",
-              "required": true
+              "label": "Count"
             }
           ]
         }
       }
     },
     "epoch": {
-      "label": "Epoch & Block",
+      "label": "Epoch & Block Queries",
       "queries": {
         "getEpochsInfo": {
           "label": "Get Epochs Info",
-          "description": "Get information about epochs",
+          "description": "Retrieve summary information for one or more epochs.",
           "inputs": [
             {
               "name": "startEpoch",
               "type": "number",
-              "label": "Start Epoch",
-              "required": true
+              "label": "Start Epoch"
             },
             {
               "name": "count",
               "type": "number",
-              "label": "Count",
-              "required": true
+              "label": "Count"
             },
             {
               "name": "ascending",
               "type": "checkbox",
-              "label": "Ascending Order",
-              "required": false
+              "label": "Ascending Order"
             }
           ]
         },
         "getCurrentEpoch": {
           "label": "Get Current Epoch",
-          "description": "Get information about the current epoch",
+          "description": "Fetch the current platform epoch.",
           "inputs": []
         },
         "getFinalizedEpochInfos": {
-          "label": "Get Finalized Epoch Info",
-          "description": "Get information about finalized epochs",
+          "label": "Get Finalized Epoch Infos",
+          "description": "Retrieve finalized epoch information for a range.",
           "inputs": [
             {
               "name": "startEpoch",
               "type": "number",
-              "label": "Start Epoch",
-              "required": true
+              "label": "Start Epoch"
             },
             {
               "name": "count",
               "type": "number",
-              "label": "Count",
-              "required": true
+              "label": "Count"
             },
             {
               "name": "ascending",
               "type": "checkbox",
-              "label": "Ascending Order",
-              "required": false
+              "label": "Ascending Order"
             }
           ]
         },
         "getEvonodesProposedEpochBlocksByIds": {
-          "label": "Get Evonodes Proposed Epoch Blocks by IDs",
-          "description": "Get proposed blocks by evonode IDs",
-          "supportsProof": false,
+          "label": "Get Epoch Blocks by Evonode IDs",
+          "description": "Fetch proposed blocks for specific evonode ProTx hashes.",
           "inputs": [
             {
               "name": "epoch",
@@ -841,16 +930,15 @@
             {
               "name": "ids",
               "type": "array",
-              "label": "ProTx Hashes",
+              "label": "Evonode ProTx Hashes",
               "required": true,
               "placeholder": "[\"143dcd6a6b7684fde01e88a10e5d65de9a29244c5ecd586d14a342657025f113\"]"
             }
           ]
         },
         "getEvonodesProposedEpochBlocksByRange": {
-          "label": "Get Evonodes Proposed Epoch Blocks by Range",
-          "description": "Get proposed blocks by range",
-          "supportsProof": false,
+          "label": "Get Epoch Blocks by Range",
+          "description": "Fetch proposed blocks in range order.",
           "inputs": [
             {
               "name": "epoch",
@@ -861,21 +949,18 @@
             {
               "name": "limit",
               "type": "number",
-              "label": "Limit",
-              "required": false
+              "label": "Limit"
             },
             {
               "name": "startAfter",
               "type": "text",
-              "label": "Start After (Evonode ID)",
-              "required": false,
-              "placeholder": "143dcd6a6b7684fde01e88a10e5d65de9a29244c5ecd586d14a342657025f113"              
+              "label": "Start After (ProTxHash)",
+              "placeholder": "143dcd6a6b7684fde01e88a10e5d65de9a29244c5ecd586d14a342657025f113"
             },
             {
               "name": "orderAscending",
               "type": "checkbox",
-              "label": "Order Ascending",
-              "required": false
+              "label": "Order Ascending"
             }
           ]
         }
@@ -886,62 +971,66 @@
       "queries": {
         "getTokenStatuses": {
           "label": "Get Token Statuses",
-          "description": "Get token statuses",
+          "description": "Retrieve status information for one or more tokens.",
           "inputs": [
             {
               "name": "tokenIds",
               "type": "array",
               "label": "Token IDs",
-              "required": true
+              "required": true,
+              "placeholder": "[\"Hqyu8WcRwXCTwbNxdga4CN5gsVEGc67wng4TFzceyLUv\"]"
             }
           ]
         },
         "getTokenDirectPurchasePrices": {
-          "label": "Get Token Direct Purchase Prices",
-          "description": "Get direct purchase prices for tokens",
+          "label": "Get Direct Purchase Prices",
+          "description": "Fetch direct purchase prices for tokens.",
           "inputs": [
             {
               "name": "tokenIds",
               "type": "array",
               "label": "Token IDs",
-              "required": true
+              "required": true,
+              "placeholder": "[\"Hqyu8WcRwXCTwbNxdga4CN5gsVEGc67wng4TFzceyLUv\"]"
             }
           ]
         },
         "getTokenContractInfo": {
           "label": "Get Token Contract Info",
-          "description": "Get information about a token contract",
+          "description": "Retrieve metadata for a token contract.",
           "inputs": [
             {
-              "name": "dataContractId",
+              "name": "contractId",
               "type": "text",
-              "label": "Data Contract ID",
+              "label": "Token Contract ID",
               "required": true,
-              "placeholder": "EETVvWgohFDKtbB3ejEzBcDRMNYkc9TtgXY6y8hzP3Ta"
+              "placeholder": "ALybvzfcCwMs7sinDwmtumw17NneuW7RgFtFHgjKmF3A"
             }
           ]
         },
         "getTokenPerpetualDistributionLastClaim": {
-          "label": "Get Token Perpetual Distribution Last Claim",
-          "description": "Get last claim information for perpetual distribution",
+          "label": "Get Token Distribution Last Claim",
+          "description": "Fetch the last perpetual distribution claim for an identity and token.",
           "inputs": [
             {
               "name": "identityId",
               "type": "text",
               "label": "Identity ID",
-              "required": true
+              "required": true,
+              "placeholder": "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk"
             },
             {
               "name": "tokenId",
               "type": "text",
               "label": "Token ID",
-              "required": true
+              "required": true,
+              "placeholder": "Hqyu8WcRwXCTwbNxdga4CN5gsVEGc67wng4TFzceyLUv"
             }
           ]
         },
         "getTokenTotalSupply": {
           "label": "Get Token Total Supply",
-          "description": "Get total supply of a token",
+          "description": "Fetch the total supply for a token.",
           "inputs": [
             {
               "name": "tokenId",
@@ -949,6 +1038,26 @@
               "label": "Token ID",
               "required": true,
               "placeholder": "Hqyu8WcRwXCTwbNxdga4CN5gsVEGc67wng4TFzceyLUv"
+            }
+          ]
+        },
+        "getTokenPriceByContract": {
+          "label": "Get Token Price by Contract",
+          "description": "Retrieve the price details for a token indexed by contract position.",
+          "inputs": [
+            {
+              "name": "contractId",
+              "type": "text",
+              "label": "Token Contract ID",
+              "required": true,
+              "placeholder": "ALybvzfcCwMs7sinDwmtumw17NneuW7RgFtFHgjKmF3A"
+            },
+            {
+              "name": "tokenPosition",
+              "type": "number",
+              "label": "Token Position",
+              "required": true,
+              "placeholder": "0"
             }
           ]
         }
@@ -959,133 +1068,175 @@
       "queries": {
         "getGroupInfo": {
           "label": "Get Group Info",
-          "description": "Get information about a group",
+          "description": "Fetch metadata for a specific group contract position.",
           "inputs": [
             {
               "name": "contractId",
               "type": "text",
-              "label": "Contract ID",
-              "required": true
+              "label": "Group Contract ID",
+              "required": true,
+              "placeholder": "49PJEnNx7ReCitzkLdkDNr4s6RScGsnNexcdSZJ1ph5N"
             },
             {
               "name": "groupContractPosition",
               "type": "number",
-              "label": "Group Contract Position",
-              "required": true
+              "label": "Group Position",
+              "required": true,
+              "placeholder": "0"
             }
           ]
         },
         "getGroupInfos": {
-          "label": "Get Group Infos",
-          "description": "Get information about multiple groups",
+          "label": "List Group Infos",
+          "description": "List group information entries for a contract.",
           "inputs": [
             {
               "name": "contractId",
               "type": "text",
-              "label": "Contract ID",
-              "required": true
+              "label": "Group Contract ID",
+              "required": true,
+              "placeholder": "49PJEnNx7ReCitzkLdkDNr4s6RScGsnNexcdSZJ1ph5N"
             },
             {
-              "name": "startAtGroupContractPosition",
-              "type": "number",
-              "label": "Start at Position",
-              "required": false
-            },
-            {
-              "name": "startGroupContractPositionIncluded",
-              "type": "checkbox",
-              "label": "Include Start Position",
-              "required": false
+              "name": "startAtInfo",
+              "type": "text",
+              "label": "Start At Info"
             },
             {
               "name": "count",
               "type": "number",
-              "label": "Count",
-              "required": false
+              "label": "Count"
+            }
+          ]
+        },
+        "getGroupMembers": {
+          "label": "Get Group Members",
+          "description": "Retrieve member entries for a group.",
+          "inputs": [
+            {
+              "name": "contractId",
+              "type": "text",
+              "label": "Group Contract ID",
+              "required": true,
+              "placeholder": "49PJEnNx7ReCitzkLdkDNr4s6RScGsnNexcdSZJ1ph5N"
+            },
+            {
+              "name": "groupContractPosition",
+              "type": "number",
+              "label": "Group Position",
+              "required": true,
+              "placeholder": "0"
+            },
+            {
+              "name": "memberIds",
+              "type": "array",
+              "label": "Member Identity IDs"
+            },
+            {
+              "name": "startAt",
+              "type": "text",
+              "label": "Start At Member Info"
+            },
+            {
+              "name": "limit",
+              "type": "number",
+              "label": "Limit"
             }
           ]
         },
         "getGroupActions": {
           "label": "Get Group Actions",
-          "description": "Get actions for a group",
+          "description": "Fetch actions associated with a group.",
           "inputs": [
             {
               "name": "contractId",
               "type": "text",
-              "label": "Contract ID",
-              "required": true
+              "label": "Group Contract ID",
+              "required": true,
+              "placeholder": "49PJEnNx7ReCitzkLdkDNr4s6RScGsnNexcdSZJ1ph5N"
             },
             {
               "name": "groupContractPosition",
               "type": "number",
-              "label": "Group Contract Position",
-              "required": true
+              "label": "Group Position",
+              "required": true,
+              "placeholder": "0"
             },
             {
               "name": "status",
               "type": "select",
-              "label": "Status",
+              "label": "Action Status",
               "required": true,
               "options": [
                 {
-                  "value": "ACTIVE",
-                  "label": "Active"
+                  "value": "PENDING",
+                  "label": "PENDING"
                 },
                 {
-                  "value": "CLOSED",
-                  "label": "Closed"
+                  "value": "ACTIVE",
+                  "label": "ACTIVE"
+                },
+                {
+                  "value": "EXECUTED",
+                  "label": "EXECUTED"
+                },
+                {
+                  "value": "CANCELLED",
+                  "label": "CANCELLED"
                 }
               ]
             },
             {
-              "name": "startActionId",
+              "name": "startAtInfo",
               "type": "text",
-              "label": "Start Action ID",
-              "required": false
-            },
-            {
-              "name": "startActionIdIncluded",
-              "type": "checkbox",
-              "label": "Include Start Action",
-              "required": false
+              "label": "Start At Action Info"
             },
             {
               "name": "count",
               "type": "number",
-              "label": "Count",
-              "required": false
+              "label": "Count"
             }
           ]
         },
         "getGroupActionSigners": {
           "label": "Get Group Action Signers",
-          "description": "Get signers for a group action",
+          "description": "List signers for a specific group action.",
           "inputs": [
             {
               "name": "contractId",
               "type": "text",
-              "label": "Contract ID",
-              "required": true
+              "label": "Group Contract ID",
+              "required": true,
+              "placeholder": "49PJEnNx7ReCitzkLdkDNr4s6RScGsnNexcdSZJ1ph5N"
             },
             {
               "name": "groupContractPosition",
               "type": "number",
-              "label": "Group Contract Position",
-              "required": true
+              "label": "Group Position",
+              "required": true,
+              "placeholder": "0"
             },
             {
               "name": "status",
               "type": "select",
-              "label": "Status",
+              "label": "Action Status",
               "required": true,
               "options": [
                 {
-                  "value": "ACTIVE",
-                  "label": "Active"
+                  "value": "PENDING",
+                  "label": "PENDING"
                 },
                 {
-                  "value": "CLOSED",
-                  "label": "Closed"
+                  "value": "ACTIVE",
+                  "label": "ACTIVE"
+                },
+                {
+                  "value": "EXECUTED",
+                  "label": "EXECUTED"
+                },
+                {
+                  "value": "CANCELLED",
+                  "label": "CANCELLED"
                 }
               ]
             },
@@ -1096,6 +1247,47 @@
               "required": true
             }
           ]
+        },
+        "getIdentityGroups": {
+          "label": "Get Identity Groups",
+          "description": "Fetch group memberships for an identity.",
+          "inputs": [
+            {
+              "name": "identityId",
+              "type": "text",
+              "label": "Identity ID",
+              "required": true,
+              "placeholder": "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk"
+            },
+            {
+              "name": "memberDataContracts",
+              "type": "array",
+              "label": "Member Data Contracts"
+            },
+            {
+              "name": "ownerDataContracts",
+              "type": "array",
+              "label": "Owner Data Contracts"
+            },
+            {
+              "name": "moderatorDataContracts",
+              "type": "array",
+              "label": "Moderator Data Contracts"
+            }
+          ]
+        },
+        "getGroupsDataContracts": {
+          "label": "Get Groups Data Contracts",
+          "description": "Fetch group configuration documents for the supplied data contracts.",
+          "inputs": [
+            {
+              "name": "dataContractIds",
+              "type": "array",
+              "label": "Data Contract IDs",
+              "required": true,
+              "placeholder": "[\"GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec\"]"
+            }
+          ]
         }
       }
     },
@@ -1103,20 +1295,18 @@
       "label": "System & Utility",
       "queries": {
         "getStatus": {
-          "label": "Get Status",
-          "description": "Get system status",
-          "supportsProof": false,
+          "label": "Get Platform Status",
+          "description": "Retrieve basic platform status information.",
           "inputs": []
         },
         "getCurrentQuorumsInfo": {
           "label": "Get Current Quorums Info",
-          "description": "Get information about current quorums",
-          "supportsProof": false,
+          "description": "Fetch details about currently active quorums.",
           "inputs": []
         },
         "getPrefundedSpecializedBalance": {
           "label": "Get Prefunded Specialized Balance",
-          "description": "Get prefunded specialized balance",
+          "description": "Retrieve a prefunded specialized balance entry.",
           "inputs": [
             {
               "name": "identityId",
@@ -1129,37 +1319,39 @@
         },
         "getTotalCreditsInPlatform": {
           "label": "Get Total Credits in Platform",
-          "description": "Get total credits in the platform",
+          "description": "Fetch the total credit balance stored in the platform.",
           "inputs": []
         },
         "getPathElements": {
           "label": "Get Path Elements",
-          "description": "Access any data in the Dash Platform state tree. This low-level query allows direct access to GroveDB storage by specifying a path through the tree structure and keys to retrieve at that path. Common paths include: Identities (32), Tokens (96), DataContractDocuments (64), Balances (16), Votes (80), and more.",
+          "description": "Access items in the GroveDB state tree by specifying a path and keys.",
           "inputs": [
             {
               "name": "path",
               "type": "array",
-              "label": "Path",
-              "required": true
+              "label": "Path Segments",
+              "required": true,
+              "placeholder": "[\"32\"]"
             },
             {
               "name": "keys",
               "type": "array",
               "label": "Keys",
-              "required": true
+              "required": true,
+              "placeholder": "[\"5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk\"]"
             }
           ]
         },
         "waitForStateTransitionResult": {
           "label": "Wait for State Transition Result",
-          "description": "Internal query to wait for and retrieve the result of a previously submitted state transition",
-          "supportsProof": false,
+          "description": "Wait for a state transition to be processed and return the result.",
           "inputs": [
             {
               "name": "stateTransitionHash",
               "type": "text",
               "label": "State Transition Hash",
-              "required": true
+              "required": true,
+              "placeholder": "0000000000000000000000000000000000000000000000000000000000000000"
             }
           ]
         }
