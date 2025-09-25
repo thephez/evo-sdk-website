@@ -328,7 +328,7 @@ class EvoSdkPage extends BaseTest {
         try {
           await proofContainer.waitFor({ state: 'visible', timeout: 3000 });
         } catch {
-          console.log('⚠️ Proof toggle container exists but remains hidden - may not be available for this query type');
+          // console.log('⚠️ Proof toggle container exists but remains hidden - may not be available for this query type');
           return false;
         }
       }

@@ -79,13 +79,11 @@ jobs:
       - name: Run smoke tests
         if: github.event_name != 'workflow_dispatch' || inputs.test_type == 'smoke' || inputs.test_type == 'all'
         run: |
-          echo "🧪 Running smoke tests..."
           yarn test:smoke
 
       - name: Run query execution tests
         if: github.event_name != 'workflow_dispatch' || inputs.test_type == 'queries' || inputs.test_type == 'all'
         run: |
-          echo "🔍 Running query execution tests..."
           yarn test:queries
 
       - name: Upload Playwright Report

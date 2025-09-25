@@ -23,7 +23,7 @@ class ParameterInjector {
       }
 
       const parameters = allParameters[parameterSetIndex] || allParameters[0];
-      console.log(`📝 Injecting parameters for ${category}.${queryType}`);
+      // console.log(`📝 Injecting parameters for ${category}.${queryType}`);
 
       await this.page.fillQueryParameters(parameters);
       return true;
