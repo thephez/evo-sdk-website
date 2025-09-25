@@ -91,7 +91,7 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'python3 -m http.server 8081',
+    command: process.env.DEBUG ? 'python3 -m http.server 8081' : 'python3 -m http.server 8081 2>/dev/null',
     url: 'http://localhost:8081',
     cwd: 'public',
     reuseExistingServer: !process.env.CI,
