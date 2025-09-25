@@ -24,7 +24,7 @@ class BaseTest {
     // Verify we're on the right page
     await expect(this.page).toHaveTitle(/Dash Platform Evo JS SDK/);
     
-    console.log('SDK initialized successfully');
+    // console.log('SDK initialized successfully');
   }
 
   /**
@@ -164,7 +164,7 @@ class BaseTest {
     // Network changes might trigger SDK re-initialization, so wait a bit
     await this.page.waitForTimeout(1000);
     
-    console.log(`Network set to ${network}`);
+    // console.log(`Network set to ${network}`);
   }
 
   /**
@@ -172,7 +172,7 @@ class BaseTest {
    */
   async setOperationType(type = 'queries') {
     await this.selectOption('#operationType', type);
-    console.log(`Operation type set to ${type}`);
+    // console.log(`Operation type set to ${type}`);
   }
 
   /**
@@ -184,7 +184,7 @@ class BaseTest {
     // Wait for query type dropdown to populate
     await this.page.waitForTimeout(500);
     
-    console.log(`Query category set to ${category}`);
+    // console.log(`Query category set to ${category}`);
   }
 
   /**
@@ -198,7 +198,7 @@ class BaseTest {
     // Wait for inputs to appear
     await this.page.waitForTimeout(500);
     
-    console.log(`Query type set to ${queryType}`);
+    // console.log(`Query type set to ${queryType}`);
   }
 
   /**
@@ -230,7 +230,7 @@ class BaseTest {
       const currentStatus = await statusBanner.getAttribute('class');
       if (currentStatus && (currentStatus.includes('success') || currentStatus.includes('error'))) {
         // Query completed without showing loading state - this is okay for fast queries
-        console.log('Query executed');
+        // console.log('Query executed');
         return currentStatus.includes('success');
       }
       
@@ -238,7 +238,7 @@ class BaseTest {
       throw error;
     }
     
-    console.log('Query executed');
+    // console.log('Query executed');
     
     // Return whether it was successful
     const statusClass = await statusBanner.getAttribute('class');

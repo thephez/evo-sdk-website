@@ -348,14 +348,14 @@ class EvoSdkPage extends BaseTest {
         // Wait for the toggle to reach the expected state
         if (enable) {
           await expect(proofToggle).toBeChecked();
-          console.log('Proof toggle confirmed as checked');
+          // console.log('Proof toggle confirmed as checked');
         } else {
           await expect(proofToggle).not.toBeChecked();
-          console.log('Proof toggle confirmed as unchecked');
+          // console.log('Proof toggle confirmed as unchecked');
         }
       }
       
-      console.log(`Proof info ${enable ? 'enabled' : 'disabled'}`);
+      // console.log(`Proof info ${enable ? 'enabled' : 'disabled'}`);
       return true;
     } catch (error) {
       console.log(`⚠️ Proof toggle not available for this query type: ${error.message}`);
@@ -410,7 +410,7 @@ class EvoSdkPage extends BaseTest {
       if (assetLockProof) {
         await this.fillInput(this.selectors.assetLockProof, assetLockProof);
       }
-      console.log('Authentication filled');
+      // console.log('Authentication filled');
     }
   }
 
@@ -763,7 +763,7 @@ class EvoSdkPage extends BaseTest {
       if (identityId) {
         await this.fillIdentityId(identityId);
       }
-      console.log('State transition authentication filled');
+      // console.log('State transition authentication filled');
     }
   }
 }

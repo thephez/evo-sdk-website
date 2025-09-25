@@ -159,7 +159,7 @@ class ParameterInjector {
       }
     }
 
-    console.log(`Successfully filled fields: ${filledFields.join(', ')}`);
+    // console.log(`Successfully filled fields: ${filledFields.join(', ')}`);
     if (failedFields.length > 0) {
       console.warn(`⚠️  Failed to fill fields: ${failedFields.join(', ')}`);
     }
@@ -193,7 +193,7 @@ class ParameterInjector {
           
           if (isVisible) {
             await this.page.fillInputByType(element, value);
-            console.log(`📝 Filled ${paramName} using selector: ${selector}`);
+            // console.log(`📝 Filled ${paramName} using selector: ${selector}`);
             return true;
           }
         }

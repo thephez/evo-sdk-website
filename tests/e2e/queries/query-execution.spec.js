@@ -21,7 +21,6 @@ async function executeQueryWithProof(evoSdkPage, parameterInjector, category, qu
   if (proofEnabled) {
     const proofToggle = evoSdkPage.page.locator('#proofToggle');
     await expect(proofToggle).toBeChecked();
-    console.log('Proof toggle confirmed as checked');
   }
   
   const success = await parameterInjector.injectParameters(category, queryName, network);
@@ -336,8 +335,6 @@ test.describe('Evo SDK Query Execution Tests', () => {
       validateBasicQueryResult(result);
       validateResultWithoutProof(result);
       validateContractResult(result.result);
-      
-      console.log('✅ getDataContract without proof confirmed');
     });
 
     test('should execute getDataContracts query for multiple contracts', async () => {
@@ -364,8 +361,6 @@ test.describe('Evo SDK Query Execution Tests', () => {
       Object.values(contractsData.dataContracts).forEach(contract => {
         validateContractResult(JSON.stringify(contract));
       });
-      
-      console.log('✅ getDataContracts without proof confirmed');
     });
 
     test('should execute getDataContractHistory query', async () => {
@@ -386,8 +381,6 @@ test.describe('Evo SDK Query Execution Tests', () => {
       const historyData = JSON.parse(result.result);
       expect(historyData).toBeDefined();
       expect(Array.isArray(historyData) || typeof historyData === 'object').toBe(true);
-      
-      console.log('✅ getDataContractHistory without proof confirmed');
     });
 
     test('should execute getDataContract query with proof info', async () => {
@@ -408,11 +401,9 @@ test.describe('Evo SDK Query Execution Tests', () => {
         // Extract data field for validation when in proof mode
         const resultData = JSON.parse(result.result);
         validateContractResult(JSON.stringify(resultData.data));
-        console.log('✅ getDataContract with proof confirmed');
       } else {
         validateResultWithoutProof(result);
         validateContractResult(result.result);
-        console.log('⚠️ Proof was not enabled for getDataContract query');
       }
     });
 
@@ -442,7 +433,6 @@ test.describe('Evo SDK Query Execution Tests', () => {
         Object.values(contractsData.dataContracts).forEach(contract => {
           validateContractResult(JSON.stringify(contract));
         });
-        console.log('✅ getDataContracts with proof confirmed');
       } else {
         validateResultWithoutProof(result);
         // Multiple contracts result should be valid JSON
@@ -456,7 +446,6 @@ test.describe('Evo SDK Query Execution Tests', () => {
         Object.values(contractsData.dataContracts).forEach(contract => {
           validateContractResult(JSON.stringify(contract));
         });
-        console.log('⚠️ Proof was not enabled for getDataContracts query');
       }
     });
 
@@ -480,7 +469,6 @@ test.describe('Evo SDK Query Execution Tests', () => {
         const historyData = resultData.data;
         expect(historyData).toBeDefined();
         expect(Array.isArray(historyData) || typeof historyData === 'object').toBe(true);
-        console.log('✅ getDataContractHistory with proof confirmed');
       } else {
         validateResultWithoutProof(result);
         // Contract history should be valid JSON
@@ -488,7 +476,6 @@ test.describe('Evo SDK Query Execution Tests', () => {
         const historyData = JSON.parse(result.result);
         expect(historyData).toBeDefined();
         expect(Array.isArray(historyData) || typeof historyData === 'object').toBe(true);
-        console.log('⚠️ Proof was not enabled for getDataContractHistory query');
       }
     });
   });
@@ -507,8 +494,6 @@ test.describe('Evo SDK Query Execution Tests', () => {
       validateBasicQueryResult(result);
       validateResultWithoutProof(result);
       validateDocumentResult(result.result);
-      
-      console.log('✅ getDocuments without proof confirmed');
     });
 
     test('should execute getDocument query for specific document', async () => {
@@ -524,8 +509,6 @@ test.describe('Evo SDK Query Execution Tests', () => {
       validateBasicQueryResult(result);
       validateResultWithoutProof(result);
       validateDocumentResult(result.result);
-      
-      console.log('✅ getDocument without proof confirmed');
     });
 
     test('should execute getDocuments query with proof info', async () => {
@@ -546,11 +529,9 @@ test.describe('Evo SDK Query Execution Tests', () => {
         // Extract data field for validation when in proof mode
         const resultData = JSON.parse(result.result);
         validateDocumentResult(JSON.stringify(resultData.data));
-        console.log('✅ getDocuments with proof confirmed');
       } else {
         validateResultWithoutProof(result);
         validateDocumentResult(result.result);
-        console.log('⚠️ Proof was not enabled for getDocuments query');
       }
     });
 
@@ -572,11 +553,9 @@ test.describe('Evo SDK Query Execution Tests', () => {
         // Extract data field for validation when in proof mode
         const resultData = JSON.parse(result.result);
         validateDocumentResult(JSON.stringify(resultData.data));
-        console.log('✅ getDocument with proof confirmed');
       } else {
         validateResultWithoutProof(result);
         validateDocumentResult(result.result);
-        console.log('⚠️ Proof was not enabled for getDocument query');
       }
     });
   });
@@ -644,8 +623,6 @@ test.describe('Evo SDK Query Execution Tests', () => {
           validateBasicQueryResult(result);
           validateResultWithoutProof(result);
           validateFn(result.result);
-          
-          console.log(`✅ ${name} without proof confirmed`);
         });
 
         if (hasProofSupport) {
@@ -665,10 +642,8 @@ test.describe('Evo SDK Query Execution Tests', () => {
               // Extract data field for validation when in proof mode
               const resultData = JSON.parse(result.result);
               validateFn(JSON.stringify(resultData.data));
-              console.log(`✅ ${name} with proof confirmed`);
             } else {
               validateResultWithoutProof(result);
-              console.log(`⚠️ Proof was not enabled for ${name} query`);
               validateFn(result.result);
             }
           });
@@ -753,8 +728,6 @@ test.describe('Evo SDK Query Execution Tests', () => {
           validateBasicQueryResult(result);
           validateResultWithoutProof(result);
           validateFn(result.result);
-          
-          console.log(`✅ ${name} without proof confirmed`);
         });
 
         if (hasProofSupport) {
@@ -774,10 +747,8 @@ test.describe('Evo SDK Query Execution Tests', () => {
               // Extract data field for validation when in proof mode
               const resultData = JSON.parse(result.result);
               validateFn(JSON.stringify(resultData.data));
-              console.log(`✅ ${name} with proof confirmed`);
             } else {
               validateResultWithoutProof(result);
-              console.log(`⚠️ Proof was not enabled for ${name} query`);
               validateFn(result.result);
             }
           });
@@ -873,8 +844,6 @@ test.describe('Evo SDK Query Execution Tests', () => {
           validateBasicQueryResult(result);
           validateResultWithoutProof(result);
           validateFn(result.result);
-          
-          console.log(`✅ ${name} without proof confirmed`);
         });
 
         if (hasProofSupport) {
@@ -894,10 +863,8 @@ test.describe('Evo SDK Query Execution Tests', () => {
               // Extract data field for validation when in proof mode
               const resultData = JSON.parse(result.result);
               validateFn(JSON.stringify(resultData.data));
-              console.log(`✅ ${name} with proof confirmed`);
             } else {
               validateResultWithoutProof(result);
-              console.log(`⚠️ Proof was not enabled for ${name} query`);
               validateFn(result.result);
             }
           });
@@ -984,8 +951,6 @@ test.describe('Evo SDK Query Execution Tests', () => {
           validateBasicQueryResult(result);
           validateResultWithoutProof(result);
           validateFn(result.result);
-          
-          console.log(`✅ ${name} without proof confirmed`);
         });
 
         if (hasProofSupport) {
@@ -1005,10 +970,8 @@ test.describe('Evo SDK Query Execution Tests', () => {
               // Extract data field for validation when in proof mode
               const resultData = JSON.parse(result.result);
               validateFn(JSON.stringify(resultData.data));
-              console.log(`✅ ${name} with proof confirmed`);
             } else {
               validateResultWithoutProof(result);
-              console.log(`⚠️ Proof was not enabled for ${name} query`);
               validateFn(result.result);
             }
           });
@@ -1084,8 +1047,6 @@ test.describe('Evo SDK Query Execution Tests', () => {
           validateBasicQueryResult(result);
           validateResultWithoutProof(result);
           validateFn(result.result);
-          
-          console.log(`✅ ${name} without proof confirmed`);
         });
 
         if (hasProofSupport) {
@@ -1105,10 +1066,8 @@ test.describe('Evo SDK Query Execution Tests', () => {
               // Extract data field for validation when in proof mode
               const resultData = JSON.parse(result.result);
               validateFn(JSON.stringify(resultData.data));
-              console.log(`✅ ${name} with proof confirmed`);
             } else {
               validateResultWithoutProof(result);
-              console.log(`⚠️ Proof was not enabled for ${name} query`);
               validateFn(result.result);
             }
           });
@@ -1143,8 +1102,6 @@ test.describe('Evo SDK Query Execution Tests', () => {
       // Should show error
       expect(statusClass).toContain('error');
       expect(statusText).toBeTruthy();
-      
-      console.log('Error handling result:', statusText);
     });
 
     test('should handle empty required fields', async () => {
@@ -1165,8 +1122,6 @@ test.describe('Evo SDK Query Execution Tests', () => {
       // Should show error or validation message
       expect(statusClass).toContain('error');
       expect(statusText).toContain('required');
-      
-      console.log('Empty fields handling:', statusText);
     });
   });
 
@@ -1234,8 +1189,6 @@ test.describe('Evo SDK Query Execution Tests', () => {
           validateBasicQueryResult(result);
           validateResultWithoutProof(result);
           validateFn(result.result);
-          
-          console.log(`✅ ${name} without proof confirmed`);
         });
 
         if (hasProofSupport) {
@@ -1255,10 +1208,8 @@ test.describe('Evo SDK Query Execution Tests', () => {
               // Extract data field for validation when in proof mode
               const resultData = JSON.parse(result.result);
               validateFn(JSON.stringify(resultData.data));
-              console.log(`✅ ${name} with proof confirmed`);
             } else {
               validateResultWithoutProof(result);
-              console.log(`⚠️ Proof was not enabled for ${name} query`);
               validateFn(result.result);
             }
           });
@@ -1397,8 +1348,6 @@ test.describe('Evo SDK Query Execution Tests', () => {
           validateBasicDpnsQueryResult(result);
           validateResultWithoutProof(result);
           validateFn(result.result);
-          
-          console.log(`✅ ${name} without proof confirmed`);
         });
 
         if (hasProofSupport) {
@@ -1418,10 +1367,8 @@ test.describe('Evo SDK Query Execution Tests', () => {
               // Extract data field for validation when in proof mode
               const resultData = JSON.parse(result.result);
               validateFn(JSON.stringify(resultData.data));
-              console.log(`✅ ${name} with proof confirmed`);
             } else {
               validateResultWithoutProof(result);
-              console.log(`⚠️ Proof was not enabled for ${name} query`);
               validateFn(result.result);
             }
           });
@@ -1468,8 +1415,6 @@ test.describe('Evo SDK Query Execution Tests', () => {
           expect(result.result.length).toBeGreaterThan(0);
           validateResultWithoutProof(result);
           validateFn(result.result);
-          
-          console.log(`✅ ${name} without proof - PASSED`);
         });
 
         if (hasProofSupport) {
@@ -1490,10 +1435,8 @@ test.describe('Evo SDK Query Execution Tests', () => {
               // Extract data field for validation when in proof mode
               const resultData = JSON.parse(result.result);
               validateFn(JSON.stringify(resultData.data));
-              console.log(`✅ ${name} with proof - PASSED`);
             } else {
               validateResultWithoutProof(result);
-              console.log(`⚠️ Proof was not enabled for ${name} query`);
               validateFn(result.result);
             }
           });
