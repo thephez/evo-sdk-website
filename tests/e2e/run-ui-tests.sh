@@ -12,9 +12,10 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configuration
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EVO_SDK_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
-UI_TEST_DIR="$SCRIPT_DIR"
+# Use root directory for unified testing approach
+UI_TEST_DIR="$EVO_SDK_DIR"
 
 # Debug mode flag
 DEBUG=${DEBUG:-false}
@@ -53,12 +54,12 @@ validate_paths() {
     fi
     
     if [ ! -f "$UI_TEST_DIR/package.json" ]; then
-        print_error "package.json not found in UI test directory: $UI_TEST_DIR"
+        print_error "package.json not found in root directory: $UI_TEST_DIR"
         exit 1
     fi
-    
-    if [ ! -f "$UI_TEST_DIR/playwright.config.js" ]; then
-        print_error "playwright.config.js not found in UI test directory: $UI_TEST_DIR"
+
+    if [ ! -f "$UI_TEST_DIR/playwright.config.ts" ]; then
+        print_error "playwright.config.ts not found in root directory: $UI_TEST_DIR"
         exit 1
     fi
     
@@ -119,39 +120,39 @@ check_prerequisites() {
 # Function to install dependencies
 install_dependencies() {
     print_status "Installing test dependencies..."
-    
+
     cd "$UI_TEST_DIR" || {
-        print_error "Failed to change to UI test directory: $UI_TEST_DIR"
+        print_error "Failed to change to root directory: $UI_TEST_DIR"
         exit 1
     }
     print_debug "Changed to directory: $(pwd)"
-    
+
     if [ ! -d "node_modules" ]; then
-        print_status "Installing npm dependencies..."
-        if ! npm install; then
-            print_error "Failed to install npm dependencies"
+        print_status "Installing dependencies with yarn..."
+        if ! yarn install; then
+            print_error "Failed to install dependencies"
             exit 1
         fi
     fi
-    
+
     # Check if browsers are installed
-    if ! npx playwright --version &> /dev/null; then
-        print_error "Playwright not found. Installing..."
-        if ! npm install; then
+    if ! yarn playwright --version &> /dev/null; then
+        print_error "Playwright not found. Installing dependencies..."
+        if ! yarn install; then
             print_error "Failed to install Playwright"
             exit 1
         fi
     fi
-    
+
     # Install browsers if needed
     if ! find "$HOME/.cache/ms-playwright" -maxdepth 1 -name "chromium-*" -type d -print -quit 2>/dev/null | grep -q .; then
         print_status "Installing Playwright browsers..."
-        if ! npx playwright install chromium; then
+        if ! yarn install-browsers; then
             print_error "Failed to install Playwright browsers"
             exit 1
         fi
     fi
-    
+
     print_status "Dependencies installed ✓"
 }
 
@@ -182,36 +183,36 @@ run_tests() {
     case "${1:-all}" in
         "smoke")
             print_status "Running smoke tests..."
-            npm run test:smoke
+            yarn test:smoke
             ;;
         "queries")
             print_status "Running query execution tests..."
-            npm run test:queries
+            yarn test:queries
             ;;
-        "parameterized")
-            print_status "Running parameterized tests..."
-            npm run test:parameterized
+        "transitions")
+            print_status "Running state transition tests..."
+            yarn test:transitions
             ;;
         "headed")
             print_status "Running tests in headed mode..."
-            npm run test:headed
+            yarn test:headed
             ;;
         "debug")
             print_status "Running tests in debug mode..."
-            npm run test:debug
+            yarn test:debug
             ;;
         "ui")
             print_status "Running tests in UI mode..."
-            npm run test:ui
+            yarn test:ui
             ;;
         "all")
             print_status "Running all tests..."
-            npm run test:all
+            yarn test:all
             ;;
         *)
             # Pass through any other arguments to playwright
             print_status "Running custom playwright command: $*"
-            npx playwright test "$@"
+            yarn playwright test "$@"
             ;;
     esac
 }
@@ -222,9 +223,9 @@ show_results() {
     
     if [ -d "$UI_TEST_DIR/playwright-report" ]; then
         print_status "HTML report available at: $UI_TEST_DIR/playwright-report/index.html"
-        print_status "To view report: npm run test:report"
+        print_status "To view report: yarn test:report"
     fi
-    
+
     if [ -f "$UI_TEST_DIR/test-results.json" ]; then
         print_status "JSON results available at: $UI_TEST_DIR/test-results.json"
     fi
@@ -235,9 +236,9 @@ print_usage() {
     echo "Usage: $0 [test_type]"
     echo ""
     echo "Test types:"
-    echo "  smoke          - Run basic smoke tests"
+    echo "  smoke          - Run basic smoke tests (site + smoke tests)"
     echo "  queries        - Run query execution tests"
-    echo "  parameterized  - Run parameterized tests"
+    echo "  transitions    - Run state transition tests"
     echo "  headed         - Run tests in headed mode (visible browser)"
     echo "  debug          - Run tests in debug mode"
     echo "  ui             - Run tests in UI mode (interactive)"
