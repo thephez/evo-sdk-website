@@ -13,6 +13,22 @@ function filterPlaceholderOptions(options) {
   );
 }
 
+// Reusable comparator with clear diagnostics
+function ensureExactOptions(actual, expected, label) {
+  const missing = expected.filter(x => !actual.includes(x));
+  const unexpected = actual.filter(x => !expected.includes(x));
+  const duplicates = actual.filter((x, i, a) => a.indexOf(x) !== i);
+
+  // Show explicit diffs when failing
+  expect(missing, `${label} → Missing: ${JSON.stringify(missing)}`).toEqual([]);
+  expect(unexpected, `${label} → Unexpected: ${JSON.stringify(unexpected)}`).toEqual([]);
+
+  // Guard against dupes and count drift
+  expect(new Set(actual).size, `${label} → Duplicates: ${JSON.stringify(duplicates)}`).toBe(expected.length);
+  expect(actual.length, `${label} → Wrong count (actual ${actual.length} vs expected ${expected.length})`)
+    .toBe(expected.length);
+}
+
 test.describe('JS Evo SDK Basic Smoke Tests', () => {
   let wasmSdkPage;
 
@@ -342,5 +358,278 @@ test.describe('State Transitions UI Tests', () => {
     expect(transitionTypes.length).toBe(expected.length);
 
     console.log('✅ Voting transition types populated correctly:', transitionTypes);
+  });
+});
+
+test.describe('Query Categories and Types UI Tests', () => {
+  let wasmSdkPage;
+
+  test.beforeEach(async ({ page }) => {
+    wasmSdkPage = new WasmSdkPage(page);
+    await wasmSdkPage.initialize('testnet');
+  });
+
+  test('should populate all query categories correctly', async () => {
+    await wasmSdkPage.setOperationType('queries');
+
+    const categories = filterPlaceholderOptions(
+      await wasmSdkPage.getAvailableQueryCategories()
+    );
+
+    const expected = [
+      'Identity Queries',
+      'Data Contract Queries',
+      'Document Queries',
+      'DPNS Queries',
+      'Voting & Contested Resources',
+      'Protocol & Version',
+      'Epoch & Block Queries',
+      'Token Queries',
+      'Group Queries',
+      'System & Utility'
+    ];
+
+    ensureExactOptions(categories, expected, 'Query categories');
+
+    console.log('✅ Query categories populated correctly:', categories);
+  });
+
+  test('should populate identity query types correctly', async () => {
+    await wasmSdkPage.setOperationType('queries');
+    await wasmSdkPage.setQueryCategory('identity');
+
+    const queryTypes = filterPlaceholderOptions(
+      await wasmSdkPage.getAvailableQueryTypes()
+    );
+
+    const expected = [
+      'Get Identity',
+      'Get Identity (Unproved)',
+      'Get Identity Keys',
+      'Get Contract Keys for Identities',
+      'Get Identity Nonce',
+      'Get Identity Contract Nonce',
+      'Get Identity Balance',
+      'Get Multiple Identity Balances',
+      'Get Identity Balance & Revision',
+      'Get Identity by Unique Public Key Hash',
+      'Get Identity by Non-Unique Public Key Hash',
+      'Get Identity Token Balances',
+      'Get Token Balances for Identities',
+      'Get Identity Token Info',
+      'Get Token Info for Identities'
+    ];
+
+    ensureExactOptions(queryTypes, expected, 'Identity query types');
+
+    console.log('✅ Identity query types populated correctly:', queryTypes);
+  });
+
+  test('should populate data contract query types correctly', async () => {
+    await wasmSdkPage.setOperationType('queries');
+    await wasmSdkPage.setQueryCategory('dataContract');
+
+    const queryTypes = filterPlaceholderOptions(
+      await wasmSdkPage.getAvailableQueryTypes()
+    );
+
+    const expected = [
+      'Get Data Contract',
+      'Get Data Contracts',
+      'Get Data Contract History'
+    ];
+
+    ensureExactOptions(queryTypes, expected, 'Data Contract query types');
+
+    console.log('✅ Data contract query types populated correctly:', queryTypes);
+  });
+
+  test('should populate document query types correctly', async () => {
+    await wasmSdkPage.setOperationType('queries');
+    await wasmSdkPage.setQueryCategory('document');
+
+    const queryTypes = filterPlaceholderOptions(
+      await wasmSdkPage.getAvailableQueryTypes()
+    );
+
+    const expected = [
+      'Get Documents',
+      'Get Document'
+    ];
+
+    ensureExactOptions(queryTypes, expected, 'Document query types');
+
+    console.log('✅ Document query types populated correctly:', queryTypes);
+  });
+
+  test('should populate DPNS query types correctly', async () => {
+    await wasmSdkPage.setOperationType('queries');
+    await wasmSdkPage.setQueryCategory('dpns');
+
+    const queryTypes = filterPlaceholderOptions(
+      await wasmSdkPage.getAvailableQueryTypes()
+    );
+
+    const expected = [
+      'Get Primary Username',
+      'List Usernames for Identity',
+      'Get Username by Name',
+      'Resolve DPNS Name',
+      'Check DPNS Availability',
+      'Convert to Homograph Safe',
+      'Validate Username',
+      'Is Contested Username'
+    ];
+
+    ensureExactOptions(queryTypes, expected, 'DPNS query types');
+
+    console.log('✅ DPNS query types populated correctly:', queryTypes);
+  });
+
+  test('should populate system query types correctly', async () => {
+    await wasmSdkPage.setOperationType('queries');
+    await wasmSdkPage.setQueryCategory('system');
+
+    const queryTypes = filterPlaceholderOptions(
+      await wasmSdkPage.getAvailableQueryTypes()
+    );
+
+    const expected = [
+      'Get Platform Status',
+      'Get Current Quorums Info',
+      'Get Prefunded Specialized Balance',
+      'Get Total Credits in Platform',
+      'Get Path Elements',
+      'Wait for State Transition Result'
+    ];
+
+    ensureExactOptions(queryTypes, expected, 'System query types');
+
+    console.log('✅ System query types populated correctly:', queryTypes);
+  });
+
+  test('should populate protocol query types correctly', async () => {
+    await wasmSdkPage.setOperationType('queries');
+    await wasmSdkPage.setQueryCategory('protocol');
+
+    const queryTypes = filterPlaceholderOptions(
+      await wasmSdkPage.getAvailableQueryTypes()
+    );
+
+    const expected = [
+      'Get Protocol Version Upgrade State',
+      'Get Protocol Version Vote Status'
+    ];
+
+    ensureExactOptions(queryTypes, expected, 'Protocol query types');
+
+    console.log('✅ Protocol query types populated correctly:', queryTypes);
+  });
+
+  test('should populate epoch query types correctly', async () => {
+    await wasmSdkPage.setOperationType('queries');
+    await wasmSdkPage.setQueryCategory('epoch');
+
+    const queryTypes = filterPlaceholderOptions(
+      await wasmSdkPage.getAvailableQueryTypes()
+    );
+
+    const expected = [
+      'Get Epochs Info',
+      'Get Current Epoch',
+      'Get Finalized Epoch Infos',
+      'Get Epoch Blocks by Evonode IDs',
+      'Get Epoch Blocks by Range'
+    ];
+
+    const missing = expected.filter(type => !queryTypes.includes(type));
+    const unexpected = queryTypes.filter(type => !expected.includes(type));
+
+    expect(missing, `Missing: ${missing.join(', ')}`).toEqual([]);
+    expect(unexpected, `Unexpected: ${unexpected.join(', ')}`).toEqual([]);
+    expect(queryTypes.length, 'Wrong number of query types').toBe(expected.length);
+
+    console.log('✅ Epoch query types populated correctly:', queryTypes);
+  });
+
+  test('should populate token query types correctly', async () => {
+    await wasmSdkPage.setOperationType('queries');
+    await wasmSdkPage.setQueryCategory('token');
+
+    const queryTypes = filterPlaceholderOptions(
+      await wasmSdkPage.getAvailableQueryTypes()
+    );
+
+    const expected = [
+      'Get Token Statuses',
+      'Get Direct Purchase Prices',
+      'Get Token Contract Info',
+      'Get Token Distribution Last Claim',
+      'Get Token Total Supply',
+      'Get Token Price by Contract'
+    ];
+
+    const missing = expected.filter(type => !queryTypes.includes(type));
+    const unexpected = queryTypes.filter(type => !expected.includes(type));
+
+    expect(missing, `Missing: ${missing.join(', ')}`).toEqual([]);
+    expect(unexpected, `Unexpected: ${unexpected.join(', ')}`).toEqual([]);
+    expect(queryTypes.length, 'Wrong number of query types').toBe(expected.length);
+
+    console.log('✅ Token query types populated correctly:', queryTypes);
+  });
+
+  test('should populate group query types correctly', async () => {
+    await wasmSdkPage.setOperationType('queries');
+    await wasmSdkPage.setQueryCategory('group');
+
+    const queryTypes = filterPlaceholderOptions(
+      await wasmSdkPage.getAvailableQueryTypes()
+    );
+
+    const expected = [
+      'Get Group Info',
+      'List Group Infos',
+      'Get Group Members',
+      'Get Group Actions',
+      'Get Group Action Signers',
+      'Get Identity Groups',
+      'Get Groups Data Contracts'
+    ];
+
+    const missing = expected.filter(type => !queryTypes.includes(type));
+    const unexpected = queryTypes.filter(type => !expected.includes(type));
+
+    expect(missing, `Missing: ${missing.join(', ')}`).toEqual([]);
+    expect(unexpected, `Unexpected: ${unexpected.join(', ')}`).toEqual([]);
+    expect(queryTypes.length, 'Wrong number of query types').toBe(expected.length);
+
+    console.log('✅ Group query types populated correctly:', queryTypes);
+  });
+
+  test('should populate voting query types correctly', async () => {
+    await wasmSdkPage.setOperationType('queries');
+    await wasmSdkPage.setQueryCategory('voting');
+
+    const queryTypes = filterPlaceholderOptions(
+      await wasmSdkPage.getAvailableQueryTypes()
+    );
+
+    const expected = [
+      'Get Contested Resources',
+      'Get Contested Resource Vote State',
+      'Get Voters for Identity',
+      'Get Identity Votes',
+      'Get Vote Polls by End Date'
+    ];
+
+    const missing = expected.filter(type => !queryTypes.includes(type));
+    const unexpected = queryTypes.filter(type => !expected.includes(type));
+
+    expect(missing, `Missing: ${missing.join(', ')}`).toEqual([]);
+    expect(unexpected, `Unexpected: ${unexpected.join(', ')}`).toEqual([]);
+    expect(queryTypes.length, 'Wrong number of query types').toBe(expected.length);
+
+    console.log('✅ Voting query types populated correctly:', queryTypes);
   });
 });
