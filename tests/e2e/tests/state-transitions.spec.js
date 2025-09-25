@@ -1,23 +1,23 @@
 const { test, expect } = require('@playwright/test');
-const { WasmSdkPage } = require('../utils/wasm-sdk-page');
+const { EvoSdkPage } = require('../utils/sdk-page');
 const { ParameterInjector } = require('../utils/parameter-injector');
 
 /**
  * Helper function to execute a state transition
- * @param {WasmSdkPage} wasmSdkPage - The page object instance
+ * @param {EvoSdkPage} evoSdkPage - The page object instance
  * @param {ParameterInjector} parameterInjector - The parameter injector instance
  * @param {string} category - State transition category (e.g., 'identity', 'dataContract')
  * @param {string} transitionType - Transition type (e.g., 'identityCreate')
  * @param {string} network - Network to use ('testnet' or 'mainnet')
  * @returns {Promise<Object>} - The transition result object
  */
-async function executeStateTransition(wasmSdkPage, parameterInjector, category, transitionType, network = 'testnet') {
-  await wasmSdkPage.setupStateTransition(category, transitionType);
+async function executeStateTransition(evoSdkPage, parameterInjector, category, transitionType, network = 'testnet') {
+  await evoSdkPage.setupStateTransition(category, transitionType);
 
   const success = await parameterInjector.injectStateTransitionParameters(category, transitionType, network);
   expect(success).toBe(true);
 
-  const result = await wasmSdkPage.executeStateTransitionAndGetResult();
+  const result = await evoSdkPage.executeStateTransitionAndGetResult();
 
   return result;
 }
@@ -469,7 +469,7 @@ function validateDocumentPurchaseResult(resultStr, expectedDocumentId, expectedB
 
 /**
  * Execute a state transition with custom parameters
- * @param {WasmSdkPage} wasmSdkPage - The page object instance
+ * @param {EvoSdkPage} evoSdkPage - The page object instance
  * @param {ParameterInjector} parameterInjector - The parameter injector instance
  * @param {string} category - State transition category
  * @param {string} transitionType - Transition type
@@ -477,32 +477,32 @@ function validateDocumentPurchaseResult(resultStr, expectedDocumentId, expectedB
  * @param {Object} customParams - Custom parameters to override test data
  * @returns {Promise<Object>} - The transition result object
  */
-async function executeStateTransitionWithCustomParams(wasmSdkPage, parameterInjector, category, transitionType, network = 'testnet', customParams = {}) {
-  await wasmSdkPage.setupStateTransition(category, transitionType);
+async function executeStateTransitionWithCustomParams(evoSdkPage, parameterInjector, category, transitionType, network = 'testnet', customParams = {}) {
+  await evoSdkPage.setupStateTransition(category, transitionType);
 
   const success = await parameterInjector.injectStateTransitionParameters(category, transitionType, network, customParams);
   expect(success).toBe(true);
 
-  const result = await wasmSdkPage.executeStateTransitionAndGetResult();
+  const result = await evoSdkPage.executeStateTransitionAndGetResult();
 
   return result;
 }
 
-test.describe('WASM SDK State Transition Tests', () => {
-  let wasmSdkPage;
+test.describe('Evo SDK State Transition Tests', () => {
+  let evoSdkPage;
   let parameterInjector;
 
   test.beforeEach(async ({ page }) => {
-    wasmSdkPage = new WasmSdkPage(page);
-    parameterInjector = new ParameterInjector(wasmSdkPage);
-    await wasmSdkPage.initialize('testnet');
+    evoSdkPage = new EvoSdkPage(page);
+    parameterInjector = new ParameterInjector(evoSdkPage);
+    await evoSdkPage.initialize('testnet');
   });
 
   test.describe('Data Contract State Transitions', () => {
     test.skip('should execute data contract create transition', async () => {
       // Execute the data contract create transition
       const result = await executeStateTransition(
-        wasmSdkPage,
+        evoSdkPage,
         parameterInjector,
         'dataContract',
         'dataContractCreate',
@@ -521,7 +521,7 @@ test.describe('WASM SDK State Transition Tests', () => {
     test.skip('should execute data contract update transition', async () => {
       // Execute the data contract update transition
       const result = await executeStateTransition(
-        wasmSdkPage,
+        evoSdkPage,
         parameterInjector,
         'dataContract',
         'dataContractUpdate',
@@ -547,7 +547,7 @@ test.describe('WASM SDK State Transition Tests', () => {
       await test.step('Create data contract', async () => {
         console.log('Creating new data contract...');
         const createResult = await executeStateTransition(
-          wasmSdkPage,
+          evoSdkPage,
           parameterInjector,
           'dataContract',
           'dataContractCreate',
@@ -568,7 +568,7 @@ test.describe('WASM SDK State Transition Tests', () => {
       await test.step('Update data contract with author field', async () => {
         console.log('🔄 Updating data contract to add author field...');
         const updateResult = await executeStateTransitionWithCustomParams(
-          wasmSdkPage,
+          evoSdkPage,
           parameterInjector,
           'dataContract',
           'dataContractUpdate',
@@ -585,10 +585,10 @@ test.describe('WASM SDK State Transition Tests', () => {
     });
 
     test('should show authentication inputs for data contract transitions', async () => {
-      await wasmSdkPage.setupStateTransition('dataContract', 'dataContractCreate');
+      await evoSdkPage.setupStateTransition('dataContract', 'dataContractCreate');
 
       // Check that authentication inputs are visible
-      const hasAuthInputs = await wasmSdkPage.hasAuthenticationInputs();
+      const hasAuthInputs = await evoSdkPage.hasAuthenticationInputs();
       expect(hasAuthInputs).toBe(true);
 
       console.log('✅ Data contract state transition authentication inputs are visible');
@@ -598,7 +598,7 @@ test.describe('WASM SDK State Transition Tests', () => {
   test.describe('Document State Transitions', () => {
     test('should execute document create transition', async () => {
       // Set up the document create transition manually due to special schema handling
-      await wasmSdkPage.setupStateTransition('document', 'documentCreate');
+      await evoSdkPage.setupStateTransition('document', 'documentCreate');
 
       // Inject basic parameters (contractId, documentType, identityId, privateKey)
       const success = await parameterInjector.injectStateTransitionParameters('document', 'documentCreate', 'testnet');
@@ -606,7 +606,7 @@ test.describe('WASM SDK State Transition Tests', () => {
 
       // Step 1: Fetch document schema to generate dynamic fields
       await test.step('Fetch document schema', async () => {
-        await wasmSdkPage.fetchDocumentSchema();
+        await evoSdkPage.fetchDocumentSchema();
         console.log('✅ Document schema fetched and fields generated');
       });
 
@@ -614,13 +614,13 @@ test.describe('WASM SDK State Transition Tests', () => {
       await test.step('Fill document fields', async () => {
         // Get document fields from test data
         const testParams = parameterInjector.testData.stateTransitionParameters.document.documentCreate.testnet[0];
-        await wasmSdkPage.fillDocumentFields(testParams.documentFields);
+        await evoSdkPage.fillDocumentFields(testParams.documentFields);
         console.log('✅ Document fields filled');
       });
 
       // Step 3: Execute the transition
       await test.step('Execute document create', async () => {
-        const result = await wasmSdkPage.executeStateTransitionAndGetResult();
+        const result = await evoSdkPage.executeStateTransitionAndGetResult();
 
         // Validate basic result structure
         validateBasicStateTransitionResult(result);
@@ -634,14 +634,14 @@ test.describe('WASM SDK State Transition Tests', () => {
 
     test('should execute document replace transition', async () => {
       // Set up the document replace transition
-      await wasmSdkPage.setupStateTransition('document', 'documentReplace');
+      await evoSdkPage.setupStateTransition('document', 'documentReplace');
 
       // Inject basic parameters (contractId, documentType, documentId, identityId, privateKey)
       const success = await parameterInjector.injectStateTransitionParameters('document', 'documentReplace', 'testnet');
       expect(success).toBe(true);
 
       // Load the existing document to get revision and populate fields
-      await wasmSdkPage.loadExistingDocument();
+      await evoSdkPage.loadExistingDocument();
 
       // Create updated message with timestamp
       const testParams = parameterInjector.testData.stateTransitionParameters.document.documentReplace.testnet[0];
@@ -652,10 +652,10 @@ test.describe('WASM SDK State Transition Tests', () => {
       };
 
       // Fill updated document fields
-      await wasmSdkPage.fillDocumentFields(updatedFields);
+      await evoSdkPage.fillDocumentFields(updatedFields);
 
       // Execute the replace transition
-      const result = await wasmSdkPage.executeStateTransitionAndGetResult();
+      const result = await evoSdkPage.executeStateTransitionAndGetResult();
 
       // Validate basic result structure
       validateBasicStateTransitionResult(result);
@@ -682,7 +682,7 @@ test.describe('WASM SDK State Transition Tests', () => {
         
         // Execute the set price transition
         const setPriceResult = await executeStateTransitionWithCustomParams(
-          wasmSdkPage,
+          evoSdkPage,
           parameterInjector,
           'document',
           'documentSetPrice',
@@ -722,7 +722,7 @@ test.describe('WASM SDK State Transition Tests', () => {
 
         // Execute the purchase transition
         const purchaseResult = await executeStateTransitionWithCustomParams(
-          wasmSdkPage,
+          evoSdkPage,
           parameterInjector,
           'document',
           'documentPurchase',
@@ -756,7 +756,7 @@ test.describe('WASM SDK State Transition Tests', () => {
 
         // Execute the transfer transition
         const transferResult = await executeStateTransitionWithCustomParams(
-          wasmSdkPage,
+          evoSdkPage,
           parameterInjector,
           'document',
           'documentTransfer',
@@ -791,21 +791,21 @@ test.describe('WASM SDK State Transition Tests', () => {
         console.log('Creating new document...');
 
         // Set up the document create transition
-        await wasmSdkPage.setupStateTransition('document', 'documentCreate');
+        await evoSdkPage.setupStateTransition('document', 'documentCreate');
 
         // Inject basic parameters (contractId, documentType, identityId, privateKey)
         const success = await parameterInjector.injectStateTransitionParameters('document', 'documentCreate', 'testnet');
         expect(success).toBe(true);
 
         // Fetch document schema to generate dynamic fields
-        await wasmSdkPage.fetchDocumentSchema();
+        await evoSdkPage.fetchDocumentSchema();
 
         // Fill document fields
         const testParams = parameterInjector.testData.stateTransitionParameters.document.documentCreate.testnet[0];
-        await wasmSdkPage.fillDocumentFields(testParams.documentFields);
+        await evoSdkPage.fillDocumentFields(testParams.documentFields);
 
         // Execute the transition
-        const createResult = await wasmSdkPage.executeStateTransitionAndGetResult();
+        const createResult = await evoSdkPage.executeStateTransitionAndGetResult();
 
         // Validate create result
         validateBasicStateTransitionResult(createResult);
@@ -821,7 +821,7 @@ test.describe('WASM SDK State Transition Tests', () => {
         console.log('Replacing the created document...');
 
         // Set up document replace transition
-        await wasmSdkPage.setupStateTransition('document', 'documentReplace');
+        await evoSdkPage.setupStateTransition('document', 'documentReplace');
 
         // Inject parameters with the created document ID
         const success = await parameterInjector.injectStateTransitionParameters(
@@ -833,7 +833,7 @@ test.describe('WASM SDK State Transition Tests', () => {
         expect(success).toBe(true);
 
         // Load the existing document to get revision
-        await wasmSdkPage.loadExistingDocument();
+        await evoSdkPage.loadExistingDocument();
 
         // Create updated message with timestamp
         const originalTestParams = parameterInjector.testData.stateTransitionParameters.document.documentCreate.testnet[0];
@@ -844,10 +844,10 @@ test.describe('WASM SDK State Transition Tests', () => {
         };
 
         // Fill updated document fields
-        await wasmSdkPage.fillDocumentFields(updatedFields);
+        await evoSdkPage.fillDocumentFields(updatedFields);
 
         // Execute the replace transition
-        const replaceResult = await wasmSdkPage.executeStateTransitionAndGetResult();
+        const replaceResult = await evoSdkPage.executeStateTransitionAndGetResult();
 
         // Validate replace result
         validateBasicStateTransitionResult(replaceResult);
@@ -861,7 +861,7 @@ test.describe('WASM SDK State Transition Tests', () => {
         console.log('Deleting the created document...');
 
         // Set up document delete transition with the created document ID
-        await wasmSdkPage.setupStateTransition('document', 'documentDelete');
+        await evoSdkPage.setupStateTransition('document', 'documentDelete');
 
         // Inject parameters with the dynamic document ID
         const success = await parameterInjector.injectStateTransitionParameters(
@@ -873,7 +873,7 @@ test.describe('WASM SDK State Transition Tests', () => {
         expect(success).toBe(true);
 
         // Execute the delete transition
-        const deleteResult = await wasmSdkPage.executeStateTransitionAndGetResult();
+        const deleteResult = await evoSdkPage.executeStateTransitionAndGetResult();
 
         // Validate delete result with expected document ID
         validateBasicStateTransitionResult(deleteResult);
@@ -884,10 +884,10 @@ test.describe('WASM SDK State Transition Tests', () => {
     });
 
     test('should show authentication inputs for document transitions', async () => {
-      await wasmSdkPage.setupStateTransition('document', 'documentCreate');
+      await evoSdkPage.setupStateTransition('document', 'documentCreate');
 
       // Check that authentication inputs are visible
-      const hasAuthInputs = await wasmSdkPage.hasAuthenticationInputs();
+      const hasAuthInputs = await evoSdkPage.hasAuthenticationInputs();
       expect(hasAuthInputs).toBe(true);
 
       console.log('✅ Document state transition authentication inputs are visible');
@@ -897,14 +897,14 @@ test.describe('WASM SDK State Transition Tests', () => {
   test.describe('Identity State Transitions', () => {
     test('should execute identity credit transfer transition', async () => {
       // Set up the identity credit transfer transition
-      await wasmSdkPage.setupStateTransition('identity', 'identityCreditTransfer');
+      await evoSdkPage.setupStateTransition('identity', 'identityCreditTransfer');
 
       // Inject parameters (senderId, recipientId, amount, privateKey)
       const success = await parameterInjector.injectStateTransitionParameters('identity', 'identityCreditTransfer', 'testnet');
       expect(success).toBe(true);
 
       // Execute the transfer
-      const result = await wasmSdkPage.executeStateTransitionAndGetResult();
+      const result = await evoSdkPage.executeStateTransitionAndGetResult();
 
       // Validate basic result structure
       validateBasicStateTransitionResult(result);
@@ -933,14 +933,14 @@ test.describe('WASM SDK State Transition Tests', () => {
       }
 
       // Set up the identity credit withdrawal transition
-      await wasmSdkPage.setupStateTransition('identity', 'identityCreditWithdrawal');
+      await evoSdkPage.setupStateTransition('identity', 'identityCreditWithdrawal');
 
       // Inject parameters (identityId, withdrawalAddress, amount, privateKey)
       const success = await parameterInjector.injectStateTransitionParameters('identity', 'identityCreditWithdrawal', 'testnet');
       expect(success).toBe(true);
 
       // Execute the withdrawal
-      const result = await wasmSdkPage.executeStateTransitionAndGetResult();
+      const result = await evoSdkPage.executeStateTransitionAndGetResult();
 
       // Validate basic result structure
       validateBasicStateTransitionResult(result);
@@ -957,10 +957,10 @@ test.describe('WASM SDK State Transition Tests', () => {
     });
 
     test('should show authentication inputs for identity transitions', async () => {
-      await wasmSdkPage.setupStateTransition('identity', 'identityCreditTransfer');
+      await evoSdkPage.setupStateTransition('identity', 'identityCreditTransfer');
 
       // Check that authentication inputs are visible
-      const hasAuthInputs = await wasmSdkPage.hasAuthenticationInputs();
+      const hasAuthInputs = await evoSdkPage.hasAuthenticationInputs();
       expect(hasAuthInputs).toBe(true);
 
       console.log('✅ Identity state transition authentication inputs are visible');
@@ -970,14 +970,14 @@ test.describe('WASM SDK State Transition Tests', () => {
   test.describe('Token State Transitions', () => {
     test('should execute token mint transition', async () => {
       // Set up the token mint transition
-      await wasmSdkPage.setupStateTransition('token', 'tokenMint');
+      await evoSdkPage.setupStateTransition('token', 'tokenMint');
 
       // Inject parameters (contractId, tokenId, tokenPosition, amount, issuedToIdentityId, identityId, privateKey)
       const success = await parameterInjector.injectStateTransitionParameters('token', 'tokenMint', 'testnet');
       expect(success).toBe(true);
 
       // Execute the mint
-      const result = await wasmSdkPage.executeStateTransitionAndGetResult();
+      const result = await evoSdkPage.executeStateTransitionAndGetResult();
 
       // Validate basic result structure
       validateBasicStateTransitionResult(result);
@@ -997,14 +997,14 @@ test.describe('WASM SDK State Transition Tests', () => {
 
     test('should execute token transfer transition', async () => {
       // Set up the token transfer transition
-      await wasmSdkPage.setupStateTransition('token', 'tokenTransfer');
+      await evoSdkPage.setupStateTransition('token', 'tokenTransfer');
 
       // Inject parameters (contractId, tokenId, tokenPosition, amount, recipientId, identityId, privateKey)
       const success = await parameterInjector.injectStateTransitionParameters('token', 'tokenTransfer', 'testnet');
       expect(success).toBe(true);
 
       // Execute the transfer
-      const result = await wasmSdkPage.executeStateTransitionAndGetResult();
+      const result = await evoSdkPage.executeStateTransitionAndGetResult();
 
       // Validate basic result structure
       validateBasicStateTransitionResult(result);
@@ -1025,14 +1025,14 @@ test.describe('WASM SDK State Transition Tests', () => {
 
     test('should execute token burn transition', async () => {
       // Set up the token burn transition
-      await wasmSdkPage.setupStateTransition('token', 'tokenBurn');
+      await evoSdkPage.setupStateTransition('token', 'tokenBurn');
 
       // Inject parameters (contractId, tokenId, tokenPosition, amount, identityId, privateKey)
       const success = await parameterInjector.injectStateTransitionParameters('token', 'tokenBurn', 'testnet');
       expect(success).toBe(true);
 
       // Execute the burn
-      const result = await wasmSdkPage.executeStateTransitionAndGetResult();
+      const result = await evoSdkPage.executeStateTransitionAndGetResult();
 
       // Validate basic result structure
       validateBasicStateTransitionResult(result);
@@ -1052,14 +1052,14 @@ test.describe('WASM SDK State Transition Tests', () => {
 
     test('should execute token freeze transition', async () => {
       // Set up the token freeze transition
-      await wasmSdkPage.setupStateTransition('token', 'tokenFreeze');
+      await evoSdkPage.setupStateTransition('token', 'tokenFreeze');
 
       // Inject parameters (contractId, tokenPosition, identityId, identityToFreeze, privateKey)
       const success = await parameterInjector.injectStateTransitionParameters('token', 'tokenFreeze', 'testnet');
       expect(success).toBe(true);
 
       // Execute the freeze
-      const result = await wasmSdkPage.executeStateTransitionAndGetResult();
+      const result = await evoSdkPage.executeStateTransitionAndGetResult();
 
       // Validate basic result structure
       validateBasicStateTransitionResult(result);
@@ -1075,14 +1075,14 @@ test.describe('WASM SDK State Transition Tests', () => {
 
     test('should execute token destroy frozen transition', async () => {
       // Set up the token destroy frozen transition
-      await wasmSdkPage.setupStateTransition('token', 'tokenDestroyFrozen');
+      await evoSdkPage.setupStateTransition('token', 'tokenDestroyFrozen');
 
       // Inject parameters (contractId, tokenPosition, identityId, destroyFromIdentityId, amount, privateKey)
       const success = await parameterInjector.injectStateTransitionParameters('token', 'tokenDestroyFrozen', 'testnet');
       expect(success).toBe(true);
 
       // Execute the destroy frozen
-      const result = await wasmSdkPage.executeStateTransitionAndGetResult();
+      const result = await evoSdkPage.executeStateTransitionAndGetResult();
 
       // Validate basic result structure
       validateBasicStateTransitionResult(result);
@@ -1098,14 +1098,14 @@ test.describe('WASM SDK State Transition Tests', () => {
 
     test('should execute token unfreeze transition', async () => {
       // Set up the token unfreeze transition
-      await wasmSdkPage.setupStateTransition('token', 'tokenUnfreeze');
+      await evoSdkPage.setupStateTransition('token', 'tokenUnfreeze');
 
       // Inject parameters (contractId, tokenPosition, identityId, identityToUnfreeze, privateKey)
       const success = await parameterInjector.injectStateTransitionParameters('token', 'tokenUnfreeze', 'testnet');
       expect(success).toBe(true);
 
       // Execute the unfreeze
-      const result = await wasmSdkPage.executeStateTransitionAndGetResult();
+      const result = await evoSdkPage.executeStateTransitionAndGetResult();
 
       // Validate basic result structure
       validateBasicStateTransitionResult(result);
@@ -1121,14 +1121,14 @@ test.describe('WASM SDK State Transition Tests', () => {
 
     test('should execute token claim transition', async () => {
       // Set up the token claim transition
-      await wasmSdkPage.setupStateTransition('token', 'tokenClaim');
+      await evoSdkPage.setupStateTransition('token', 'tokenClaim');
 
       // Inject parameters (contractId, tokenPosition, distributionType, privateKey)
       const success = await parameterInjector.injectStateTransitionParameters('token', 'tokenClaim', 'testnet');
       expect(success).toBe(true);
 
       // Execute the claim
-      const result = await wasmSdkPage.executeStateTransitionAndGetResult();
+      const result = await evoSdkPage.executeStateTransitionAndGetResult();
 
       // Check for expected platform responses indicating no tokens available
       if (!result.success && result.result && result.result.includes('Missing response message')) {
@@ -1150,14 +1150,14 @@ test.describe('WASM SDK State Transition Tests', () => {
 
     test('should execute token set price transition', async () => {
       // Set up the token set price transition
-      await wasmSdkPage.setupStateTransition('token', 'tokenSetPriceForDirectPurchase');
+      await evoSdkPage.setupStateTransition('token', 'tokenSetPriceForDirectPurchase');
 
       // Inject parameters (contractId, tokenPosition, priceType, priceData, privateKey)
       const success = await parameterInjector.injectStateTransitionParameters('token', 'tokenSetPriceForDirectPurchase', 'testnet');
       expect(success).toBe(true);
 
       // Execute the set price
-      const result = await wasmSdkPage.executeStateTransitionAndGetResult();
+      const result = await evoSdkPage.executeStateTransitionAndGetResult();
 
       // Validate basic result structure
       validateBasicStateTransitionResult(result);
@@ -1173,14 +1173,14 @@ test.describe('WASM SDK State Transition Tests', () => {
 
     test('should execute token direct purchase transition', async () => {
       // Set up the token direct purchase transition
-      await wasmSdkPage.setupStateTransition('token', 'tokenDirectPurchase');
+      await evoSdkPage.setupStateTransition('token', 'tokenDirectPurchase');
 
       // Inject parameters (contractId, tokenPosition, amount, totalAgreedPrice, keyId, privateKey)
       const success = await parameterInjector.injectStateTransitionParameters('token', 'tokenDirectPurchase', 'testnet');
       expect(success).toBe(true);
 
       // Execute the purchase
-      const result = await wasmSdkPage.executeStateTransitionAndGetResult();
+      const result = await evoSdkPage.executeStateTransitionAndGetResult();
 
       // Check for expected platform responses indicating issues
       if (!result.success && result.result && result.result.includes('Missing response message')) {
@@ -1202,14 +1202,14 @@ test.describe('WASM SDK State Transition Tests', () => {
 
     test('should execute token config update transition', async () => {
       // Set up the token config update transition
-      await wasmSdkPage.setupStateTransition('token', 'tokenConfigUpdate');
+      await evoSdkPage.setupStateTransition('token', 'tokenConfigUpdate');
 
       // Inject parameters (contractId, tokenPosition, configItemType, configValue, privateKey)
       const success = await parameterInjector.injectStateTransitionParameters('token', 'tokenConfigUpdate', 'testnet');
       expect(success).toBe(true);
 
       // Execute the config update
-      const result = await wasmSdkPage.executeStateTransitionAndGetResult();
+      const result = await evoSdkPage.executeStateTransitionAndGetResult();
 
       // Validate basic result structure
       validateBasicStateTransitionResult(result);
@@ -1224,10 +1224,10 @@ test.describe('WASM SDK State Transition Tests', () => {
     });
 
     test('should show authentication inputs for token transitions', async () => {
-      await wasmSdkPage.setupStateTransition('token', 'tokenTransfer');
+      await evoSdkPage.setupStateTransition('token', 'tokenTransfer');
 
       // Check that authentication inputs are visible
-      const hasAuthInputs = await wasmSdkPage.hasAuthenticationInputs();
+      const hasAuthInputs = await evoSdkPage.hasAuthenticationInputs();
       expect(hasAuthInputs).toBe(true);
 
       console.log('✅ Token state transition authentication inputs are visible');
@@ -1236,7 +1236,7 @@ test.describe('WASM SDK State Transition Tests', () => {
 
   test.describe('Error Handling for State Transitions', () => {
     test('should handle invalid JSON schema gracefully', async () => {
-      await wasmSdkPage.setupStateTransition('dataContract', 'dataContractCreate');
+      await evoSdkPage.setupStateTransition('dataContract', 'dataContractCreate');
 
       // Fill with invalid JSON schema
       const invalidParams = {
@@ -1248,10 +1248,10 @@ test.describe('WASM SDK State Transition Tests', () => {
         privateKey: "11111111111111111111111111111111111111111111111111"
       };
 
-      await wasmSdkPage.fillStateTransitionParameters(invalidParams);
+      await evoSdkPage.fillStateTransitionParameters(invalidParams);
 
       // Execute the transition
-      const result = await wasmSdkPage.executeStateTransitionAndGetResult();
+      const result = await evoSdkPage.executeStateTransitionAndGetResult();
 
       // Should show error
       expect(result.hasError).toBe(true);
@@ -1261,10 +1261,10 @@ test.describe('WASM SDK State Transition Tests', () => {
     });
 
     test('should handle missing required fields', async () => {
-      await wasmSdkPage.setupStateTransition('dataContract', 'dataContractCreate');
+      await evoSdkPage.setupStateTransition('dataContract', 'dataContractCreate');
 
       // Don't fill any parameters, try to execute
-      const result = await wasmSdkPage.executeStateTransitionAndGetResult();
+      const result = await evoSdkPage.executeStateTransitionAndGetResult();
 
       // Should show error or validation message
       expect(result.hasError).toBe(true);
@@ -1274,7 +1274,7 @@ test.describe('WASM SDK State Transition Tests', () => {
     });
 
     test('should handle invalid private key gracefully', async () => {
-      await wasmSdkPage.setupStateTransition('dataContract', 'dataContractCreate');
+      await evoSdkPage.setupStateTransition('dataContract', 'dataContractCreate');
 
       // Fill with invalid private key
       const invalidParams = {
@@ -1286,10 +1286,10 @@ test.describe('WASM SDK State Transition Tests', () => {
         privateKey: "invalid_private_key_here"
       };
 
-      await wasmSdkPage.fillStateTransitionParameters(invalidParams);
+      await evoSdkPage.fillStateTransitionParameters(invalidParams);
 
       // Execute the transition
-      const result = await wasmSdkPage.executeStateTransitionAndGetResult();
+      const result = await evoSdkPage.executeStateTransitionAndGetResult();
 
       // Should show error
       expect(result.hasError).toBe(true);

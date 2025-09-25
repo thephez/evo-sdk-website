@@ -13,7 +13,7 @@ const DYNAMIC_ARRAY_PARAMETERS = {
 /**
  * Page Object Model for WASM SDK index.html interface
  */
-class WasmSdkPage extends BaseTest {
+class EvoSdkPage extends BaseTest {
   constructor(page) {
     super(page);
     
@@ -768,4 +768,4 @@ class WasmSdkPage extends BaseTest {
   }
 }
 
-module.exports = { WasmSdkPage };
+module.exports = { EvoSdkPage };

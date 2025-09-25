@@ -1,25 +1,25 @@
 const { test, expect } = require('@playwright/test');
-const { WasmSdkPage } = require('../utils/wasm-sdk-page');
+const { EvoSdkPage } = require('../utils/sdk-page');
 const { ParameterInjector } = require('../utils/parameter-injector');
 
 /**
  * Helper function to execute a query with proof toggle enabled
- * @param {WasmSdkPage} wasmSdkPage - The page object instance
+ * @param {EvoSdkPage} evoSdkPage - The page object instance
  * @param {ParameterInjector} parameterInjector - The parameter injector instance
  * @param {string} category - Query category (e.g., 'identity', 'documents')
  * @param {string} queryName - Query name (e.g., 'getIdentity')
  * @param {string} network - Network to use ('testnet' or 'mainnet')
  * @returns {Promise<Object>} - The query result object
  */
-async function executeQueryWithProof(wasmSdkPage, parameterInjector, category, queryName, network = 'testnet') {
-  await wasmSdkPage.setupQuery(category, queryName);
+async function executeQueryWithProof(evoSdkPage, parameterInjector, category, queryName, network = 'testnet') {
+  await evoSdkPage.setupQuery(category, queryName);
   
   // Enable proof info if available
-  const proofEnabled = await wasmSdkPage.enableProofInfo();
+  const proofEnabled = await evoSdkPage.enableProofInfo();
   
   // If proof was enabled, wait for the toggle to be actually checked
   if (proofEnabled) {
-    const proofToggle = wasmSdkPage.page.locator('#proofToggle');
+    const proofToggle = evoSdkPage.page.locator('#proofToggle');
     await expect(proofToggle).toBeChecked();
     console.log('Proof toggle confirmed as checked');
   }
@@ -27,7 +27,7 @@ async function executeQueryWithProof(wasmSdkPage, parameterInjector, category, q
   const success = await parameterInjector.injectParameters(category, queryName, network);
   expect(success).toBe(true);
   
-  const result = await wasmSdkPage.executeQueryAndGetResult();
+  const result = await evoSdkPage.executeQueryAndGetResult();
   
   return { result, proofEnabled };
 }
@@ -312,25 +312,25 @@ function validateTokenInfoResult(resultStr) {
   });
 }
 
-test.describe('WASM SDK Query Execution Tests', () => {
-  let wasmSdkPage;
+test.describe('Evo SDK Query Execution Tests', () => {
+  let evoSdkPage;
   let parameterInjector;
 
   test.beforeEach(async ({ page }) => {
-    wasmSdkPage = new WasmSdkPage(page);
-    parameterInjector = new ParameterInjector(wasmSdkPage);
-    await wasmSdkPage.initialize('testnet');
+    evoSdkPage = new EvoSdkPage(page);
+    parameterInjector = new ParameterInjector(evoSdkPage);
+    await evoSdkPage.initialize('testnet');
   });
 
   test.describe('Data Contract Queries', () => {
     test('should execute getDataContract query', async () => {
-      await wasmSdkPage.setupQuery('dataContract', 'getDataContract');
-      await wasmSdkPage.disableProofInfo();
+      await evoSdkPage.setupQuery('dataContract', 'getDataContract');
+      await evoSdkPage.disableProofInfo();
       
       const success = await parameterInjector.injectParameters('dataContract', 'getDataContract', 'testnet');
       expect(success).toBe(true);
       
-      const result = await wasmSdkPage.executeQueryAndGetResult();
+      const result = await evoSdkPage.executeQueryAndGetResult();
       
       // Use helper functions for validation
       validateBasicQueryResult(result);
@@ -341,13 +341,13 @@ test.describe('WASM SDK Query Execution Tests', () => {
     });
 
     test('should execute getDataContracts query for multiple contracts', async () => {
-      await wasmSdkPage.setupQuery('dataContract', 'getDataContracts');
-      await wasmSdkPage.disableProofInfo();
+      await evoSdkPage.setupQuery('dataContract', 'getDataContracts');
+      await evoSdkPage.disableProofInfo();
       
       const success = await parameterInjector.injectParameters('dataContract', 'getDataContracts', 'testnet');
       expect(success).toBe(true);
       
-      const result = await wasmSdkPage.executeQueryAndGetResult();
+      const result = await evoSdkPage.executeQueryAndGetResult();
       
       // Use helper functions for validation
       validateBasicQueryResult(result);
@@ -369,13 +369,13 @@ test.describe('WASM SDK Query Execution Tests', () => {
     });
 
     test('should execute getDataContractHistory query', async () => {
-      await wasmSdkPage.setupQuery('dataContract', 'getDataContractHistory');
-      await wasmSdkPage.disableProofInfo();
+      await evoSdkPage.setupQuery('dataContract', 'getDataContractHistory');
+      await evoSdkPage.disableProofInfo();
       
       const success = await parameterInjector.injectParameters('dataContract', 'getDataContractHistory', 'testnet');
       expect(success).toBe(true);
       
-      const result = await wasmSdkPage.executeQueryAndGetResult();
+      const result = await evoSdkPage.executeQueryAndGetResult();
       
       // Use helper functions for validation
       validateBasicQueryResult(result);
@@ -392,7 +392,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
 
     test('should execute getDataContract query with proof info', async () => {
       const { result, proofEnabled } = await executeQueryWithProof(
-        wasmSdkPage, 
+        evoSdkPage, 
         parameterInjector, 
         'dataContract', 
         'getDataContract',
@@ -418,7 +418,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
 
     test('should execute getDataContracts query with proof info', async () => {
       const { result, proofEnabled } = await executeQueryWithProof(
-        wasmSdkPage, 
+        evoSdkPage, 
         parameterInjector, 
         'dataContract', 
         'getDataContracts',
@@ -462,7 +462,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
 
     test('should execute getDataContractHistory query with proof info', async () => {
       const { result, proofEnabled } = await executeQueryWithProof(
-        wasmSdkPage, 
+        evoSdkPage, 
         parameterInjector, 
         'dataContract', 
         'getDataContractHistory',
@@ -495,13 +495,13 @@ test.describe('WASM SDK Query Execution Tests', () => {
 
   test.describe('Document Queries', () => {
     test('should execute getDocuments query', async () => {
-      await wasmSdkPage.setupQuery('document', 'getDocuments');
-      await wasmSdkPage.disableProofInfo();
+      await evoSdkPage.setupQuery('document', 'getDocuments');
+      await evoSdkPage.disableProofInfo();
       
       const success = await parameterInjector.injectParameters('document', 'getDocuments', 'testnet');
       expect(success).toBe(true);
       
-      const result = await wasmSdkPage.executeQueryAndGetResult();
+      const result = await evoSdkPage.executeQueryAndGetResult();
       
       // Use helper functions for validation
       validateBasicQueryResult(result);
@@ -512,13 +512,13 @@ test.describe('WASM SDK Query Execution Tests', () => {
     });
 
     test('should execute getDocument query for specific document', async () => {
-      await wasmSdkPage.setupQuery('document', 'getDocument');
-      await wasmSdkPage.disableProofInfo();
+      await evoSdkPage.setupQuery('document', 'getDocument');
+      await evoSdkPage.disableProofInfo();
       
       const success = await parameterInjector.injectParameters('document', 'getDocument', 'testnet');
       expect(success).toBe(true);
       
-      const result = await wasmSdkPage.executeQueryAndGetResult();
+      const result = await evoSdkPage.executeQueryAndGetResult();
       
       // Use helper functions for validation
       validateBasicQueryResult(result);
@@ -530,7 +530,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
 
     test('should execute getDocuments query with proof info', async () => {
       const { result, proofEnabled } = await executeQueryWithProof(
-        wasmSdkPage, 
+        evoSdkPage, 
         parameterInjector, 
         'document', 
         'getDocuments',
@@ -556,7 +556,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
 
     test('should execute getDocument query with proof info', async () => {
       const { result, proofEnabled } = await executeQueryWithProof(
-        wasmSdkPage, 
+        evoSdkPage, 
         parameterInjector, 
         'document', 
         'getDocument',
@@ -585,7 +585,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
     const systemQueries = [
       { 
         name: 'getStatus', 
-        hasProofSupport: false, // No proof function in WASM-SDK
+        hasProofSupport: false, // No proof function in SDK
         needsParameters: false,
         validateFn: (result) => {
           expect(result).toBeDefined();
@@ -605,7 +605,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
       },
       { 
         name: 'getCurrentQuorumsInfo', 
-        hasProofSupport: false, // No proof function in WASM-SDK 
+        hasProofSupport: false, // No proof function in SDK 
         needsParameters: false,
         validateFn: (result) => {
           expect(() => JSON.parse(result)).not.toThrow();
@@ -632,15 +632,15 @@ test.describe('WASM SDK Query Execution Tests', () => {
     systemQueries.forEach(({ name, hasProofSupport, needsParameters, validateFn }) => {
       test.describe(`${name} query (parameterized)`, () => {
         test('without proof info', async () => {
-          await wasmSdkPage.setupQuery('system', name);
-          await wasmSdkPage.disableProofInfo();
+          await evoSdkPage.setupQuery('system', name);
+          await evoSdkPage.disableProofInfo();
           
           if (needsParameters) {
             const success = await parameterInjector.injectParameters('system', name, 'testnet');
             expect(success).toBe(true);
           }
           
-          const result = await wasmSdkPage.executeQueryAndGetResult();
+          const result = await evoSdkPage.executeQueryAndGetResult();
           validateBasicQueryResult(result);
           validateResultWithoutProof(result);
           validateFn(result.result);
@@ -651,7 +651,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
         if (hasProofSupport) {
           test('with proof info', async () => {
             const { result, proofEnabled } = await executeQueryWithProof(
-              wasmSdkPage, 
+              evoSdkPage, 
               parameterInjector, 
               'system', 
               name,
@@ -716,7 +716,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
       },
       { 
         name: 'getEvonodesProposedEpochBlocksByIds', 
-        hasProofSupport: false, // Proof support not yet implemented in WASM-SDK
+        hasProofSupport: false, // Proof support not yet implemented in SDK
         needsParameters: true,
         validateFn: (result) => {
           expect(() => JSON.parse(result)).not.toThrow();
@@ -727,7 +727,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
       },
       { 
         name: 'getEvonodesProposedEpochBlocksByRange', 
-        hasProofSupport: false, // Proof support not yet implemented in WASM-SDK
+        hasProofSupport: false, // Proof support not yet implemented in SDK
         needsParameters: true,
         validateFn: (result) => {
           expect(() => JSON.parse(result)).not.toThrow();
@@ -741,15 +741,15 @@ test.describe('WASM SDK Query Execution Tests', () => {
     epochQueries.forEach(({ name, hasProofSupport, needsParameters, validateFn }) => {
       test.describe(`${name} query (parameterized)`, () => {
         test('without proof info', async () => {
-          await wasmSdkPage.setupQuery('epoch', name);
-          await wasmSdkPage.disableProofInfo();
+          await evoSdkPage.setupQuery('epoch', name);
+          await evoSdkPage.disableProofInfo();
           
           if (needsParameters) {
             const success = await parameterInjector.injectParameters('epoch', name, 'testnet');
             expect(success).toBe(true);
           }
           
-          const result = await wasmSdkPage.executeQueryAndGetResult();
+          const result = await evoSdkPage.executeQueryAndGetResult();
           validateBasicQueryResult(result);
           validateResultWithoutProof(result);
           validateFn(result.result);
@@ -760,7 +760,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
         if (hasProofSupport) {
           test('with proof info', async () => {
             const { result, proofEnabled } = await executeQueryWithProof(
-              wasmSdkPage, 
+              evoSdkPage, 
               parameterInjector, 
               'epoch', 
               name,
@@ -861,15 +861,15 @@ test.describe('WASM SDK Query Execution Tests', () => {
     tokenQueries.forEach(({ name, hasProofSupport, needsParameters, validateFn }) => {
       test.describe(`${name} query (parameterized)`, () => {
         test('without proof info', async () => {
-          await wasmSdkPage.setupQuery('token', name);
-          await wasmSdkPage.disableProofInfo();
+          await evoSdkPage.setupQuery('token', name);
+          await evoSdkPage.disableProofInfo();
           
           if (needsParameters) {
             const success = await parameterInjector.injectParameters('token', name, 'testnet');
             expect(success).toBe(true);
           }
           
-          const result = await wasmSdkPage.executeQueryAndGetResult();
+          const result = await evoSdkPage.executeQueryAndGetResult();
           validateBasicQueryResult(result);
           validateResultWithoutProof(result);
           validateFn(result.result);
@@ -880,7 +880,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
         if (hasProofSupport) {
           test('with proof info', async () => {
             const { result, proofEnabled } = await executeQueryWithProof(
-              wasmSdkPage, 
+              evoSdkPage, 
               parameterInjector, 
               'token', 
               name,
@@ -972,15 +972,15 @@ test.describe('WASM SDK Query Execution Tests', () => {
     votingQueries.forEach(({ name, hasProofSupport, needsParameters, validateFn }) => {
       test.describe(`${name} query (parameterized)`, () => {
         test('without proof info', async () => {
-          await wasmSdkPage.setupQuery('voting', name);
-          await wasmSdkPage.disableProofInfo();
+          await evoSdkPage.setupQuery('voting', name);
+          await evoSdkPage.disableProofInfo();
           
           if (needsParameters) {
             const success = await parameterInjector.injectParameters('voting', name, 'testnet');
             expect(success).toBe(true);
           }
           
-          const result = await wasmSdkPage.executeQueryAndGetResult();
+          const result = await evoSdkPage.executeQueryAndGetResult();
           validateBasicQueryResult(result);
           validateResultWithoutProof(result);
           validateFn(result.result);
@@ -991,7 +991,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
         if (hasProofSupport) {
           test('with proof info', async () => {
             const { result, proofEnabled } = await executeQueryWithProof(
-              wasmSdkPage, 
+              evoSdkPage, 
               parameterInjector, 
               'voting', 
               name,
@@ -1072,15 +1072,15 @@ test.describe('WASM SDK Query Execution Tests', () => {
     groupQueries.forEach(({ name, hasProofSupport, needsParameters, validateFn }) => {
       test.describe(`${name} query (parameterized)`, () => {
         test('without proof info', async () => {
-          await wasmSdkPage.setupQuery('group', name);
-          await wasmSdkPage.disableProofInfo();
+          await evoSdkPage.setupQuery('group', name);
+          await evoSdkPage.disableProofInfo();
           
           if (needsParameters) {
             const success = await parameterInjector.injectParameters('group', name, 'testnet');
             expect(success).toBe(true);
           }
           
-          const result = await wasmSdkPage.executeQueryAndGetResult();
+          const result = await evoSdkPage.executeQueryAndGetResult();
           validateBasicQueryResult(result);
           validateResultWithoutProof(result);
           validateFn(result.result);
@@ -1091,7 +1091,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
         if (hasProofSupport) {
           test('with proof info', async () => {
             const { result, proofEnabled } = await executeQueryWithProof(
-              wasmSdkPage, 
+              evoSdkPage, 
               parameterInjector, 
               'group', 
               name,
@@ -1123,22 +1123,22 @@ test.describe('WASM SDK Query Execution Tests', () => {
 
   test.describe('Error Handling', () => {
     test('should handle invalid identity ID gracefully', async () => {
-      await wasmSdkPage.setupQuery('identity', 'getIdentity');
+      await evoSdkPage.setupQuery('identity', 'getIdentity');
       
       // Fill with invalid ID (contains invalid base58 characters '0', 'O', 'I', 'l')
-      await wasmSdkPage.fillQueryParameters({ id: 'GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4SOIl0' });
+      await evoSdkPage.fillQueryParameters({ id: 'GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4SOIl0' });
       
       // Click execute button directly
-      const executeButton = wasmSdkPage.page.locator('#executeQuery');
+      const executeButton = evoSdkPage.page.locator('#executeQuery');
       await executeButton.click();
       
       // Wait a bit for the error to appear
-      await wasmSdkPage.page.waitForTimeout(1000);
+      await evoSdkPage.page.waitForTimeout(1000);
       
       // Check for error status
-      const statusBanner = wasmSdkPage.page.locator('#statusBanner');
+      const statusBanner = evoSdkPage.page.locator('#statusBanner');
       const statusClass = await statusBanner.getAttribute('class');
-      const statusText = await wasmSdkPage.getStatusBannerText();
+      const statusText = await evoSdkPage.getStatusBannerText();
       
       // Should show error
       expect(statusClass).toContain('error');
@@ -1148,19 +1148,19 @@ test.describe('WASM SDK Query Execution Tests', () => {
     });
 
     test('should handle empty required fields', async () => {
-      await wasmSdkPage.setupQuery('identity', 'getIdentity');
+      await evoSdkPage.setupQuery('identity', 'getIdentity');
       
       // Don't fill any parameters, try to execute
-      const executeButton = wasmSdkPage.page.locator('#executeQuery');
+      const executeButton = evoSdkPage.page.locator('#executeQuery');
       await executeButton.click();
       
       // Wait a bit for the error to appear
-      await wasmSdkPage.page.waitForTimeout(1000);
+      await evoSdkPage.page.waitForTimeout(1000);
       
       // Check for error status
-      const statusBanner = wasmSdkPage.page.locator('#statusBanner');
+      const statusBanner = evoSdkPage.page.locator('#statusBanner');
       const statusClass = await statusBanner.getAttribute('class');
-      const statusText = await wasmSdkPage.getStatusBannerText();
+      const statusText = await evoSdkPage.getStatusBannerText();
       
       // Should show error or validation message
       expect(statusClass).toContain('error');
@@ -1174,11 +1174,11 @@ test.describe('WASM SDK Query Execution Tests', () => {
   test.describe('Network Switching', () => {
     test('should execute queries on mainnet', async () => {
       // Switch to mainnet
-      await wasmSdkPage.setNetwork('mainnet');
+      await evoSdkPage.setNetwork('mainnet');
       
-      await wasmSdkPage.setupQuery('system', 'getStatus');
+      await evoSdkPage.setupQuery('system', 'getStatus');
       
-      const result = await wasmSdkPage.executeQueryAndGetResult();
+      const result = await evoSdkPage.executeQueryAndGetResult();
       
       // Verify query executed successfully
       expect(result.success).toBe(true);
@@ -1208,7 +1208,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
       },
       { 
         name: 'getProtocolVersionUpgradeVoteStatus', 
-        hasProofSupport: false, // Proof support not yet implemented in WASM-SDK
+        hasProofSupport: false, // Proof support not yet implemented in SDK
         needsParameters: true,
         validateFn: (result) => {
           expect(() => JSON.parse(result)).not.toThrow();
@@ -1222,15 +1222,15 @@ test.describe('WASM SDK Query Execution Tests', () => {
     protocolQueries.forEach(({ name, hasProofSupport, needsParameters, validateFn }) => {
       test.describe(`${name} query (parameterized)`, () => {
         test('without proof info', async () => {
-          await wasmSdkPage.setupQuery('protocol', name);
-          await wasmSdkPage.disableProofInfo();
+          await evoSdkPage.setupQuery('protocol', name);
+          await evoSdkPage.disableProofInfo();
           
           if (needsParameters) {
             const success = await parameterInjector.injectParameters('protocol', name, 'testnet');
             expect(success).toBe(true);
           }
           
-          const result = await wasmSdkPage.executeQueryAndGetResult();
+          const result = await evoSdkPage.executeQueryAndGetResult();
           validateBasicQueryResult(result);
           validateResultWithoutProof(result);
           validateFn(result.result);
@@ -1241,7 +1241,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
         if (hasProofSupport) {
           test('with proof info', async () => {
             const { result, proofEnabled } = await executeQueryWithProof(
-              wasmSdkPage, 
+              evoSdkPage, 
               parameterInjector, 
               'protocol', 
               name,
@@ -1321,7 +1321,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
       },
       {
         name: 'dpnsResolve',
-        hasProofSupport: false,  // Proof support not yet implemented in WASM-SDK
+        hasProofSupport: false,  // Proof support not yet implemented in SDK
         needsParameters: true,
         validateFn: (result) => {
           expect(result).toBeDefined();
@@ -1338,7 +1338,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
       },
       {
         name: 'dpnsCheckAvailability',
-        hasProofSupport: false,  // Proof support not yet implemented in WASM-SDK
+        hasProofSupport: false,  // Proof support not yet implemented in SDK
         needsParameters: true,
         validateFn: validateBooleanResult
       },
@@ -1360,7 +1360,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
       },
       {
         name: 'dpnsIsContestedUsername',
-        hasProofSupport: false,  // Proof support not yet implemented in WASM-SDK
+        hasProofSupport: false,  // Proof support not yet implemented in SDK
         needsParameters: true,
         validateFn: validateBooleanResult
       },
@@ -1385,15 +1385,15 @@ test.describe('WASM SDK Query Execution Tests', () => {
     dpnsQueries.forEach(({ name, hasProofSupport, needsParameters, validateFn }) => {
       test.describe(`${name} query (parameterized)`, () => {
         test('without proof info', async () => {
-          await wasmSdkPage.setupQuery('dpns', name);
-          await wasmSdkPage.disableProofInfo();
+          await evoSdkPage.setupQuery('dpns', name);
+          await evoSdkPage.disableProofInfo();
           
           if (needsParameters) {
             const success = await parameterInjector.injectParameters('dpns', name, 'testnet');
             expect(success).toBe(true);
           }
           
-          const result = await wasmSdkPage.executeQueryAndGetResult();
+          const result = await evoSdkPage.executeQueryAndGetResult();
           validateBasicDpnsQueryResult(result);
           validateResultWithoutProof(result);
           validateFn(result.result);
@@ -1404,7 +1404,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
         if (hasProofSupport) {
           test('with proof info', async () => {
             const { result, proofEnabled } = await executeQueryWithProof(
-              wasmSdkPage, 
+              evoSdkPage, 
               parameterInjector, 
               'dpns', 
               name,
@@ -1457,13 +1457,13 @@ test.describe('WASM SDK Query Execution Tests', () => {
     testQueries.forEach(({ name, hasProofSupport, validateFn }) => {
       test.describe(`${name} query (parameterized)`, () => {
         test('without proof info', async () => {
-          await wasmSdkPage.setupQuery('identity', name);
-          await wasmSdkPage.disableProofInfo();
+          await evoSdkPage.setupQuery('identity', name);
+          await evoSdkPage.disableProofInfo();
           
           const success = await parameterInjector.injectParameters('identity', name, 'testnet');
           expect(success).toBe(true);
           
-          const result = await wasmSdkPage.executeQueryAndGetResult();
+          const result = await evoSdkPage.executeQueryAndGetResult();
           validateBasicQueryResult(result);
           expect(result.result.length).toBeGreaterThan(0);
           validateResultWithoutProof(result);
@@ -1475,7 +1475,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
         if (hasProofSupport) {
           test('with proof info', async () => {
             const { result, proofEnabled } = await executeQueryWithProof(
-              wasmSdkPage, 
+              evoSdkPage, 
               parameterInjector, 
               'identity', 
               name,
@@ -1499,7 +1499,7 @@ test.describe('WASM SDK Query Execution Tests', () => {
           });
         } else {
           test.skip('with proof info', async () => {
-            // Proof support not yet implemented in WASM SDK for this query
+            // Proof support not yet implemented in SDK for this query
           });
         }
       });
