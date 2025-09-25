@@ -1,5 +1,9 @@
 import { EvoSDK } from './dist/evo-sdk.module.js';
 
+const identityIdInputEl = document.getElementById('identityId');
+const assetLockProofInputEl = document.getElementById('assetLockProof');
+const privateKeyInputEl = document.getElementById('privateKey');
+
 const elements = {
   apiErrorBanner: document.getElementById('apiErrorBanner'),
   apiErrorMessage: document.getElementById('apiErrorMessage'),
@@ -19,6 +23,10 @@ const elements = {
   authenticationInputs: document.getElementById('authenticationInputs'),
   identityIdGroup: document.getElementById('identityIdGroup'),
   assetLockProofGroup: document.getElementById('assetLockProofGroup'),
+  identityIdInput: identityIdInputEl,
+  assetLockProofInput: assetLockProofInputEl,
+  privateKeyInput: privateKeyInputEl,
+  privateKeyGroup: privateKeyInputEl?.closest('.input-group') || null,
   queryInputs: document.getElementById('queryInputs'),
   queryTitle: document.getElementById('queryTitle'),
   dynamicInputs: document.getElementById('dynamicInputs'),
@@ -119,6 +127,216 @@ const state = {
   currentResult: null,
   advancedOptions: {},
 };
+
+const TRANSITION_AUTH_REQUIREMENTS = {
+  identityCreate: {
+    assetLockProof: { required: true, target: 'assetLockProof' },
+    privateKey: { required: true, targets: ['assetLockPrivateKeyWif'] },
+  },
+  identityTopUp: {
+    identity: { required: true, targets: ['identityId'] },
+    assetLockProof: { required: true, target: 'assetLockProof' },
+    privateKey: { required: true, targets: ['assetLockPrivateKeyWif'] },
+  },
+  identityCreditTransfer: {
+    identity: { required: true, targets: ['senderId'] },
+    privateKey: { required: true, targets: ['privateKeyWif'], allowKeyId: true, keyIdTarget: 'keyId' },
+  },
+  identityCreditWithdrawal: {
+    identity: { required: true, targets: ['identityId'] },
+    privateKey: { required: true, targets: ['privateKeyWif'], allowKeyId: true, keyIdTarget: 'keyId' },
+  },
+  identityUpdate: {
+    identity: { required: true, targets: ['identityId'] },
+    privateKey: { required: true, targets: ['privateKeyWif'], allowKeyId: true },
+  },
+  dataContractCreate: {
+    identity: { required: true, targets: ['ownerId'] },
+    privateKey: { required: true, targets: ['privateKeyWif'], allowKeyId: true, keyIdTarget: 'keyId' },
+  },
+  dataContractUpdate: {
+    identity: { required: true, targets: ['ownerId'] },
+    privateKey: { required: true, targets: ['privateKeyWif'], allowKeyId: true, keyIdTarget: 'keyId' },
+  },
+  documentCreate: {
+    identity: { required: true, targets: ['ownerId'] },
+    privateKey: { required: true, targets: ['privateKeyWif'], allowKeyId: true },
+  },
+  documentReplace: {
+    identity: { required: true, targets: ['ownerId'] },
+    privateKey: { required: true, targets: ['privateKeyWif'], allowKeyId: true },
+  },
+  documentDelete: {
+    identity: { required: true, targets: ['ownerId'] },
+    privateKey: { required: true, targets: ['privateKeyWif'], allowKeyId: true },
+  },
+  documentTransfer: {
+    identity: { required: true, targets: ['ownerId'] },
+    privateKey: { required: true, targets: ['privateKeyWif'], allowKeyId: true },
+  },
+  documentPurchase: {
+    identity: { required: true, targets: ['buyerId'] },
+    privateKey: { required: true, targets: ['privateKeyWif'], allowKeyId: true },
+  },
+  documentSetPrice: {
+    identity: { required: true, targets: ['ownerId'] },
+    privateKey: { required: true, targets: ['privateKeyWif'], allowKeyId: true },
+  },
+  tokenMint: {
+    identity: { required: true, targets: ['identityId'] },
+    privateKey: { required: true, targets: ['privateKeyWif'], allowKeyId: true },
+  },
+  tokenBurn: {
+    identity: { required: true, targets: ['identityId'] },
+    privateKey: { required: true, targets: ['privateKeyWif'], allowKeyId: true },
+  },
+  tokenTransfer: {
+    identity: { required: true, targets: ['senderId'] },
+    privateKey: { required: true, targets: ['privateKeyWif'], allowKeyId: true },
+  },
+  tokenFreeze: {
+    identity: { required: true, targets: ['freezerId'] },
+    privateKey: { required: true, targets: ['privateKeyWif'], allowKeyId: true },
+  },
+  tokenUnfreeze: {
+    identity: { required: true, targets: ['unfreezerId'] },
+    privateKey: { required: true, targets: ['privateKeyWif'], allowKeyId: true },
+  },
+  tokenDestroyFrozen: {
+    identity: { required: true, targets: ['destroyerId'] },
+    privateKey: { required: true, targets: ['privateKeyWif'], allowKeyId: true },
+  },
+  tokenSetPriceForDirectPurchase: {
+    identity: { required: true, targets: ['identityId'] },
+    privateKey: { required: true, targets: ['privateKeyWif'], allowKeyId: true },
+  },
+  tokenDirectPurchase: {
+    identity: { required: true, targets: ['identityId'] },
+    privateKey: { required: true, targets: ['privateKeyWif'], allowKeyId: true },
+  },
+  tokenClaim: {
+    identity: { required: true, targets: ['identityId'] },
+    privateKey: { required: true, targets: ['privateKeyWif'], allowKeyId: true },
+  },
+  tokenConfigUpdate: {
+    identity: { required: true, targets: ['identityId'] },
+    privateKey: { required: true, targets: ['privateKeyWif'], allowKeyId: true },
+  },
+  masternodeVote: {
+    privateKey: { required: true, targets: ['votingKeyWif'] },
+  },
+};
+
+function computeAuthRequirements(operationKey, definition) {
+  const config = TRANSITION_AUTH_REQUIREMENTS[operationKey] || {};
+  const auth = {
+    identity: config.identity
+      ? {
+        required: !!config.identity.required,
+        targets: Array.isArray(config.identity.targets) ? [...config.identity.targets] : [],
+      }
+      : null,
+    assetLockProof: config.assetLockProof
+      ? {
+        required: !!config.assetLockProof.required,
+        target: config.assetLockProof.target || 'assetLockProof',
+      }
+      : null,
+    privateKey: config.privateKey
+      ? {
+        required: config.privateKey.required !== false,
+        targets: Array.isArray(config.privateKey.targets)
+          ? [...config.privateKey.targets]
+          : (config.privateKey.target ? [config.privateKey.target] : []),
+        allowKeyId: !!config.privateKey.allowKeyId,
+        keyIdTarget: config.privateKey.keyIdTarget || null,
+      }
+      : null,
+  };
+
+  const sdkParams = Array.isArray(definition?.sdk_params) ? definition.sdk_params : [];
+  if (sdkParams.length) {
+    const names = new Set(sdkParams.map(param => param.name));
+    if (names.has('assetLockProof')) {
+      if (!auth.assetLockProof) {
+        auth.assetLockProof = { required: true, target: 'assetLockProof' };
+      } else {
+        auth.assetLockProof.required = true;
+        if (!auth.assetLockProof.target) auth.assetLockProof.target = 'assetLockProof';
+      }
+    }
+    if (names.has('assetLockProofPrivateKey')) {
+      if (!auth.privateKey) {
+        auth.privateKey = {
+          required: true,
+          targets: ['assetLockPrivateKeyWif'],
+          allowKeyId: false,
+          keyIdTarget: null,
+        };
+      } else {
+        auth.privateKey.required = true;
+        if (!auth.privateKey.targets.length) {
+          auth.privateKey.targets = ['assetLockPrivateKeyWif'];
+        }
+        auth.privateKey.allowKeyId = !!auth.privateKey.allowKeyId;
+      }
+    }
+    if (names.has('identityId')) {
+      if (!auth.identity) {
+        auth.identity = { required: true, targets: ['identityId'] };
+      } else {
+        auth.identity.required = true;
+        if (!auth.identity.targets.length) {
+          auth.identity.targets = ['identityId'];
+        }
+      }
+    }
+  }
+
+  if (auth.identity && !auth.identity.targets.length) {
+    auth.identity = null;
+  }
+  if (auth.privateKey && !auth.privateKey.targets.length) {
+    auth.privateKey = null;
+  }
+
+  if (!auth.identity && !auth.assetLockProof && !auth.privateKey) {
+    return null;
+  }
+
+  return auth;
+}
+
+function updateAuthInputsVisibility(auth) {
+  const showIdentity = !!(auth?.identity?.targets?.length);
+  const showAssetLock = !!(auth?.assetLockProof?.required);
+  const showPrivateKey = !!(auth?.privateKey?.targets?.length);
+
+  if (elements.identityIdGroup) {
+    elements.identityIdGroup.style.display = showIdentity ? '' : 'none';
+  }
+  if (elements.identityIdInput) {
+    elements.identityIdInput.required = !!(auth?.identity?.required);
+  }
+
+  if (elements.assetLockProofGroup) {
+    elements.assetLockProofGroup.style.display = showAssetLock ? '' : 'none';
+  }
+  if (elements.assetLockProofInput) {
+    elements.assetLockProofInput.required = showAssetLock;
+  }
+
+  if (elements.privateKeyGroup) {
+    elements.privateKeyGroup.style.display = showPrivateKey ? '' : 'none';
+  }
+  if (elements.privateKeyInput) {
+    elements.privateKeyInput.required = !!(auth?.privateKey?.required);
+  }
+
+  if (elements.authenticationInputs) {
+    elements.authenticationInputs.style.display = (showIdentity || showAssetLock || showPrivateKey) ? 'block' : 'none';
+  }
+}
 
 function normalizeType(type) {
   if (!type) return 'text';
@@ -249,7 +467,7 @@ function populateCategories() {
     }
     hideOperationDetails();
     setStatus('Wallet helpers are not available with the Evo SDK demo.', 'loading');
-    elements.authenticationInputs.style.display = 'none';
+    updateAuthInputsVisibility(null);
     return;
   }
 
@@ -269,8 +487,6 @@ function populateCategories() {
     elements.queryTypeLabel.style.display = 'none';
   }
   hideOperationDetails();
-
-  elements.authenticationInputs.style.display = isQuery ? 'none' : 'block';
 }
 
 function populateOperations(categoryKey) {
@@ -314,6 +530,7 @@ function hideOperationDetails() {
     elements.executeButton.disabled = true;
   }
   state.selected = null;
+  updateAuthInputsVisibility(null);
 }
 
 function onOperationChange(categoryKey, operationKey) {
@@ -339,11 +556,13 @@ function onOperationChange(categoryKey, operationKey) {
   elements.proofToggle.checked = supportsProof;
   elements.proofToggleContainer.style.display = supportsProof ? 'flex' : 'none';
   elements.noProofInfoContainer.style.display = supportsProof ? 'none' : 'block';
+  const authRequirements = isQuery ? null : computeAuthRequirements(operationKey, def);
+  updateAuthInputsVisibility(authRequirements);
   if (elements.executeButton) {
     elements.executeButton.style.display = 'block';
     elements.executeButton.disabled = false;
   }
-  state.selected = { type, categoryKey, operationKey, definition: def };
+  state.selected = { type, categoryKey, operationKey, definition: def, auth: authRequirements };
 }
 
 function renderInputs(def) {
@@ -561,8 +780,160 @@ function namedArgs(defs, args) {
   return out;
 }
 
-async function callEvo(client, groupKey, itemKey, defs, args, useProof) {
-  const n = namedArgs(defs, args);
+function collectAuthArgs(requirements) {
+  if (!requirements) return {};
+
+  const extras = {};
+
+  if (requirements.identity?.targets?.length) {
+    const identityValue = elements.identityIdInput?.value.trim() || '';
+    if (!identityValue) {
+      if (requirements.identity.required) {
+        throw new Error('Identity ID is required for this operation.');
+      }
+    } else {
+      requirements.identity.targets.forEach(target => {
+        extras[target] = identityValue;
+      });
+    }
+  }
+
+  if (requirements.assetLockProof?.required) {
+    const proofValue = elements.assetLockProofInput?.value.trim() || '';
+    if (!proofValue) {
+      throw new Error('Asset Lock Proof is required for this operation.');
+    }
+    const targetName = requirements.assetLockProof.target || 'assetLockProof';
+    extras[targetName] = proofValue;
+  }
+
+  if (requirements.privateKey?.targets?.length) {
+    const rawValue = elements.privateKeyInput?.value.trim() || '';
+    if (!rawValue) {
+      if (requirements.privateKey.required) {
+        throw new Error('Private key is required for this operation.');
+      }
+    } else {
+      if (!requirements.privateKey.allowKeyId && rawValue.includes(':')) {
+        throw new Error('Key ID suffix is not supported for this operation.');
+      }
+      let keyValue = rawValue;
+      let keyIdValue;
+      if (requirements.privateKey.allowKeyId) {
+        const colonIndex = rawValue.lastIndexOf(':');
+        if (colonIndex > -1) {
+          if (colonIndex === 0) {
+            throw new Error('Private key is required before specifying a key ID.');
+          }
+          const suffix = rawValue.slice(colonIndex + 1).trim();
+          if (!suffix) {
+            throw new Error('Key ID suffix must be provided after ":".');
+          }
+          keyValue = rawValue.slice(0, colonIndex).trim();
+          if (!keyValue) {
+            throw new Error('Private key is required before specifying a key ID.');
+          }
+          const parsed = Number(suffix);
+          if (!Number.isInteger(parsed) || parsed < 0) {
+            throw new Error('Key ID suffix must be a non-negative integer.');
+          }
+          keyIdValue = parsed;
+        }
+      }
+
+      requirements.privateKey.targets.forEach(target => {
+        extras[target] = keyValue;
+      });
+
+      if (keyIdValue !== undefined) {
+        const keyIdTarget = requirements.privateKey.keyIdTarget || 'keyId';
+        extras[keyIdTarget] = keyIdValue;
+      }
+    }
+  }
+
+  return extras;
+}
+
+function buildContractDefinition(params) {
+  // Get document schemas JSON
+  if (!params.documentSchemas) {
+    throw new Error('Document Schemas JSON is required');
+  }
+
+  let documentSchemas;
+  try {
+    documentSchemas = typeof params.documentSchemas === 'string'
+      ? JSON.parse(params.documentSchemas)
+      : params.documentSchemas;
+  } catch (e) {
+    throw new Error(`Invalid JSON in Document Schemas field: ${e.message}`);
+  }
+
+  // Get optional JSON fields
+  let groups = {};
+  let tokens = {};
+
+  if (params.groups) {
+    try {
+      groups = typeof params.groups === 'string'
+        ? JSON.parse(params.groups)
+        : params.groups;
+    } catch (e) {
+      throw new Error(`Invalid JSON in Groups field: ${e.message}`);
+    }
+  }
+
+  if (params.tokens) {
+    try {
+      tokens = typeof params.tokens === 'string'
+        ? JSON.parse(params.tokens)
+        : params.tokens;
+    } catch (e) {
+      throw new Error(`Invalid JSON in Tokens field: ${e.message}`);
+    }
+  }
+
+  // Get keywords
+  const keywords = params.keywords ? params.keywords.split(',').map(k => k.trim()).filter(k => k) : [];
+
+  // Build the contract object
+  const contractData = {
+    "$format_version": "1",
+    "id": "11111111111111111111111111111111", // Will be replaced by SDK
+    "config": {
+      "$format_version": "1",
+      "canBeDeleted": params.canBeDeleted || false,
+      "readonly": params.readonly || false,
+      "keepsHistory": params.keepsHistory || false,
+      "documentsKeepHistoryContractDefault": params.documentsKeepHistoryContractDefault || false,
+      "documentsMutableContractDefault": params.documentsMutableContractDefault !== false, // Default true
+      "documentsCanBeDeletedContractDefault": params.documentsCanBeDeletedContractDefault !== false, // Default true
+      "requiresIdentityEncryptionBoundedKey": params.requiresIdentityEncryptionBoundedKey || null,
+      "requiresIdentityDecryptionBoundedKey": params.requiresIdentityDecryptionBoundedKey || null,
+      "sizedIntegerTypes": true
+    },
+    "version": 1,
+    "ownerId": params.ownerId,
+    "schemaDefs": null,
+    "documentSchemas": documentSchemas,
+    "createdAt": null,
+    "updatedAt": null,
+    "createdAtBlockHeight": null,
+    "updatedAtBlockHeight": null,
+    "createdAtEpoch": null,
+    "updatedAtEpoch": null,
+    "groups": groups,
+    "tokens": tokens,
+    "keywords": keywords,
+    "description": params.description || null
+  };
+
+  return JSON.stringify(contractData);
+}
+
+async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArgs = {}) {
+  const n = { ...namedArgs(defs, args), ...(extraArgs || {}) };
   const c = client;
 
   const toStringArray = (value) => {
@@ -687,8 +1058,10 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof) {
         : c.contracts.getHistory({ contractId: n.dataContractId || n.id, limit: n.limit ?? null, startAtMs: n.startAtMs ?? null });
     case 'getDataContracts':
       return useProof ? c.contracts.getManyWithProof(n.ids) : c.contracts.getMany(n.ids);
-    case 'dataContractCreate':
-      return c.contracts.create({ ownerId: n.ownerId, definition: n.definition, privateKeyWif: n.privateKeyWif, keyId: n.keyId });
+    case 'dataContractCreate': {
+      const definition = buildContractDefinition(n);
+      return c.contracts.create({ ownerId: n.ownerId, definition: definition, privateKeyWif: n.privateKeyWif, keyId: n.keyId });
+    }
     case 'dataContractUpdate':
       return c.contracts.update({ contractId: n.dataContractId || n.contractId, ownerId: n.ownerId, updates: n.updates, privateKeyWif: n.privateKeyWif, keyId: n.keyId });
 
@@ -1000,14 +1373,23 @@ async function executeSelected() {
     if (elements.executeButton) {
       elements.executeButton.disabled = true;
     }
-    const { definition } = state.selected;
+    const { definition, auth } = state.selected;
     const args = collectArgs(definition);
+    const authArgs = collectAuthArgs(auth);
     const client = await ensureClient();
     const useProof = elements.proofToggleContainer.style.display !== 'none'
       && elements.proofToggle.checked
       && state.selected.type === 'queries';
     setStatus(`Running ${state.selected.operationKey}${useProof ? ' (proof)' : ''}...`, 'loading');
-    const result = await callEvo(client, state.selected.categoryKey, state.selected.operationKey, definition.inputs || [], args, useProof);
+    const result = await callEvo(
+      client,
+      state.selected.categoryKey,
+      state.selected.operationKey,
+      definition.inputs || [],
+      args,
+      useProof,
+      authArgs,
+    );
     const formatted = formatResult(result);
     elements.resultContent.classList.remove('empty', 'error');
     elements.resultContent.textContent = formatted;
