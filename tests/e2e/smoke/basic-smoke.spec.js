@@ -227,8 +227,6 @@ test.describe('State Transitions UI Tests', () => {
     // Verify the operation type is set correctly
     const operationType = await evoSdkPage.page.locator('#operationType').inputValue();
     expect(operationType).toBe('transitions');
-
-    console.log('✅ Successfully switched to state transitions operation type');
   });
 
   test('should populate transition categories correctly', async () => {
@@ -252,8 +250,6 @@ test.describe('State Transitions UI Tests', () => {
     expect(missing, `Missing: ${missing.join(', ')}`).toEqual([]);
     expect(unexpected, `Unexpected: ${unexpected.join(', ')}`).toEqual([]);
     expect(categories.length, 'Wrong number of categories').toBe(expected.length);
-
-    console.log('✅ State transition categories populated correctly:', categories);
   });
 
   test('should populate identity transition types correctly', async () => {
@@ -274,7 +270,6 @@ test.describe('State Transitions UI Tests', () => {
 
     expect(new Set(transitionTypes)).toEqual(new Set(expected));
     expect(transitionTypes.length).toBe(expected.length);
-    console.log('✅ Identity transition types populated correctly:', transitionTypes);
   });
 
   test('should populate data contract transition types correctly', async () => {
@@ -289,8 +284,6 @@ test.describe('State Transitions UI Tests', () => {
 
     expect(new Set(transitionTypes)).toEqual(new Set(expected));
     expect(transitionTypes.length).toBe(expected.length);
-
-    console.log('✅ Data contract transition types populated correctly:', transitionTypes);
   });
 
   test('should populate document transition types correctly', async () => {
@@ -313,8 +306,6 @@ test.describe('State Transitions UI Tests', () => {
 
     expect(new Set(transitionTypes)).toEqual(new Set(expected));
     expect(transitionTypes.length).toBe(expected.length);
-
-    console.log('✅ Document transition types populated correctly:', transitionTypes);
   });
 
   test('should populate token transition types correctly', async () => {
@@ -340,8 +331,6 @@ test.describe('State Transitions UI Tests', () => {
 
     expect(new Set(transitionTypes)).toEqual(new Set(expected));
     expect(transitionTypes.length).toBe(expected.length);
-
-    console.log('✅ Token transition types populated correctly:', transitionTypes);
   });
 
   test('should populate voting transition types correctly', async () => {
@@ -356,8 +345,6 @@ test.describe('State Transitions UI Tests', () => {
 
     expect(new Set(transitionTypes)).toEqual(new Set(expected));
     expect(transitionTypes.length).toBe(expected.length);
-
-    console.log('✅ Voting transition types populated correctly:', transitionTypes);
   });
 });
 
@@ -390,8 +377,6 @@ test.describe('Query Categories and Types UI Tests', () => {
     ];
 
     ensureExactOptions(categories, expected, 'Query categories');
-
-    console.log('✅ Query categories populated correctly:', categories);
   });
 
   test('should populate identity query types correctly', async () => {
@@ -421,8 +406,6 @@ test.describe('Query Categories and Types UI Tests', () => {
     ];
 
     ensureExactOptions(queryTypes, expected, 'Identity query types');
-
-    console.log('✅ Identity query types populated correctly:', queryTypes);
   });
 
   test('should populate data contract query types correctly', async () => {
@@ -440,8 +423,6 @@ test.describe('Query Categories and Types UI Tests', () => {
     ];
 
     ensureExactOptions(queryTypes, expected, 'Data Contract query types');
-
-    console.log('✅ Data contract query types populated correctly:', queryTypes);
   });
 
   test('should populate document query types correctly', async () => {
@@ -458,8 +439,6 @@ test.describe('Query Categories and Types UI Tests', () => {
     ];
 
     ensureExactOptions(queryTypes, expected, 'Document query types');
-
-    console.log('✅ Document query types populated correctly:', queryTypes);
   });
 
   test('should populate DPNS query types correctly', async () => {
@@ -482,8 +461,6 @@ test.describe('Query Categories and Types UI Tests', () => {
     ];
 
     ensureExactOptions(queryTypes, expected, 'DPNS query types');
-
-    console.log('✅ DPNS query types populated correctly:', queryTypes);
   });
 
   test('should populate system query types correctly', async () => {
@@ -504,8 +481,6 @@ test.describe('Query Categories and Types UI Tests', () => {
     ];
 
     ensureExactOptions(queryTypes, expected, 'System query types');
-
-    console.log('✅ System query types populated correctly:', queryTypes);
   });
 
   test('should populate protocol query types correctly', async () => {
@@ -522,8 +497,6 @@ test.describe('Query Categories and Types UI Tests', () => {
     ];
 
     ensureExactOptions(queryTypes, expected, 'Protocol query types');
-
-    console.log('✅ Protocol query types populated correctly:', queryTypes);
   });
 
   test('should populate epoch query types correctly', async () => {
@@ -548,8 +521,6 @@ test.describe('Query Categories and Types UI Tests', () => {
     expect(missing, `Missing: ${missing.join(', ')}`).toEqual([]);
     expect(unexpected, `Unexpected: ${unexpected.join(', ')}`).toEqual([]);
     expect(queryTypes.length, 'Wrong number of query types').toBe(expected.length);
-
-    console.log('✅ Epoch query types populated correctly:', queryTypes);
   });
 
   test('should populate token query types correctly', async () => {
@@ -575,8 +546,6 @@ test.describe('Query Categories and Types UI Tests', () => {
     expect(missing, `Missing: ${missing.join(', ')}`).toEqual([]);
     expect(unexpected, `Unexpected: ${unexpected.join(', ')}`).toEqual([]);
     expect(queryTypes.length, 'Wrong number of query types').toBe(expected.length);
-
-    console.log('✅ Token query types populated correctly:', queryTypes);
   });
 
   test('should populate group query types correctly', async () => {
@@ -603,8 +572,6 @@ test.describe('Query Categories and Types UI Tests', () => {
     expect(missing, `Missing: ${missing.join(', ')}`).toEqual([]);
     expect(unexpected, `Unexpected: ${unexpected.join(', ')}`).toEqual([]);
     expect(queryTypes.length, 'Wrong number of query types').toBe(expected.length);
-
-    console.log('✅ Group query types populated correctly:', queryTypes);
   });
 
   test('should populate voting query types correctly', async () => {
@@ -629,7 +596,5 @@ test.describe('Query Categories and Types UI Tests', () => {
     expect(missing, `Missing: ${missing.join(', ')}`).toEqual([]);
     expect(unexpected, `Unexpected: ${unexpected.join(', ')}`).toEqual([]);
     expect(queryTypes.length, 'Wrong number of query types').toBe(expected.length);
-
-    console.log('✅ Voting query types populated correctly:', queryTypes);
   });
 });
