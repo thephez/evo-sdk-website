@@ -1317,24 +1317,24 @@ test.describe('WASM SDK State Transition Tests', () => {
     test('should populate transition categories correctly', async () => {
       await wasmSdkPage.setOperationType('transitions');
 
-      // Get available categories and filter out placeholders
-      const allCategories = await wasmSdkPage.getAvailableQueryCategories();
-      const categories = filterPlaceholderOptions(allCategories);
+      const categories = filterPlaceholderOptions(
+        await wasmSdkPage.getAvailableQueryCategories()
+      );
 
-      // Define expected state transition categories
-      const expectedCategories = [
+      const expected = [
         'Identity Transitions',
         'Data Contract Transitions',
         'Document Transitions',
         'Token Transitions',
-        'Voting Transitions'
+        'Voting Transitions',
       ];
 
-      // Verify exact match - contains all expected and no unexpected ones
-      expect(categories).toHaveLength(expectedCategories.length);
-      expectedCategories.forEach(expectedCategory => {
-        expect(categories).toContain(expectedCategory);
-      });
+      const missing = expected.filter(cat => !categories.includes(cat));
+      const unexpected = categories.filter(cat => !expected.includes(cat));
+
+      expect(missing, `Missing: ${missing.join(', ')}`).toEqual([]);
+      expect(unexpected, `Unexpected: ${unexpected.join(', ')}`).toEqual([]);
+      expect(categories.length, 'Wrong number of categories').toBe(expected.length);
 
       console.log('✅ State transition categories populated correctly:', categories);
     });
@@ -1343,12 +1343,11 @@ test.describe('WASM SDK State Transition Tests', () => {
       await wasmSdkPage.setOperationType('transitions');
       await wasmSdkPage.setQueryCategory('identity');
 
-      // Get available transition types and filter out placeholders
-      const allTransitionTypes = await wasmSdkPage.getAvailableQueryTypes();
-      const transitionTypes = filterPlaceholderOptions(allTransitionTypes);
+      const transitionTypes = filterPlaceholderOptions(
+        await wasmSdkPage.getAvailableQueryTypes()
+      );
 
-      // Define expected identity transition types
-      const expectedTransitionTypes = [
+      const expected = [
         'Identity Create',
         'Identity Top Up',
         'Identity Update',
@@ -1356,12 +1355,8 @@ test.describe('WASM SDK State Transition Tests', () => {
         'Identity Credit Withdrawal'
       ];
 
-      // Verify exact match - contains all expected and no unexpected ones
-      expect(transitionTypes).toHaveLength(expectedTransitionTypes.length);
-      expectedTransitionTypes.forEach(expectedType => {
-        expect(transitionTypes).toContain(expectedType);
-      });
-
+      expect(new Set(transitionTypes)).toEqual(new Set(expected));
+      expect(transitionTypes.length).toBe(expected.length);
       console.log('✅ Identity transition types populated correctly:', transitionTypes);
     });
 
@@ -1369,21 +1364,14 @@ test.describe('WASM SDK State Transition Tests', () => {
       await wasmSdkPage.setOperationType('transitions');
       await wasmSdkPage.setQueryCategory('dataContract');
 
-      // Get available transition types and filter out placeholders
-      const allTransitionTypes = await wasmSdkPage.getAvailableQueryTypes();
-      const transitionTypes = filterPlaceholderOptions(allTransitionTypes);
+      const transitionTypes = filterPlaceholderOptions(
+        await wasmSdkPage.getAvailableQueryTypes()
+      );
 
-      // Define expected data contract transition types
-      const expectedTransitionTypes = [
-        'Data Contract Create',
-        'Data Contract Update'
-      ];
+      const expected = ['Data Contract Create', 'Data Contract Update'];
 
-      // Verify exact match - contains all expected and no unexpected ones
-      expect(transitionTypes).toHaveLength(expectedTransitionTypes.length);
-      expectedTransitionTypes.forEach(expectedType => {
-        expect(transitionTypes).toContain(expectedType);
-      });
+      expect(new Set(transitionTypes)).toEqual(new Set(expected));
+      expect(transitionTypes.length).toBe(expected.length);
 
       console.log('✅ Data contract transition types populated correctly:', transitionTypes);
     });
@@ -1392,12 +1380,11 @@ test.describe('WASM SDK State Transition Tests', () => {
       await wasmSdkPage.setOperationType('transitions');
       await wasmSdkPage.setQueryCategory('document');
 
-      // Get available transition types and filter out placeholders
-      const allTransitionTypes = await wasmSdkPage.getAvailableQueryTypes();
-      const transitionTypes = filterPlaceholderOptions(allTransitionTypes);
+      const transitionTypes = filterPlaceholderOptions(
+        await wasmSdkPage.getAvailableQueryTypes()
+      );
 
-      // Define expected document transition types
-      const expectedTransitionTypes = [
+      const expected = [
         'Document Create',
         'Document Replace',
         'Document Delete',
@@ -1407,11 +1394,8 @@ test.describe('WASM SDK State Transition Tests', () => {
         'DPNS Register Name'
       ];
 
-      // Verify exact match - contains all expected and no unexpected ones
-      expect(transitionTypes).toHaveLength(expectedTransitionTypes.length);
-      expectedTransitionTypes.forEach(expectedType => {
-        expect(transitionTypes).toContain(expectedType);
-      });
+      expect(new Set(transitionTypes)).toEqual(new Set(expected));
+      expect(transitionTypes.length).toBe(expected.length);
 
       console.log('✅ Document transition types populated correctly:', transitionTypes);
     });
@@ -1420,12 +1404,11 @@ test.describe('WASM SDK State Transition Tests', () => {
       await wasmSdkPage.setOperationType('transitions');
       await wasmSdkPage.setQueryCategory('token');
 
-      // Get available transition types and filter out placeholders
-      const allTransitionTypes = await wasmSdkPage.getAvailableQueryTypes();
-      const transitionTypes = filterPlaceholderOptions(allTransitionTypes);
+      const transitionTypes = filterPlaceholderOptions(
+        await wasmSdkPage.getAvailableQueryTypes()
+      );
 
-      // Define expected token transition types (based on docs.html)
-      const expectedTransitionTypes = [
+      const expected = [
         'Token Burn',
         'Token Mint',
         'Token Claim',
@@ -1438,11 +1421,8 @@ test.describe('WASM SDK State Transition Tests', () => {
         'Token Destroy Frozen'
       ];
 
-      // Verify exact match - contains all expected and no unexpected ones
-      expect(transitionTypes).toHaveLength(expectedTransitionTypes.length);
-      expectedTransitionTypes.forEach(expectedType => {
-        expect(transitionTypes).toContain(expectedType);
-      });
+      expect(new Set(transitionTypes)).toEqual(new Set(expected));
+      expect(transitionTypes.length).toBe(expected.length);
 
       console.log('✅ Token transition types populated correctly:', transitionTypes);
     });
@@ -1451,21 +1431,14 @@ test.describe('WASM SDK State Transition Tests', () => {
       await wasmSdkPage.setOperationType('transitions');
       await wasmSdkPage.setQueryCategory('voting');
 
-      // Get available transition types and filter out placeholders
-      const allTransitionTypes = await wasmSdkPage.getAvailableQueryTypes();
-      const transitionTypes = filterPlaceholderOptions(allTransitionTypes);
+      const transitionTypes = filterPlaceholderOptions(
+        await wasmSdkPage.getAvailableQueryTypes()
+      );
 
-      // Define expected voting transition types
-      const expectedTransitionTypes = [
-        'DPNS Username',
-        'Contested Resource'
-      ];
+      const expected = ['DPNS Username', 'Contested Resource'];
 
-      // Verify exact match - contains all expected and no unexpected ones
-      expect(transitionTypes).toHaveLength(expectedTransitionTypes.length);
-      expectedTransitionTypes.forEach(expectedType => {
-        expect(transitionTypes).toContain(expectedType);
-      });
+      expect(new Set(transitionTypes)).toEqual(new Set(expected));
+      expect(transitionTypes.length).toBe(expected.length);
 
       console.log('✅ Voting transition types populated correctly:', transitionTypes);
     });
