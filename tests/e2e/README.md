@@ -1,16 +1,15 @@
-# WASM SDK UI Automation Tests
+# Evo SDK Testing Suite
 
-Automated testing suite for the WASM SDK web interface (`index.html`) using Playwright.
+Testing suite for the Evo SDK web interface using Playwright.
 
 ## Features
 
-- **Cross-browser testing** (currently configured for Chromium, easily extensible)
-- **Automated parameter injection** from existing test data
+- **Project-based test organization** (site, smoke, queries, transitions)
+- **Cross-browser testing** with Chromium support
+- **Automated parameter injection** from centralized test data
 - **Page Object Model** for maintainable test code
 - **Network switching** (testnet/mainnet) testing
-- **Error handling** and validation testing
 - **Comprehensive reporting** with screenshots and videos on failure
-- **GitHub Actions integration** for automated testing
 
 ## Quick Start
 
@@ -18,102 +17,117 @@ Automated testing suite for the WASM SDK web interface (`index.html`) using Play
 
 - Node.js 18+ installed
 - Python 3 for serving the web interface
-- Linux environment (Ubuntu/Debian recommended)
-
-### Installation
-
-```bash
-cd /path/to/wasm-sdk/test/ui-automation
-npm install
-npx playwright install chromium
-```
+- Evo SDK built at `public/dist/sdk.js`
 
 ### Running Tests
 
-The easiest way to run tests is using the provided shell script:
+**From the root directory** (recommended for quick execution):
 
 ```bash
-# From any directory, using the test runner script:
-./run-ui-tests.sh smoke          # Basic functionality tests
-./run-ui-tests.sh queries        # Query execution tests  
-./run-ui-tests.sh parameterized  # Comprehensive parameter testing
-./run-ui-tests.sh all           # Run all tests (default)
+# Install dependencies and browsers (one-time setup)
+yarn install
+yarn install-browsers
 
-# Run in headed mode (see browser)
-./run-ui-tests.sh headed
+# Run all tests
+yarn test
 
-# Debug mode with detailed output
+# Run specific test projects
+yarn test:smoke         # Smoke tests (SDK UI functionality)
+yarn test:queries       # Query execution tests
+yarn test:transitions   # State transition tests
+
+# Interactive modes
+yarn test:ui            # Visual test runner
+
+# View results
+yarn test:report        # Open HTML report
+```
+
+**Using the comprehensive test runner** (recommended for validation):
+
+```bash
+# From tests/e2e/ directory - includes setup validation
+./run-ui-tests.sh smoke       # Basic functionality tests
+./run-ui-tests.sh queries     # Query execution tests
+./run-ui-tests.sh transitions # State transition tests
+./run-ui-tests.sh all         # Run all tests (default)
+
+# Interactive modes via script
+./run-ui-tests.sh headed      # Run with visible browser
+./run-ui-tests.sh ui          # Visual test runner
+./run-ui-tests.sh debug       # Debug mode
+
+# Debug with detailed output
 DEBUG=true ./run-ui-tests.sh smoke
-
-# Pattern matching for specific tests
-./run-ui-tests.sh --grep="should initialize SDK"
 ```
 
-**Alternative: Direct npm commands** (from ui-automation directory):
+## Test Organization
 
-```bash
-npm test                    # Run all tests
-npm run test:smoke          # Basic functionality tests
-npm run test:queries        # Query execution tests
-npm run test:parameterized  # Comprehensive parameter testing
-npm run test:headed         # Run in headed mode
-npm run test:debug          # Debug mode
-npm run test:report         # View HTML report
-```
+### Test Projects
 
-## Test Structure
+The test suite is organized into four distinct projects:
 
-### Test Categories
+1. **site-tests** (3 tests) - `tests/site.spec.ts`
+   - Basic website functionality
+   - Documentation page loading
+   - Simple query execution
 
-1. **Basic Smoke Tests** (`basic-smoke.spec.js`)
-   - SDK initialization
-   - UI component visibility
-   - Network switching
+2. **smoke-tests** (27 tests) - `tests/e2e/smoke/basic-smoke.spec.js`
+   - SDK initialization and UI validation
+   - Network switching functionality
    - Basic interaction flows
+   - State transition UI validation
 
-2. **Query Execution Tests** (`query-execution.spec.js`)
-   - Identity queries (getIdentity, getIdentityBalance, getIdentityKeys, etc.)
-   - Data contract queries (getDataContract, getDataContracts, getDataContractHistory)
+3. **query-tests** (109 tests) - `tests/e2e/queries/query-execution.spec.js`
+   - Identity queries (getIdentity, getIdentityBalance, etc.)
+   - Data contract queries (getDataContract, getDataContracts, etc.)
    - Document queries (getDocuments, getDocument)
-   - System queries (getStatus, getCurrentEpoch, getTotalCreditsInPlatform)
-   - Error handling scenarios
-   - Proof support testing with automatic fallback
+   - System queries (getStatus, getCurrentEpoch, etc.)
+   - Token, DPNS, voting, and protocol queries
+   - Error handling and proof support testing
 
-3. **Parameterized Tests** (`parameterized-queries.spec.js`)
-   - Multiple parameter sets per query type
-   - Cross-network testing scenarios
-   - Parameter validation testing
+4. **transition-tests** (26 tests) - `tests/e2e/transitions/state-transitions.spec.js`
+   - Data contract create/update transitions
+   - Document create/replace/delete/transfer transitions
+   - Identity credit transfer/withdrawal transitions
+   - Token mint/transfer/burn/freeze transitions
+   - Authentication input validation
 
-### Architecture
+### Directory Structure
 
 ```text
-ui-automation/
-├── tests/                  # Test specification files
-│   ├── basic-smoke.spec.js        # Basic functionality tests
-│   ├── query-execution.spec.js    # Comprehensive query testing
-│   └── parameterized-queries.spec.js # Multi-parameter testing
-├── utils/                  # Test utilities and page objects
-│   ├── base-test.js       # Base test functionality
-│   ├── wasm-sdk-page.js   # Page Object Model for index.html
-│   └── parameter-injector.js # Parameter injection system
-├── fixtures/              # Test data and fixtures
-│   └── test-data.js       # Centralized test parameters
-├── playwright.config.js   # Playwright configuration
-├── run-ui-tests.sh        # Comprehensive test runner script
-└── package.json           # npm scripts and dependencies
+tests/
+├── site.spec.ts              # Basic site functionality tests
+└── e2e/                      # E2E test suite
+    ├── smoke/                # Quick validation tests
+    │   └── basic-smoke.spec.js
+    ├── queries/              # Query execution tests
+    │   └── query-execution.spec.js
+    ├── transitions/          # State transition tests
+    │   └── state-transitions.spec.js
+    ├── utils/                # Test utilities and page objects
+    │   ├── base-test.js      # Base test functionality
+    │   ├── sdk-page.js       # Page Object Model for SDK interface
+    │   └── parameter-injector.js # Parameter injection system
+    ├── fixtures/             # Test data and fixtures
+    │   └── test-data.js      # Centralized test parameters
+    ├── run-ui-tests.sh       # Comprehensive test runner script
+    └── README.md             # This file
 ```
 
 ## Configuration
 
-### Playwright Configuration
+### Playwright Setup
 
-The `playwright.config.js` file is configured for:
+The testing suite uses a unified configuration approach:
 
-- **Base URL**: `http://localhost:8888` (server managed via Playwright config's `webServer`)
+- **Dependencies**: In `package.json`
+- **Configuration**: `playwright.config.ts` in root directory
+- **Base URL**: `http://localhost:8081` (auto-managed web server)
 - **Browsers**: Chromium (headless by default)
 - **Timeouts**: 30s for actions, 120s for tests
 - **Reporters**: HTML, JSON, and console output
-- **Screenshots/Videos**: On failure only
+- **CI Handling**: Conditional test execution (skips slow tests in CI)
 
 ### Test Data
 
@@ -124,72 +138,122 @@ Test parameters are centralized in `fixtures/test-data.js` and include:
 - Document IDs and examples
 - Token IDs for testing
 - Parameter sets for each query type
+- State transition authentication data
 
-## Usage Examples
+## Command Reference
 
-### Running Specific Tests
+### Yarn Commands (from root)
 
 ```bash
-# Run only identity query tests
-npx playwright test --grep "Identity Queries"
+# Basic execution
+yarn test                   # Run all tests
+yarn test:smoke            # Run smoke tests only
+yarn test:queries          # Run query tests only
+yarn test:transitions      # Run transition tests only
 
-# Run tests for a specific query
-npx playwright test --grep "getIdentity"
+# Interactive modes
+yarn test:ui               # Visual test runner
+yarn test:report           # View HTML report
 
-# Run tests on headed browser for debugging
-npx playwright test --headed --grep "smoke"
+# Development
+yarn test:all              # Run with comprehensive reporting
+yarn test:ci               # CI-friendly output
+yarn install-browsers     # Install Playwright browsers
 ```
 
-### Adding New Tests
+### run-ui-tests.sh Script
 
-1. **Add test data** to `fixtures/test-data.js`
-2. **Create test file** in `tests/` directory
-3. **Use page object** for UI interactions
-4. **Use parameter injector** for form filling
+```bash
+# Basic execution with validation
+./run-ui-tests.sh [smoke|queries|transitions|all]
 
-Example:
+# Interactive modes
+./run-ui-tests.sh [headed|debug|ui]
+
+# Environment options
+DEBUG=true ./run-ui-tests.sh smoke    # Detailed output
+```
+
+### Direct Playwright Commands
+
+```bash
+# From root directory
+yarn playwright test --project=site-tests
+yarn playwright test --project=smoke-tests
+yarn playwright test --project=parallel-e2e-tests
+yarn playwright test --project=sequential-e2e-tests
+
+# Pattern matching
+yarn playwright test --grep "Identity Queries"
+yarn playwright test --grep "getIdentity"
+```
+
+## Adding New Tests
+
+### 1. Add Test Data
+
+Update `fixtures/test-data.js` with new parameters:
+
+```javascript
+const newQueryParameters = {
+  myCategory: {
+    myQueryType: {
+      testnet: [
+        { id: 'someIdentityId', limit: 10 }
+      ]
+    }
+  }
+};
+```
+
+### 2. Create Test Cases
+
+Use the page object model and parameter injector:
 
 ```javascript
 const { test, expect } = require('@playwright/test');
-const { EvoSdkPage } = require('../utils/wasm-sdk-page');
+const { EvoSdkPage } = require('../utils/sdk-page');
 const { ParameterInjector } = require('../utils/parameter-injector');
 
 test('should execute my new query', async ({ page }) => {
   const evoSdkPage = new EvoSdkPage(page);
   const parameterInjector = new ParameterInjector(evoSdkPage);
-  
+
   await evoSdkPage.initialize('testnet');
   await evoSdkPage.setupQuery('myCategory', 'myQueryType');
-  
+
   const success = await parameterInjector.injectParameters('myCategory', 'myQueryType');
   expect(success).toBe(true);
-  
+
   const result = await evoSdkPage.executeQueryAndGetResult();
   expect(result.success || result.hasError).toBe(true);
 });
 ```
 
+### 3. Choose Test Location
+
+- **Site tests**: Basic website functionality → `tests/site.spec.ts`
+- **Smoke tests**: SDK UI validation → `tests/e2e/smoke/basic-smoke.spec.js`
+- **Query tests**: Query execution → `tests/e2e/queries/query-execution.spec.js`
+- **Transition tests**: State transitions → `tests/e2e/transitions/state-transitions.spec.js`
+
 ## CI/CD Integration
 
-### GitHub Actions Integration
+### Automatic Execution
 
-Tests run automatically in CI or can be triggered manually with different configurations:
+Tests are configured for CI environments with:
 
-- Automatic execution after WASM SDK builds
-- Manual execution with configurable test types and browsers
-- Comprehensive reporting with HTML reports and test artifacts
+- **Conditional execution**: Slow tests (transitions) skip in CI
+- **Proper retry logic**: 2 retries on CI
+- **Multiple reporters**: GitHub Actions, JSON, HTML
+- **Artifact collection**: Screenshots, videos, traces
 
-### Local CI Testing
-
-For continuous integration, use the test runner script which handles all setup automatically:
+### CI Commands
 
 ```bash
-# In CI environment - the script handles all prerequisites
-./run-ui-tests.sh smoke     # Quick smoke tests for PR validation
-./run-ui-tests.sh all       # Full test suite for releases
-
-# CI-friendly JSON output
-DEBUG=false ./run-ui-tests.sh all
+# In CI environment
+yarn test:ci              # CI-friendly output
+./run-ui-tests.sh all     # Full validation with setup checks
 
 # Results available in:
 # - playwright-report/ (HTML)
@@ -197,61 +261,53 @@ DEBUG=false ./run-ui-tests.sh all
 # - test-results/ (screenshots, videos)
 ```
 
-**Manual CI setup** (if not using the script):
+## When to Use What
 
-```bash
-# Install system dependencies
-sudo npx playwright install-deps
-npx playwright install chromium
+**Use `yarn test:*`** when:
 
-# Run tests with CI-friendly output  
-npm run test:ci
+- Everything is already set up
+- Quick development iteration
+- Running specific test categories
 
-# Results will be in test-results/ directory
-```
+**Use `run-ui-tests.sh`** when:
+
+- First time setup
+- Validating environment prerequisites
+- Need automatic dependency installation
+- Running in CI/CD environments
+- Want detailed progress output
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Dependencies missing**: Run `sudo npx playwright install-deps`
-2. **Port 8888 in use**: Playwright config's `webServer` starts the server automatically; ensure the port is free or update the config
-3. **WASM build issues**: The script rebuilds WASM if needed
+1. **Missing dependencies**: Run `yarn install && yarn install-browsers`
+2. **Port conflicts**: Playwright auto-manages port 8081
+3. **SDK not built**: Ensure `public/dist/sdk.js` exists
 4. **Test timeouts**: Use `DEBUG=true ./run-ui-tests.sh` for details
 
 ### Debug Mode
 
 ```bash
-# See detailed execution logs
+# Detailed execution logs
 DEBUG=true ./run-ui-tests.sh smoke
 
-# Run with visible browser
-./run-ui-tests.sh headed
-
-# Interactive debugging
-./run-ui-tests.sh debug
+# Visual debugging
+yarn test:ui
 ```
-
-## Extending Tests
-
-To add new tests:
-
-1. Add test data to `fixtures/test-data.js`
-2. Create test cases using the page object model
-3. Use `parameter-injector.js` for form filling
-
-## Known Issues
-
-- Some queries don't yet support proof information in the WASM SDK
-- Tests automatically skip proof testing for unsupported queries
-- All core functionality works correctly
 
 ## Support
 
 For issues or questions:
 
-1. Use `DEBUG=true ./run-ui-tests.sh` to get detailed execution information
-2. Check the HTML reports in `playwright-report/` for visual debugging
-3. Review the implementation summary in `IMPLEMENTATION_SUMMARY.md`
-4. Examine test screenshots and videos in `test-results/` for failed tests
-5. Check GitHub Actions workflow runs for CI/CD issues
+1. **Environment validation**: `./run-ui-tests.sh` with DEBUG mode
+2. **Visual debugging**: Check HTML reports in `playwright-report/`
+3. **Test artifacts**: Review screenshots/videos in `test-results/`
+4. **Configuration**: Verify `playwright.config.ts` in root directory
+5. **Dependencies**: Ensure unified setup with root `package.json`
+
+## Known Issues & Limitations
+
+- State transition tests are slow and skip in CI environments
+- Some queries don't support proof information (tests automatically adapt)
+- Currently configured for Chromium only
