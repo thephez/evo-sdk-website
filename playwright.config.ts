@@ -56,7 +56,7 @@ export default defineConfig({
       name: 'smoke-tests',
       testMatch: ['tests/e2e/smoke/*.spec.js'],
       fullyParallel: true,
-      workers: process.env.CI ? 1 : undefined,
+      // workers: process.env.CI ? 1 : undefined,
       use: {
         ...devices['Desktop Chrome'],
         headless: true,
@@ -67,7 +67,7 @@ export default defineConfig({
       name: 'parallel-e2e-tests',
       testMatch: ['tests/e2e/queries/*.spec.js'],
       fullyParallel: true,
-      workers: process.env.CI ? 1 : undefined,
+      // workers: process.env.CI ? 1 : undefined,
       use: {
         ...devices['Desktop Chrome'],
         headless: true,
