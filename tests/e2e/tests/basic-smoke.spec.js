@@ -1,5 +1,5 @@
 const { test, expect } = require('@playwright/test');
-const { WasmSdkPage } = require('../utils/wasm-sdk-page');
+const { EvoSdkPage } = require('../utils/sdk-page');
 
 /**
  * Filter out placeholder options from dropdown arrays
@@ -29,12 +29,12 @@ function ensureExactOptions(actual, expected, label) {
     .toBe(expected.length);
 }
 
-test.describe('JS Evo SDK Basic Smoke Tests', () => {
-  let wasmSdkPage;
+test.describe('Evo SDK Basic Smoke Tests', () => {
+  let evoSdkPage;
 
   test.beforeEach(async ({ page }) => {
-    wasmSdkPage = new WasmSdkPage(page);
-    await wasmSdkPage.initialize('testnet');
+    evoSdkPage = new EvoSdkPage(page);
+    await evoSdkPage.initialize('testnet');
   });
 
   test('should initialize SDK successfully', async () => {
@@ -44,7 +44,7 @@ test.describe('JS Evo SDK Basic Smoke Tests', () => {
     const maxAttempts = 3;
     
     while (attempts < maxAttempts) {
-      statusState = await wasmSdkPage.getStatusBannerState();
+      statusState = await evoSdkPage.getStatusBannerState();
       
       if (statusState === 'success') {
         break;
@@ -52,8 +52,8 @@ test.describe('JS Evo SDK Basic Smoke Tests', () => {
       
       if (statusState === 'loading') {
         // Wait for loading to complete
-        await wasmSdkPage.waitForSdkReady();
-        statusState = await wasmSdkPage.getStatusBannerState();
+        await evoSdkPage.waitForSdkReady();
+        statusState = await evoSdkPage.getStatusBannerState();
         
         if (statusState === 'success') {
           break;
@@ -62,7 +62,7 @@ test.describe('JS Evo SDK Basic Smoke Tests', () => {
       
       attempts++;
       if (attempts < maxAttempts) {
-        await wasmSdkPage.page.waitForTimeout(2000);
+        await evoSdkPage.page.waitForTimeout(2000);
       }
     }
     
@@ -70,14 +70,14 @@ test.describe('JS Evo SDK Basic Smoke Tests', () => {
     expect(statusState).toBe('success');
     
     // Verify network is set to testnet
-    const networkIndicator = wasmSdkPage.page.locator('#networkIndicator');
+    const networkIndicator = evoSdkPage.page.locator('#networkIndicator');
     await expect(networkIndicator).toContainText('TESTNET');
   });
 
   test('should load query categories', async () => {
-    await wasmSdkPage.setOperationType('queries');
+    await evoSdkPage.setOperationType('queries');
     
-    const categories = await wasmSdkPage.getAvailableQueryCategories();
+    const categories = await evoSdkPage.getAvailableQueryCategories();
     
     // Check that we have the expected categories
     const expectedCategories = [
@@ -100,21 +100,21 @@ test.describe('JS Evo SDK Basic Smoke Tests', () => {
 
   test('should switch between networks', async () => {
     // Test switching to mainnet
-    await wasmSdkPage.setNetwork('mainnet');
-    const mainnetIndicator = wasmSdkPage.page.locator('#networkIndicator');
+    await evoSdkPage.setNetwork('mainnet');
+    const mainnetIndicator = evoSdkPage.page.locator('#networkIndicator');
     await expect(mainnetIndicator).toContainText('MAINNET');
     
     // Switch back to testnet
-    await wasmSdkPage.setNetwork('testnet');
-    const testnetIndicator = wasmSdkPage.page.locator('#networkIndicator');
+    await evoSdkPage.setNetwork('testnet');
+    const testnetIndicator = evoSdkPage.page.locator('#networkIndicator');
     await expect(testnetIndicator).toContainText('TESTNET');
   });
 
   test('should show query types when category is selected', async () => {
-    await wasmSdkPage.setOperationType('queries');
-    await wasmSdkPage.setQueryCategory('identity');
+    await evoSdkPage.setOperationType('queries');
+    await evoSdkPage.setQueryCategory('identity');
     
-    const queryTypes = await wasmSdkPage.getAvailableQueryTypes();
+    const queryTypes = await evoSdkPage.getAvailableQueryTypes();
     
     // Should have some identity query types
     expect(queryTypes.length).toBeGreaterThan(0);
@@ -122,69 +122,69 @@ test.describe('JS Evo SDK Basic Smoke Tests', () => {
   });
 
   test('should show input fields when query type is selected', async () => {
-    await wasmSdkPage.setOperationType('queries');
-    await wasmSdkPage.setQueryCategory('identity');
-    await wasmSdkPage.setQueryType('getIdentity');
+    await evoSdkPage.setOperationType('queries');
+    await evoSdkPage.setQueryCategory('identity');
+    await evoSdkPage.setQueryType('getIdentity');
     
     // Should show query inputs container
-    const queryInputs = wasmSdkPage.page.locator('#queryInputs');
+    const queryInputs = evoSdkPage.page.locator('#queryInputs');
     await expect(queryInputs).toBeVisible();
     
     // Should show execute button
-    const executeButton = wasmSdkPage.page.locator('#executeQuery');
+    const executeButton = evoSdkPage.page.locator('#executeQuery');
     await expect(executeButton).toBeVisible();
   });
 
   test('should enable/disable execute button based on form completion', async () => {
-    await wasmSdkPage.setOperationType('queries');
-    await wasmSdkPage.setQueryCategory('identity');
-    await wasmSdkPage.setQueryType('getIdentity');
+    await evoSdkPage.setOperationType('queries');
+    await evoSdkPage.setQueryCategory('identity');
+    await evoSdkPage.setQueryType('getIdentity');
     
-    const executeButton = wasmSdkPage.page.locator('#executeQuery');
+    const executeButton = evoSdkPage.page.locator('#executeQuery');
     
     // Button should be enabled (even without required params for this test)
     await expect(executeButton).toBeVisible();
   });
 
   test('should clear results when clear button is clicked', async () => {
-    await wasmSdkPage.setOperationType('queries');
-    await wasmSdkPage.setQueryCategory('system');
-    await wasmSdkPage.setQueryType('getStatus');
+    await evoSdkPage.setOperationType('queries');
+    await evoSdkPage.setQueryCategory('system');
+    await evoSdkPage.setQueryType('getStatus');
     
     // Execute a simple query first
-    await wasmSdkPage.executeQuery();
+    await evoSdkPage.executeQuery();
     
     // Clear results
-    await wasmSdkPage.clearResults();
+    await evoSdkPage.clearResults();
     
     // Verify results are cleared
-    const resultContent = wasmSdkPage.page.locator('#identityInfo');
+    const resultContent = evoSdkPage.page.locator('#identityInfo');
     await expect(resultContent).toHaveClass(/empty/);
   });
 
   test('should toggle proof information', async () => {
-    await wasmSdkPage.setOperationType('queries');
-    await wasmSdkPage.setQueryCategory('identity');
-    await wasmSdkPage.setQueryType('getIdentity');
+    await evoSdkPage.setOperationType('queries');
+    await evoSdkPage.setQueryCategory('identity');
+    await evoSdkPage.setQueryType('getIdentity');
     
     // Wait a moment for UI to fully load
-    await wasmSdkPage.page.waitForTimeout(1000);
+    await evoSdkPage.page.waitForTimeout(1000);
     
     // Check if proof toggle is available
-    const proofContainer = wasmSdkPage.page.locator('#proofToggleContainer');
+    const proofContainer = evoSdkPage.page.locator('#proofToggleContainer');
     
     try {
       // Wait for container to potentially appear
       await proofContainer.waitFor({ state: 'visible', timeout: 5000 });
       
       // Test enabling proof info
-      const enableSuccess = await wasmSdkPage.enableProofInfo();
+      const enableSuccess = await evoSdkPage.enableProofInfo();
       if (enableSuccess) {
-        const proofToggle = wasmSdkPage.page.locator('#proofToggle');
+        const proofToggle = evoSdkPage.page.locator('#proofToggle');
         await expect(proofToggle).toBeChecked();
         
         // Test disabling proof info
-        const disableSuccess = await wasmSdkPage.disableProofInfo();
+        const disableSuccess = await evoSdkPage.disableProofInfo();
         if (disableSuccess) {
           await expect(proofToggle).not.toBeChecked();
         }
@@ -197,11 +197,11 @@ test.describe('JS Evo SDK Basic Smoke Tests', () => {
   });
 
   test('should show query description when available', async () => {
-    await wasmSdkPage.setOperationType('queries');
-    await wasmSdkPage.setQueryCategory('identity');
-    await wasmSdkPage.setQueryType('getIdentity');
+    await evoSdkPage.setOperationType('queries');
+    await evoSdkPage.setQueryCategory('identity');
+    await evoSdkPage.setQueryType('getIdentity');
     
-    const description = await wasmSdkPage.getQueryDescription();
+    const description = await evoSdkPage.getQueryDescription();
     
     if (description) {
       expect(description.length).toBeGreaterThan(0);
@@ -210,32 +210,32 @@ test.describe('JS Evo SDK Basic Smoke Tests', () => {
 });
 
 test.describe('State Transitions UI Tests', () => {
-  let wasmSdkPage;
+  let evoSdkPage;
 
   test.beforeEach(async ({ page }) => {
-    wasmSdkPage = new WasmSdkPage(page);
-    await wasmSdkPage.initialize('testnet');
+    evoSdkPage = new EvoSdkPage(page);
+    await evoSdkPage.initialize('testnet');
   });
 
   test('should switch to state transitions operation type correctly', async () => {
     // Start with queries, then switch to transitions
-    await wasmSdkPage.setOperationType('queries');
-    await wasmSdkPage.page.waitForTimeout(500);
+    await evoSdkPage.setOperationType('queries');
+    await evoSdkPage.page.waitForTimeout(500);
 
-    await wasmSdkPage.setOperationType('transitions');
+    await evoSdkPage.setOperationType('transitions');
 
     // Verify the operation type is set correctly
-    const operationType = await wasmSdkPage.page.locator('#operationType').inputValue();
+    const operationType = await evoSdkPage.page.locator('#operationType').inputValue();
     expect(operationType).toBe('transitions');
 
     console.log('✅ Successfully switched to state transitions operation type');
   });
 
   test('should populate transition categories correctly', async () => {
-    await wasmSdkPage.setOperationType('transitions');
+    await evoSdkPage.setOperationType('transitions');
 
     const categories = filterPlaceholderOptions(
-      await wasmSdkPage.getAvailableQueryCategories()
+      await evoSdkPage.getAvailableQueryCategories()
     );
 
     const expected = [
@@ -257,11 +257,11 @@ test.describe('State Transitions UI Tests', () => {
   });
 
   test('should populate identity transition types correctly', async () => {
-    await wasmSdkPage.setOperationType('transitions');
-    await wasmSdkPage.setQueryCategory('identity');
+    await evoSdkPage.setOperationType('transitions');
+    await evoSdkPage.setQueryCategory('identity');
 
     const transitionTypes = filterPlaceholderOptions(
-      await wasmSdkPage.getAvailableQueryTypes()
+      await evoSdkPage.getAvailableQueryTypes()
     );
 
     const expected = [
@@ -278,11 +278,11 @@ test.describe('State Transitions UI Tests', () => {
   });
 
   test('should populate data contract transition types correctly', async () => {
-    await wasmSdkPage.setOperationType('transitions');
-    await wasmSdkPage.setQueryCategory('dataContract');
+    await evoSdkPage.setOperationType('transitions');
+    await evoSdkPage.setQueryCategory('dataContract');
 
     const transitionTypes = filterPlaceholderOptions(
-      await wasmSdkPage.getAvailableQueryTypes()
+      await evoSdkPage.getAvailableQueryTypes()
     );
 
     const expected = ['Data Contract Create', 'Data Contract Update'];
@@ -294,11 +294,11 @@ test.describe('State Transitions UI Tests', () => {
   });
 
   test('should populate document transition types correctly', async () => {
-    await wasmSdkPage.setOperationType('transitions');
-    await wasmSdkPage.setQueryCategory('document');
+    await evoSdkPage.setOperationType('transitions');
+    await evoSdkPage.setQueryCategory('document');
 
     const transitionTypes = filterPlaceholderOptions(
-      await wasmSdkPage.getAvailableQueryTypes()
+      await evoSdkPage.getAvailableQueryTypes()
     );
 
     const expected = [
@@ -318,11 +318,11 @@ test.describe('State Transitions UI Tests', () => {
   });
 
   test('should populate token transition types correctly', async () => {
-    await wasmSdkPage.setOperationType('transitions');
-    await wasmSdkPage.setQueryCategory('token');
+    await evoSdkPage.setOperationType('transitions');
+    await evoSdkPage.setQueryCategory('token');
 
     const transitionTypes = filterPlaceholderOptions(
-      await wasmSdkPage.getAvailableQueryTypes()
+      await evoSdkPage.getAvailableQueryTypes()
     );
 
     const expected = [
@@ -345,11 +345,11 @@ test.describe('State Transitions UI Tests', () => {
   });
 
   test('should populate voting transition types correctly', async () => {
-    await wasmSdkPage.setOperationType('transitions');
-    await wasmSdkPage.setQueryCategory('voting');
+    await evoSdkPage.setOperationType('transitions');
+    await evoSdkPage.setQueryCategory('voting');
 
     const transitionTypes = filterPlaceholderOptions(
-      await wasmSdkPage.getAvailableQueryTypes()
+      await evoSdkPage.getAvailableQueryTypes()
     );
 
     const expected = ['DPNS Username', 'Contested Resource'];
@@ -362,18 +362,18 @@ test.describe('State Transitions UI Tests', () => {
 });
 
 test.describe('Query Categories and Types UI Tests', () => {
-  let wasmSdkPage;
+  let evoSdkPage;
 
   test.beforeEach(async ({ page }) => {
-    wasmSdkPage = new WasmSdkPage(page);
-    await wasmSdkPage.initialize('testnet');
+    evoSdkPage = new EvoSdkPage(page);
+    await evoSdkPage.initialize('testnet');
   });
 
   test('should populate all query categories correctly', async () => {
-    await wasmSdkPage.setOperationType('queries');
+    await evoSdkPage.setOperationType('queries');
 
     const categories = filterPlaceholderOptions(
-      await wasmSdkPage.getAvailableQueryCategories()
+      await evoSdkPage.getAvailableQueryCategories()
     );
 
     const expected = [
@@ -395,11 +395,11 @@ test.describe('Query Categories and Types UI Tests', () => {
   });
 
   test('should populate identity query types correctly', async () => {
-    await wasmSdkPage.setOperationType('queries');
-    await wasmSdkPage.setQueryCategory('identity');
+    await evoSdkPage.setOperationType('queries');
+    await evoSdkPage.setQueryCategory('identity');
 
     const queryTypes = filterPlaceholderOptions(
-      await wasmSdkPage.getAvailableQueryTypes()
+      await evoSdkPage.getAvailableQueryTypes()
     );
 
     const expected = [
@@ -426,11 +426,11 @@ test.describe('Query Categories and Types UI Tests', () => {
   });
 
   test('should populate data contract query types correctly', async () => {
-    await wasmSdkPage.setOperationType('queries');
-    await wasmSdkPage.setQueryCategory('dataContract');
+    await evoSdkPage.setOperationType('queries');
+    await evoSdkPage.setQueryCategory('dataContract');
 
     const queryTypes = filterPlaceholderOptions(
-      await wasmSdkPage.getAvailableQueryTypes()
+      await evoSdkPage.getAvailableQueryTypes()
     );
 
     const expected = [
@@ -445,11 +445,11 @@ test.describe('Query Categories and Types UI Tests', () => {
   });
 
   test('should populate document query types correctly', async () => {
-    await wasmSdkPage.setOperationType('queries');
-    await wasmSdkPage.setQueryCategory('document');
+    await evoSdkPage.setOperationType('queries');
+    await evoSdkPage.setQueryCategory('document');
 
     const queryTypes = filterPlaceholderOptions(
-      await wasmSdkPage.getAvailableQueryTypes()
+      await evoSdkPage.getAvailableQueryTypes()
     );
 
     const expected = [
@@ -463,11 +463,11 @@ test.describe('Query Categories and Types UI Tests', () => {
   });
 
   test('should populate DPNS query types correctly', async () => {
-    await wasmSdkPage.setOperationType('queries');
-    await wasmSdkPage.setQueryCategory('dpns');
+    await evoSdkPage.setOperationType('queries');
+    await evoSdkPage.setQueryCategory('dpns');
 
     const queryTypes = filterPlaceholderOptions(
-      await wasmSdkPage.getAvailableQueryTypes()
+      await evoSdkPage.getAvailableQueryTypes()
     );
 
     const expected = [
@@ -487,11 +487,11 @@ test.describe('Query Categories and Types UI Tests', () => {
   });
 
   test('should populate system query types correctly', async () => {
-    await wasmSdkPage.setOperationType('queries');
-    await wasmSdkPage.setQueryCategory('system');
+    await evoSdkPage.setOperationType('queries');
+    await evoSdkPage.setQueryCategory('system');
 
     const queryTypes = filterPlaceholderOptions(
-      await wasmSdkPage.getAvailableQueryTypes()
+      await evoSdkPage.getAvailableQueryTypes()
     );
 
     const expected = [
@@ -509,11 +509,11 @@ test.describe('Query Categories and Types UI Tests', () => {
   });
 
   test('should populate protocol query types correctly', async () => {
-    await wasmSdkPage.setOperationType('queries');
-    await wasmSdkPage.setQueryCategory('protocol');
+    await evoSdkPage.setOperationType('queries');
+    await evoSdkPage.setQueryCategory('protocol');
 
     const queryTypes = filterPlaceholderOptions(
-      await wasmSdkPage.getAvailableQueryTypes()
+      await evoSdkPage.getAvailableQueryTypes()
     );
 
     const expected = [
@@ -527,11 +527,11 @@ test.describe('Query Categories and Types UI Tests', () => {
   });
 
   test('should populate epoch query types correctly', async () => {
-    await wasmSdkPage.setOperationType('queries');
-    await wasmSdkPage.setQueryCategory('epoch');
+    await evoSdkPage.setOperationType('queries');
+    await evoSdkPage.setQueryCategory('epoch');
 
     const queryTypes = filterPlaceholderOptions(
-      await wasmSdkPage.getAvailableQueryTypes()
+      await evoSdkPage.getAvailableQueryTypes()
     );
 
     const expected = [
@@ -553,11 +553,11 @@ test.describe('Query Categories and Types UI Tests', () => {
   });
 
   test('should populate token query types correctly', async () => {
-    await wasmSdkPage.setOperationType('queries');
-    await wasmSdkPage.setQueryCategory('token');
+    await evoSdkPage.setOperationType('queries');
+    await evoSdkPage.setQueryCategory('token');
 
     const queryTypes = filterPlaceholderOptions(
-      await wasmSdkPage.getAvailableQueryTypes()
+      await evoSdkPage.getAvailableQueryTypes()
     );
 
     const expected = [
@@ -580,11 +580,11 @@ test.describe('Query Categories and Types UI Tests', () => {
   });
 
   test('should populate group query types correctly', async () => {
-    await wasmSdkPage.setOperationType('queries');
-    await wasmSdkPage.setQueryCategory('group');
+    await evoSdkPage.setOperationType('queries');
+    await evoSdkPage.setQueryCategory('group');
 
     const queryTypes = filterPlaceholderOptions(
-      await wasmSdkPage.getAvailableQueryTypes()
+      await evoSdkPage.getAvailableQueryTypes()
     );
 
     const expected = [
@@ -608,11 +608,11 @@ test.describe('Query Categories and Types UI Tests', () => {
   });
 
   test('should populate voting query types correctly', async () => {
-    await wasmSdkPage.setOperationType('queries');
-    await wasmSdkPage.setQueryCategory('voting');
+    await evoSdkPage.setOperationType('queries');
+    await evoSdkPage.setQueryCategory('voting');
 
     const queryTypes = filterPlaceholderOptions(
-      await wasmSdkPage.getAvailableQueryTypes()
+      await evoSdkPage.getAvailableQueryTypes()
     );
 
     const expected = [

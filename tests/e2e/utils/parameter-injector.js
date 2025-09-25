@@ -5,8 +5,8 @@ const { testData, getTestParameters, getAllTestParameters, getStateTransitionPar
  * Maps test data to UI form fields automatically
  */
 class ParameterInjector {
-  constructor(wasmSdkPage) {
-    this.page = wasmSdkPage;
+  constructor(evoSdkPage) {
+    this.page = evoSdkPage;
     this.testData = testData;
   }
 
@@ -94,7 +94,6 @@ class ParameterInjector {
       // DPNS parameters
       'label': ['#label', '[name="label"]', 'input[placeholder*="Username"]', 'input[placeholder*="Label"]'],
       'name': ['#name', '[name="name"]', 'input[placeholder*="Name"]', 'input[placeholder*="DPNS"]'],
-      'username': ['#username', '[name="username"]', 'input[placeholder*="Username"]', 'input[placeholder*="alice.dash"]'],
       'prefix': ['#prefix', '[name="prefix"]', 'input[placeholder*="prefix"]', 'input[placeholder*="Prefix"]'],
       
       // Query modifiers

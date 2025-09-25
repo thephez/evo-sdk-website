@@ -151,20 +151,20 @@ Example:
 
 ```javascript
 const { test, expect } = require('@playwright/test');
-const { WasmSdkPage } = require('../utils/wasm-sdk-page');
+const { EvoSdkPage } = require('../utils/wasm-sdk-page');
 const { ParameterInjector } = require('../utils/parameter-injector');
 
 test('should execute my new query', async ({ page }) => {
-  const wasmSdkPage = new WasmSdkPage(page);
-  const parameterInjector = new ParameterInjector(wasmSdkPage);
+  const evoSdkPage = new EvoSdkPage(page);
+  const parameterInjector = new ParameterInjector(evoSdkPage);
   
-  await wasmSdkPage.initialize('testnet');
-  await wasmSdkPage.setupQuery('myCategory', 'myQueryType');
+  await evoSdkPage.initialize('testnet');
+  await evoSdkPage.setupQuery('myCategory', 'myQueryType');
   
   const success = await parameterInjector.injectParameters('myCategory', 'myQueryType');
   expect(success).toBe(true);
   
-  const result = await wasmSdkPage.executeQueryAndGetResult();
+  const result = await evoSdkPage.executeQueryAndGetResult();
   expect(result.success || result.hasError).toBe(true);
 });
 ```
