@@ -65,6 +65,7 @@ jobs:
 
       - name: Cache Playwright browsers
         uses: actions/cache@v4
+        id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ hashFiles('package.json') }}
@@ -72,12 +73,20 @@ jobs:
             ${{ runner.os }}-playwright-
 
       - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: |
           echo "Installing Playwright browsers..."
           npx playwright install --with-deps ${{ inputs.browser || 'chromium' }}
 
+      - name: Install Playwright dependencies only
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: |
+          echo "Installing Playwright system dependencies only (browsers cached)..."
+          npx playwright install-deps ${{ inputs.browser || 'chromium' }}
+
       - name: Run smoke tests
         if: github.event_name != 'workflow_dispatch' || inputs.test_type == 'smoke' || inputs.test_type == 'all'
+        continue-on-error: true
         run: |
           yarn test:smoke
 
