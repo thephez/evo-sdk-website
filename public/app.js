@@ -1163,22 +1163,6 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
       const tokenPosition = toNumber(n.tokenPosition, 0);
       return c.tokens.priceByContract(contractId, tokenPosition);
     }
-    case 'getIdentitiesTokenInfos': {
-      const identityIds = toStringArray(n.identityIds);
-      return useProof ? c.tokens.identitiesTokenInfosWithProof(identityIds, n.tokenId) : c.tokens.identitiesTokenInfos(identityIds, n.tokenId);
-    }
-    case 'getIdentityTokenInfos': {
-      const tokenIds = toStringArray(n.tokenIds);
-      if (useProof) {
-        return c.tokens.identityTokenInfosWithProof(n.identityId, tokenIds);
-      }
-      return c.tokens.identityTokenInfos(n.identityId, tokenIds, { limit: n.limit ?? null, offset: n.offset ?? null });
-    }
-    case 'getIdentitiesTokenBalances': {
-      const identityIds = toStringArray(n.identityIds);
-      return useProof ? c.tokens.balancesWithProof(identityIds, n.tokenId) : c.tokens.balances(identityIds, n.tokenId);
-    }
-
     case 'tokenMint':
       return c.tokens.mint({ contractId: n.contractId, tokenPosition: n.tokenPosition, amount: n.amount, identityId: n.identityId, privateKeyWif: n.privateKeyWif, recipientId: n.recipientId, publicNote: n.publicNote });
     case 'tokenBurn':
