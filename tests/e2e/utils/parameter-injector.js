@@ -268,12 +268,6 @@ class ParameterInjector {
       return false;
     }
     
-    // Additional check: ensure it doesn't contain invalid base58 characters
-    const invalidChars = /[0OIl]/;
-    if (invalidChars.test(id)) {
-      return false;
-    }
-    
     return true;
   }
 
