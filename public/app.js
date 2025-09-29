@@ -1504,8 +1504,9 @@ async function loadDefinitions() {
     queries: filterDefinitions(state.rawDefinitions.queries, 'queries', SUPPORTED_QUERIES),
     transitions: filterDefinitions(state.rawDefinitions.transitions, 'transitions', SUPPORTED_TRANSITIONS),
   };
-  if (elements.latestVersionInfo && data.version) {
-    elements.latestVersionInfo.textContent = `Latest manifest version: ${data.version}`;
+  if (elements.latestVersionInfo) {
+    let latestVersion = await EvoSDK.getLatestVersionNumber();
+    elements.latestVersionInfo.textContent = `Latest version: ${latestVersion}`;
   }
   setProgress(65, 'Building interface...');
   populateCategories();
