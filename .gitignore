@@ -10,9 +10,10 @@
 # NPM modules
 node_modules
 
-# test artifacts
+# playwright test artifacts
 test-results
 playwright-report/
+test-results.json
 
 # Generated files by scripts/generate_docs.py
 public/dist
