@@ -1,0 +1,168 @@
+name: Test SDK Site
+
+on:
+  # Trigger on pull requests
+  pull_request:
+    branches: [ master ]
+
+  # Trigger on pushes to main branches
+  push:
+    branches:
+      - master
+
+  # Manual trigger for standalone testing
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Type of tests to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - smoke
+          - queries
+          - all
+      browser:
+        description: 'Browser to use for testing'
+        required: false
+        default: 'chromium'
+        type: choice
+        options:
+          - chromium
+          - firefox
+          - webkit
+
+jobs:
+  ui-tests:
+    name: Run SDK Site UI Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      CI: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install test dependencies
+        run: |
+          echo "Installing UI test dependencies..."
+          yarn install
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: |
+          echo "Installing Playwright browsers..."
+          npx playwright install --with-deps ${{ inputs.browser || 'chromium' }}
+
+      - name: Install Playwright dependencies only
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: |
+          echo "Installing Playwright system dependencies only (browsers cached)..."
+          npx playwright install-deps ${{ inputs.browser || 'chromium' }}
+
+      - name: Run smoke tests
+        if: github.event_name != 'workflow_dispatch' || inputs.test_type == 'smoke' || inputs.test_type == 'all'
+        continue-on-error: true
+        run: |
+          yarn test:smoke
+
+      - name: Run query execution tests
+        if: github.event_name != 'workflow_dispatch' || inputs.test_type == 'queries' || inputs.test_type == 'all'
+        run: |
+          yarn test:queries
+
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-${{ inputs.test_type || 'all' }}-${{ inputs.browser || 'chromium' }}-${{ github.run_number }}
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ inputs.test_type || 'all' }}-${{ inputs.browser || 'chromium' }}-${{ github.run_number }}
+          path: |
+            test-results/
+            test-results.json
+          retention-days: 30
+
+      - name: Upload Screenshots and Videos
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-failures-${{ inputs.test_type || 'all' }}-${{ inputs.browser || 'chromium' }}-${{ github.run_number }}
+          path: |
+            test-results/**/*.png
+            test-results/**/*.webm
+          retention-days: 30
+
+      - name: Display Test Summary
+        if: always()
+        run: |
+          echo "## SDK Site UI Test Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "- **Triggered by**: Pull Request #${{ github.event.pull_request.number }}" >> "$GITHUB_STEP_SUMMARY"
+            echo "- **PR**: ${{ github.event.pull_request.html_url }}" >> "$GITHUB_STEP_SUMMARY"
+            echo "- **Branch**: ${{ github.head_ref }} -> ${{ github.base_ref }}" >> "$GITHUB_STEP_SUMMARY"
+          elif [ "${{ github.event_name }}" == "push" ]; then
+            echo "- **Triggered by**: Push to ${{ github.ref_name }}" >> "$GITHUB_STEP_SUMMARY"
+            echo "- **Commit**: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
+          elif [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "- **Triggered by**: Manual dispatch" >> "$GITHUB_STEP_SUMMARY"
+            echo "- **Test Type**: ${{ inputs.test_type }}" >> "$GITHUB_STEP_SUMMARY"
+            echo "- **Browser**: ${{ inputs.browser }}" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          # Show test results if available
+          if [ -f "test-results.json" ]; then
+            echo "### Test Results" >> "$GITHUB_STEP_SUMMARY"
+            echo '```json' >> "$GITHUB_STEP_SUMMARY"
+            jq '.stats' test-results.json >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || echo "Test results available in artifacts" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # List available artifacts
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Available Artifacts" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Playwright Report**: Detailed HTML report with test results" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Test Results**: JSON results and raw output files" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ job.status }}" == "failure" ]; then
+            echo "- **Test Failures**: Screenshots and videos of failed tests" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # Add quick links
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Quick Links" >> "$GITHUB_STEP_SUMMARY"
+          echo "- [SDK Website](https://github.com/${{ github.repository }})" >> "$GITHUB_STEP_SUMMARY"
+          echo "- [UI Tests](https://github.com/${{ github.repository }}/tree/${{ github.sha }}/tests/e2e)" >> "$GITHUB_STEP_SUMMARY"

@@ -5,11 +5,14 @@
 !.yarn/sdks
 !.yarn/versions
 
+.env
+
 # NPM modules
 node_modules
 
 # test artifacts
 test-results
+playwright-report/
 
 # Generated files by scripts/generate_docs.py
 public/dist
