@@ -1132,7 +1132,12 @@ function namedArgs(defs, args) {
   const out = {};
   defs.forEach((def, index) => {
     if (!def || !def.name) return;
-    out[def.name] = args[index];
+    const value = args[index];
+    // Only add to output if value is not undefined
+    // This prevents undefined values from button/dynamic inputs from polluting the params
+    if (value !== undefined) {
+      out[def.name] = value;
+    }
   });
   return out;
 }
@@ -1298,55 +1303,22 @@ function buildDocumentTransitionPayload(n, options = {}) {
     privateKeyWif: n.privateKeyWif,
   };
 
-  const documentBody = (n.document && typeof n.document === 'object') ? cloneDeep(n.document) : null;
-  const resolvedData = documentBody?.data !== undefined ? documentBody.data : n.data;
-
-  if (resolvedData !== undefined) {
-    payload.data = resolvedData;
-    if (documentBody && documentBody.data === undefined) {
-      documentBody.data = resolvedData;
-    }
+  // For documentCreate, we only need the data, not the document wrapper
+  // The SDK expects: { contractId, type, ownerId, data, privateKeyWif }
+  if (n.data !== undefined) {
+    payload.data = n.data;
   }
 
-  const entropyHex = documentBody?.entropyHex !== undefined ? documentBody.entropyHex : n.entropyHex;
-  if (entropyHex !== undefined) {
-    if (documentBody) {
-      if (documentBody.entropyHex === undefined) {
-        documentBody.entropyHex = entropyHex;
-      }
-    } else {
-      payload.entropyHex = entropyHex;
-    }
+  if (n.entropyHex !== undefined) {
+    payload.entropyHex = n.entropyHex;
   }
 
   if (includeDocumentId && n.documentId !== undefined) {
     payload.documentId = n.documentId;
-    if (documentBody && documentBody.id === undefined) {
-      documentBody.id = n.documentId;
-    }
   }
 
-  if (includeRevision) {
-    const revision = documentBody?.revision !== undefined ? documentBody.revision : n.revision;
-    if (revision !== undefined) {
-      payload.revision = revision;
-      if (documentBody && documentBody.revision === undefined) {
-        documentBody.revision = revision;
-      }
-    }
-  }
-
-  if (documentBody) {
-    if (documentBody.ownerId === undefined && n.ownerId !== undefined) {
-      documentBody.ownerId = n.ownerId;
-    }
-    if (documentBody.dataContractId === undefined && n.contractId !== undefined) {
-      documentBody.dataContractId = n.contractId;
-    }
-    if (documentBody.documentType === undefined && n.documentType !== undefined) {
-      documentBody.documentType = n.documentType;
-    }
-    payload.document = documentBody;
+  if (includeRevision && n.revision !== undefined) {
+    payload.revision = n.revision;
   }
 
   return payload;
@@ -1502,8 +1474,38 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
       return useProof
         ? c.documents.getWithProof(n.dataContractId || n.contractId, n.documentType, n.documentId)
         : c.documents.get(n.dataContractId || n.contractId, n.documentType, n.documentId);
-    case 'documentCreate':
-      return c.documents.create(buildDocumentTransitionPayload(n));
+    case 'documentCreate': {
+      // Build the payload with required fields for document creation
+      const createPayload = {
+        contractId: n.contractId,
+        type: n.documentType || n.type,  // SDK expects 'type' field
+        ownerId: n.ownerId,
+        data: n.data,
+        privateKeyWif: n.privateKeyWif
+      };
+
+      // Only add entropyHex if provided and valid (must be 32 bytes = 64 hex chars)
+      // If not provided, generate random 32 bytes
+      if (n.entropyHex) {
+        createPayload.entropyHex = n.entropyHex;
+      } else {
+        // Generate random 32 bytes (64 hex characters) for entropy
+        const randomBytes = new Uint8Array(32);
+        crypto.getRandomValues(randomBytes);
+        createPayload.entropyHex = Array.from(randomBytes)
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('');
+      }
+
+      // Remove any undefined values
+      Object.keys(createPayload).forEach(key => {
+        if (createPayload[key] === undefined) {
+          delete createPayload[key];
+        }
+      });
+
+      return c.documents.create(createPayload);
+    }
     case 'documentReplace':
       return c.documents.replace(buildDocumentTransitionPayload(n, { includeRevision: true, includeDocumentId: true }));
     case 'documentDelete':
@@ -1799,53 +1801,25 @@ function buildDocumentExecutionArgs() {
     return {};
   }
 
+  // For simple payloads (non-objects or arrays), just return as data
   if (typeof payload !== 'object' || Array.isArray(payload)) {
     return {
-      data: cloneDeep(payload),
-      document: { data: cloneDeep(payload) },
+      data: cloneDeep(payload)
     };
   }
 
   const clone = cloneDeep(payload);
-  const recognizedKeys = new Set(['document', 'data', 'revision', 'entropyHex', 'documentId', 'ownerId', 'dataContractId']);
-  const payloadKeys = Object.keys(clone);
-  const hasRecognizedKey = payloadKeys.some(key => recognizedKeys.has(key));
 
-  if (!hasRecognizedKey) {
-    return {
-      data: clone,
-      document: { data: clone },
-    };
+  // Check if the payload already has the structure we expect
+  // (i.e., it has 'data' as a direct property)
+  if (clone.data !== undefined) {
+    return clone;
   }
 
-  const { document, data, revision, ...rest } = clone;
-  const extras = { ...rest };
-
-  if (data !== undefined) {
-    extras.data = data;
-  }
-  if (revision !== undefined) {
-    extras.revision = revision;
-  }
-  if (document && typeof document === 'object') {
-    extras.document = document;
-  }
-
-  if (extras.document) {
-    if (extras.data === undefined && extras.document.data !== undefined) {
-      extras.data = extras.document.data;
-    }
-    if (extras.revision !== undefined && extras.document.revision === undefined) {
-      extras.document.revision = extras.revision;
-    }
-  } else if (extras.data !== undefined) {
-    extras.document = { data: extras.data };
-    if (extras.revision !== undefined) {
-      extras.document.revision = extras.revision;
-    }
-  }
-
-  return extras;
+  // Otherwise, the entire payload IS the document data
+  return {
+    data: clone
+  };
 }
 
 async function executeSelected() {
