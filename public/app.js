@@ -870,9 +870,25 @@ async function loadExistingDocument() {
       return;
     }
 
+    // Get the document data and revision
+    const documentData = document.toJSON ? document.toJSON() : document;
+    const revision = documentData.$revision || documentData.revision;
+
     // Generate fields with existing values
-    generateDocumentFields(schema, documentType, document);
-    setStatus('Document loaded successfully', 'success');
+    generateDocumentFields(schema, documentType, documentData);
+
+    // Store revision in state for replace operation
+    if (revision !== undefined) {
+      // We need to collect the fields first, then add revision
+      collectDocumentFields();
+      const currentFields = state.documentFieldValues || {};
+      applyDocumentFieldUpdate({
+        ...currentFields,
+        revision: revision
+      });
+    }
+
+    setStatus(`Document loaded successfully (revision: ${revision})`, 'success');
   } catch (error) {
     setStatus(`Failed to load document: ${error.message}`, 'error');
     console.error('Document load error:', error);
@@ -1033,7 +1049,15 @@ function collectDocumentFields() {
   });
 
   // Update the document field state
-  applyDocumentFieldUpdate({ data: fields });
+  const updatePayload = { data: fields };
+
+  // If this is a replace operation, preserve the revision
+  const currentState = state.documentFieldValues;
+  if (currentState && currentState.revision !== undefined) {
+    updatePayload.revision = currentState.revision;
+  }
+
+  applyDocumentFieldUpdate(updatePayload);
 }
 
 function collectArgs(definition) {
@@ -1478,7 +1502,7 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
       // Build the payload with required fields for document creation
       const createPayload = {
         contractId: n.contractId,
-        type: n.documentType || n.type,  // SDK expects 'type' field
+        type: n.documentType || n.type,
         ownerId: n.ownerId,
         data: n.data,
         privateKeyWif: n.privateKeyWif
@@ -2078,6 +2102,9 @@ Object.assign(window, {
   updateDocumentFieldState: applyDocumentFieldUpdate,
   resetDocumentFieldState,
   getDocumentFieldState: () => cloneDeep(state.documentFieldValues),
+  // Expose functions for E2E testing
+  fetchDocumentSchema,
+  loadExistingDocument,
 });
 
 if ('serviceWorker' in navigator) {
