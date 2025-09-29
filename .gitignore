@@ -17,5 +17,4 @@ playwright-report/
 # Generated files by scripts/generate_docs.py
 public/dist
 public/docs.html
-public/AI_REFERENCE.md
 public/docs_manifest.json

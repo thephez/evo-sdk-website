@@ -138,6 +138,9 @@ def evo_example_for_query(key: str, inputs: List[dict]):
         'getDpnsUsernames': example(f"""
             return await sdk.dpns.usernames('{data['identity_id']}', {{ limit: 10 }})
         """),
+        'getDpnsUsernameByName': example("""
+            return await sdk.dpns.getUsernameByName('alice.dash')
+        """),
         'dpnsCheckAvailability': example("""
             return await sdk.dpns.isNameAvailable('alice')
         """),
@@ -347,6 +350,8 @@ def evo_example_for_transition(key: str):
         'identityCreditTransfer': "await client.identities.creditTransfer({ senderId, recipientId, amount, privateKeyWif, keyId })",
         'identityCreditWithdrawal': "await client.identities.creditWithdrawal({ identityId, toAddress, amount, coreFeePerByte, privateKeyWif, keyId })",
         'identityUpdate': "await client.identities.update({ identityId, addPublicKeys, disablePublicKeyIds, privateKeyWif })",
+        'dataContractCreate': "await client.contracts.create({ ownerId, definition, privateKeyWif, keyId })",
+        'dataContractUpdate': "await client.contracts.update({ contractId, ownerId, updates, privateKeyWif, keyId })",
         # Documents
         'documentCreate': "await client.documents.create({ contractId, type: documentType, ownerId, data, entropyHex, privateKeyWif })",
         'documentReplace': "await client.documents.replace({ contractId, type: documentType, documentId, ownerId, data, revision, privateKeyWif })",
@@ -368,6 +373,7 @@ def evo_example_for_transition(key: str):
         # Voting
         'dpnsUsername': "await client.voting.masternodeVote({ masternodeProTxHash, contractId, documentTypeName, indexName, indexValues, voteChoice, votingKeyWif })",
         'masternodeVote': "await client.voting.masternodeVote({ masternodeProTxHash, contractId, documentTypeName, indexName, indexValues, voteChoice, votingKeyWif })",
+        'dpnsRegister': "await client.dpns.registerName({ label, identityId, publicKeyId, privateKeyWif, onPreorder })",
     }
     return m.get(key)
 
@@ -439,7 +445,7 @@ def format_example(code: str, header: str) -> str:
             body_lines[0] = f'return {first_line}'
 
     def replace_client(line: str) -> str:
-        return re.sub(r'\bclient\b', 'sdk', line)
+        return line.replace('client', 'sdk')
 
     processed = [replace_client(line) for line in body_lines]
     lines = [header]
@@ -988,36 +994,310 @@ def generate_docs_html(query_defs: dict, transition_defs: dict) -> str:
     return html
 
 
+def format_ai_example_block(code: str | None, item_key: str) -> str:
+    snippet = (code or '').replace('\\n', '\n').strip()
+    if not snippet:
+        return f"// Example currently unavailable for `{item_key}`"
+
+    raw_lines = snippet.split('\n')
+    processed = [line.replace('client', 'sdk') for line in raw_lines]
+
+    first_index = 0
+    while first_index < len(processed) and processed[first_index].strip().startswith('//'):
+        first_index += 1
+
+    if first_index >= len(processed):
+        result_only = '\n'.join(processed).rstrip()
+        if not result_only.endswith(';'):
+            result_only += ';'
+        return result_only
+
+    first_line = processed[first_index]
+    stripped = first_line.lstrip()
+    indent = first_line[: len(first_line) - len(stripped)]
+
+    if stripped.startswith('return '):
+        stripped = stripped[len('return ') :].lstrip()
+
+    processed[first_index] = f"{indent}const result = {stripped}"
+
+    joined = '\n'.join(processed).rstrip()
+    if not joined.endswith(';'):
+        joined += ';'
+    return joined
+
+
 def generate_ai_reference_md(query_defs: dict, transition_defs: dict) -> str:
-    lines = [
-        '# Evo SDK API Reference (Generated)',
+    identity_sample = TESTNET_TEST_DATA['identity_id']
+    contract_sample = TESTNET_TEST_DATA['data_contract_id']
+
+    lines: List[str] = [
+        '# Evo SDK - AI Reference',
         '',
-        'This file is generated from api-definitions.json and shows available queries and state transitions.',
+        '## Overview',
+        'The Evo SDK is a thin TypeScript wrapper around the Dash Platform WASM runtime. '
+        'It exposes ergonomic namespaces (identities, documents, contracts, tokens, and more) '
+        'optimized for automation and AI-assisted workflows.',
         '',
-        '## Queries',
+        '## Quick Setup',
+        '```javascript',
+        "import { EvoSDK } from '@dashevo/evo-sdk';",
+        '',
+        '// Create a trusted testnet client and connect',
+        'const sdk = EvoSDK.testnetTrusted();',
+        'await sdk.connect();',
+        '',
+        "// Optional: customize connection or enable proofs",
+        "// const sdk = new EvoSDK({ network: 'testnet', trusted: true, proofs: true });",
+        '```',
+        '',
+        '## Authentication',
+        'Most state transitions require an identity identifier and a signing key in Wallet Import '
+        'Format (WIF). Keep credentials secure and never embed production keys in source control:',
+        '```javascript',
+        f"const identityId = '{identity_sample}';",
+        "const privateKeyWif = 'L1ExamplePrivateKeyWifGoesHere';",
+        "const assetLockPrivateKeyWif = 'cVExampleAssetLockKeyForIdentityFunding';",
+        '```',
+        '',
+        '## Query Operations',
+        '',
+        '### Pattern',
+        'All queries follow this pattern:',
+        '```javascript',
+        'const result = await sdk.<namespace>.<method>(params);',
+        '```',
+        '',
+        '### Available Queries',
     ]
-    for cat_key, cat in query_defs.items():
-        entries = []
-        for item_key, item in (cat.get('queries') or {}).items():
-            if evo_example_for_query(item_key, item.get('inputs', [])):
-                entries.append((item_key, item))
-        if not entries:
+
+    def append_param_section(target: List[str], params: List[dict]) -> None:
+        if not params:
+            target.append('No parameters required.')
+            target.append('')
+            return
+
+        target.append('Parameters:')
+        for param in params:
+            name = param.get('name', 'unknown')
+            label = param.get('label')
+            display_name = label if label and label != name else name
+            param_type = param.get('type', 'text')
+            required = 'required' if param.get('required') else 'optional'
+            target.append(f"- `{display_name}` ({param_type}, {required})")
+
+            placeholder = param.get('placeholder')
+            if placeholder:
+                target.append(f"  - Example: `{placeholder}`")
+
+            options = param.get('options') or []
+            if options:
+                rendered_options: List[str] = []
+                for option in options:
+                    value = option.get('value')
+                    option_label = option.get('label')
+                    if value is None:
+                        if option_label:
+                            rendered_options.append(option_label)
+                        continue
+                    if option_label and option_label != value:
+                        rendered_options.append(f"`{value}` ({option_label})")
+                    else:
+                        rendered_options.append(f"`{value}`")
+                if rendered_options:
+                    target.append(f"  - Options: {', '.join(rendered_options)}")
+
+            target.append('')
+
+    def append_query_sections() -> None:
+        for cat_key, category in query_defs.items():
+            queries = category.get('queries') or {}
+            if not queries:
+                continue
+
+            lines.append(f"#### {category.get('label', cat_key)}")
+            lines.append('')
+
+            for query_key, query in queries.items():
+                label = query.get('label', query_key)
+                description = query.get('description', 'No description available')
+                example_code = evo_example_for_query(query_key, query.get('inputs', []))
+
+                lines.append(f"**{label}** - `{query_key}`")
+                lines.append(f"*{description}*")
+                lines.append('')
+
+                append_param_section(lines, query.get('inputs', []))
+
+                lines.append('Example:')
+                lines.append('```javascript')
+                lines.append(format_ai_example_block(example_code, query_key))
+                lines.append('```')
+                lines.append('')
+
+    append_query_sections()
+
+    lines.extend([
+        '## State Transition Operations',
+        '',
+        '### Pattern',
+        'All state transitions require authentication and are invoked with namespace methods:',
+        '```javascript',
+        'const result = await sdk.<namespace>.<transition>({ ...params, privateKeyWif });',
+        '```',
+        '',
+        '### Available State Transitions',
+    ])
+
+    sdk_param_overrides = {
+        'identityCreate': {'assetLockProofPrivateKey': 'assetLockPrivateKeyWif'},
+        'identityTopUp': {'assetLockProofPrivateKey': 'assetLockPrivateKeyWif'},
+    }
+
+    def append_transition_params(
+        item_key: str,
+        target: List[str],
+        params: List[dict],
+        uses_sdk_params: bool,
+    ) -> None:
+        if not params:
+            return
+
+        heading = 'Parameters:' if uses_sdk_params else 'Parameters (payload fields):'
+        target.append(heading)
+        for param in params:
+            name = param.get('name', 'unknown')
+            label = param.get('label')
+            override_name = sdk_param_overrides.get(item_key, {}).get(name)
+            effective_name = override_name or name
+            display_name = label if label and label != name else effective_name
+            param_type = param.get('type', 'text')
+            required = 'required' if param.get('required') else 'optional'
+            target.append(f"- `{display_name}` ({param_type}, {required})")
+
+            description = param.get('description')
+            if description:
+                target.append(f"  - {description}")
+            elif param.get('placeholder'):
+                target.append(f"  - Example: `{param['placeholder']}`")
+
+            options = param.get('options') or []
+            if options:
+                rendered_options: List[str] = []
+                for option in options:
+                    value = option.get('value')
+                    option_label = option.get('label')
+                    if value is None:
+                        if option_label:
+                            rendered_options.append(option_label)
+                        continue
+                    if option_label and option_label != value:
+                        rendered_options.append(f"`{value}` ({option_label})")
+                    else:
+                        rendered_options.append(f"`{value}`")
+                if rendered_options:
+                    target.append(f"  - Options: {', '.join(rendered_options)}")
+
+            target.append('')
+
+    for cat_key, category in transition_defs.items():
+        transitions = category.get('transitions') or {}
+        if not transitions:
             continue
-        lines.append(f"### {cat.get('label', cat_key)}")
-        for item_key, item in entries:
-            lines.append(f"- {item.get('label', item_key)} (`{item_key}`): {item.get('description', '')}")
-    lines.append('')
-    lines.append('## State Transitions')
-    for cat_key, cat in transition_defs.items():
-        entries = []
-        for item_key, item in (cat.get('transitions') or {}).items():
-            if evo_example_for_transition(item_key):
-                entries.append((item_key, item))
-        if not entries:
-            continue
-        lines.append(f"### {cat.get('label', cat_key)}")
-        for item_key, item in entries:
-            lines.append(f"- {item.get('label', item_key)} (`{item_key}`): {item.get('description', '')}")
+
+        lines.append(f"#### {category.get('label', cat_key)}")
+        lines.append('')
+
+        for transition_key, transition in transitions.items():
+            label = transition.get('label', transition_key)
+            description = transition.get('description', 'No description available')
+            example_code = evo_example_for_transition(transition_key)
+            sdk_params = transition.get('sdk_params') or []
+            inputs = transition.get('inputs') or []
+
+            lines.append(f"**{label}** - `{transition_key}`")
+            lines.append(f"*{description}*")
+            lines.append('')
+
+            if sdk_params:
+                append_transition_params(transition_key, lines, sdk_params, True)
+            elif inputs:
+                append_transition_params(transition_key, lines, inputs, False)
+
+            lines.append('Example:')
+            lines.append('```javascript')
+            lines.append(format_ai_example_block(example_code, transition_key))
+            lines.append('```')
+            lines.append('')
+
+    lines.extend([
+        '## Common Patterns',
+        '',
+        '### Error Handling',
+        '```javascript',
+        'try {',
+        f"    const identity = await sdk.identities.fetch('{identity_sample}');",
+        '    console.log(identity);',
+        '} catch (error) {',
+        '    console.error(\'Query failed:\', error);',
+        '}',
+        '```',
+        '',
+        '### Working with Proofs',
+        '```javascript',
+        "const sdk = new EvoSDK({ network: 'testnet', trusted: true, proofs: true });",
+        'await sdk.connect();',
+        '',
+        f"const identityWithProof = await sdk.identities.fetchWithProof('{identity_sample}');",
+        '```',
+        '',
+        '### Document Queries with Where/OrderBy',
+        '```javascript',
+        'const whereClause = JSON.stringify([',
+        '    ["normalizedParentDomainName", "==", "dash"],',
+        '    ["normalizedLabel", "startsWith", "alice"]',
+        ']);',
+        '',
+        'const orderBy = JSON.stringify([',
+        '    ["normalizedLabel", "asc"]',
+        ']);',
+        '',
+        'const documents = await sdk.documents.query({',
+        f"    contractId: '{contract_sample}',",
+        '    type: "domain",',
+        '    where: whereClause,',
+        '    orderBy,',
+        '    limit: 10',
+        '});',
+        '```',
+        '',
+        '### Batch Operations',
+        '```javascript',
+        'const identityIds = [',
+        f"    '{identity_sample}',",
+        "    'H72iEt2zG4MEyoh3ZzCEMkYbDWqx1GvK1xHmpM8qH1yL'",
+        '];',
+        '',
+        'const balances = await sdk.identities.balances(identityIds);',
+        '```',
+        '',
+        '## Important Notes',
+        '',
+        '1. **Network configuration**: Use `EvoSDK.testnetTrusted()` for a ready-to-use testnet client. '
+        'When mainnet is available, switch to `EvoSDK.mainnetTrusted()` or instantiate `new EvoSDK({ network: \"mainnet\" })`.',
+        '2. **Identity format**: Identity identifiers are Base58-encoded strings. Signing keys are provided as WIF strings.',
+        '3. **Credits**: All platform fees are charged in credits (1 credit = 1 satoshi equivalent). Ensure identities maintain sufficient balance.',
+        '4. **Nonces**: Evo SDK facades manage nonces automatically when you submit transitions. Use `sdk.identities.nonce(...)` for manual workflows.',
+        '5. **Proofs**: Pass `proofs: true` when constructing `EvoSDK` to validate GroveDB proofs and prefer `*WithProof` helpers.',
+        '',
+        '## Troubleshooting',
+        '',
+        '- **Connection errors**: Verify `await sdk.connect()` completes and that your network/trusted options match the target platform.',
+        '- **Invalid parameters**: Check that required fields are present and types align with the documented parameter metadata.',
+        '- **Authentication failures**: Confirm private keys are correct, funded, and permitted to sign the requested transition.',
+        '- **Query errors**: Ensure contract IDs, document types, and field names exist on the network you are querying.',
+    ])
+
     return '\n'.join(lines) + '\n'
 
 
