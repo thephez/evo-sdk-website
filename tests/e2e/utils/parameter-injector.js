@@ -126,7 +126,6 @@ class ParameterInjector {
       'startAtIdentifierInfo': ['#startAtIdentifierInfo', '[name="startAtIdentifierInfo"]'],
       
       // Group parameters
-      'contractId': ['#contractId', '[name="contractId"]', 'input[placeholder*="Contract ID"]'],
       'groupContractPosition': ['#groupContractPosition', '[name="groupContractPosition"]'],
       'startAtGroupContractPosition': ['#startAtGroupContractPosition', '[name="startAtGroupContractPosition"]'],
       'startGroupContractPositionIncluded': ['#startGroupContractPositionIncluded', '[name="startGroupContractPositionIncluded"]', 'input[type="checkbox"][name="startGroupContractPositionIncluded"]'],
