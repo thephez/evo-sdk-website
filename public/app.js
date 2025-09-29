@@ -458,19 +458,25 @@ function updateNetworkIndicator() {
 }
 
 function buildClientOptions() {
-  const selectedNetwork = elements.networkRadios.find(r => r.checked)?.value || 'testnet';
+  const selectedNetwork = elements.networkRadios.find(r => r.checked)?.value || 'mainnet';
   const opts = {
     network: selectedNetwork,
     trusted: !!(elements.trustedMode && elements.trustedMode.checked),
     proofs: true,
   };
   const { advancedOptions } = state;
-  if (advancedOptions.platformVersion) opts.platformVersion = advancedOptions.platformVersion;
-  if (advancedOptions.connectTimeout) opts.connectTimeout = advancedOptions.connectTimeout;
-  if (advancedOptions.requestTimeout) opts.requestTimeout = advancedOptions.requestTimeout;
-  if (advancedOptions.retries) opts.retries = advancedOptions.retries;
+  if (advancedOptions.platformVersion) {
+    opts.version = advancedOptions.platformVersion;
+  }
+  const settings = {};
+  if (advancedOptions.connectTimeout) settings.connectTimeoutMs = advancedOptions.connectTimeout;
+  if (advancedOptions.requestTimeout) settings.timeoutMs = advancedOptions.requestTimeout;
+  if (advancedOptions.retries) settings.retries = advancedOptions.retries;
   if (typeof advancedOptions.banFailedAddress === 'boolean') {
-    opts.banFailedAddress = advancedOptions.banFailedAddress;
+    settings.banFailedAddress = advancedOptions.banFailedAddress;
+  }
+  if (Object.keys(settings).length) {
+    opts.settings = settings;
   }
   return opts;
 }
@@ -1133,10 +1139,20 @@ function parseInputValue(type, def, control) {
         return raw.split(',').map(item => item.trim()).filter(Boolean);
       }
     }
-    case 'multiselect':
-      return Array.from(control.selectedOptions).map(opt => opt.value);
-    case 'select':
-      return control.value;
+    case 'multiselect': {
+      const values = Array.from(control.selectedOptions).map(opt => opt.value);
+      if (def.required && values.length === 0) {
+        throw new Error(`${def.label || def.name} is required`);
+      }
+      return values;
+    }
+    case 'select': {
+      const val = control.value;
+      if (def.required && (val === '' || val === undefined || val === null)) {
+        throw new Error(`${def.label || def.name} is required`);
+      }
+      return val;
+    }
     case 'dynamic':
       // Dynamic fields are handled separately through state.documentFieldValues
       return null;
@@ -1603,22 +1619,6 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
       const tokenPosition = toNumber(n.tokenPosition, 0);
       return c.tokens.priceByContract(contractId, tokenPosition);
     }
-    case 'getIdentitiesTokenInfos': {
-      const identityIds = toStringArray(n.identityIds);
-      return useProof ? c.tokens.identitiesTokenInfosWithProof(identityIds, n.tokenId) : c.tokens.identitiesTokenInfos(identityIds, n.tokenId);
-    }
-    case 'getIdentityTokenInfos': {
-      const tokenIds = toStringArray(n.tokenIds);
-      if (useProof) {
-        return c.tokens.identityTokenInfosWithProof(n.identityId, tokenIds);
-      }
-      return c.tokens.identityTokenInfos(n.identityId, tokenIds, { limit: n.limit ?? null, offset: n.offset ?? null });
-    }
-    case 'getIdentitiesTokenBalances': {
-      const identityIds = toStringArray(n.identityIds);
-      return useProof ? c.tokens.balancesWithProof(identityIds, n.tokenId) : c.tokens.balances(identityIds, n.tokenId);
-    }
-
     case 'tokenMint':
       return c.tokens.mint({ contractId: n.contractId, tokenPosition: n.tokenPosition, amount: n.amount, identityId: n.identityId, privateKeyWif: n.privateKeyWif, recipientId: n.recipientId, publicNote: n.publicNote });
     case 'tokenBurn':
@@ -1978,8 +1978,9 @@ async function loadDefinitions() {
     queries: filterDefinitions(state.rawDefinitions.queries, 'queries', SUPPORTED_QUERIES),
     transitions: filterDefinitions(state.rawDefinitions.transitions, 'transitions', SUPPORTED_TRANSITIONS),
   };
-  if (elements.latestVersionInfo && data.version) {
-    elements.latestVersionInfo.textContent = `Latest manifest version: ${data.version}`;
+  if (elements.latestVersionInfo) {
+    let latestVersion = await EvoSDK.getLatestVersionNumber();
+    elements.latestVersionInfo.textContent = `Latest version: ${latestVersion}`;
   }
   setProgress(65, 'Building interface...');
   populateCategories();
@@ -1991,7 +1992,7 @@ function attachEventListeners() {
     radio.addEventListener('change', () => {
       updateNetworkIndicator();
       state.clientKey = null;
-      setStatus('Network updated. Reconnect on next request.', 'loading');
+      setStatus('Network updated. Reconnect on next request.', 'success');
     });
   });
   if (elements.trustedMode) {
@@ -2064,13 +2065,13 @@ async function init() {
   setProgress(5, 'Starting...');
   const testnetRadio = document.getElementById('testnet');
   const mainnetRadio = document.getElementById('mainnet');
-  if (testnetRadio) {
-    testnetRadio.checked = true;
+  if (mainnetRadio) {
+    mainnetRadio.checked = true;
   } else if (elements.networkRadios.length && !elements.networkRadios.some(r => r.checked)) {
     elements.networkRadios[0].checked = true;
   }
-  if (mainnetRadio && mainnetRadio !== testnetRadio) {
-    mainnetRadio.checked = false;
+  if (testnetRadio && testnetRadio !== mainnetRadio) {
+    testnetRadio.checked = false;
   }
   if (elements.trustedMode) {
     elements.trustedMode.disabled = false;
