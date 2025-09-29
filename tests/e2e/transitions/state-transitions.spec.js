@@ -1172,7 +1172,7 @@ test.describe('Evo SDK State Transition Tests', () => {
 
       // Should show error
       expect(result.hasError).toBe(true);
-      expect(result.statusText.toLowerCase()).toMatch(/error|invalid|failed/);
+      expect(String(result.statusText).toLowerCase()).toMatch(/error|invalid|failed/);
     });
 
     test('should handle missing required fields', async () => {
@@ -1183,7 +1183,7 @@ test.describe('Evo SDK State Transition Tests', () => {
 
       // Should show error or validation message
       expect(result.hasError).toBe(true);
-      expect(result.statusText.toLowerCase()).toMatch(/error|required|missing/);
+      expect(String(result.statusText).toLowerCase()).toMatch(/error|required|missing/);
     });
 
     test('should handle invalid private key gracefully', async () => {
@@ -1206,7 +1206,7 @@ test.describe('Evo SDK State Transition Tests', () => {
 
       // Should show error
       expect(result.hasError).toBe(true);
-      expect(result.statusText.toLowerCase()).toMatch(/error|invalid|failed/);
+      expect(String(result.statusText).toLowerCase()).toMatch(/error|invalid|failed/);
     });
   });
 

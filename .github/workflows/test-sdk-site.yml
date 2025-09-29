@@ -129,19 +129,6 @@ jobs:
           echo "## SDK Site UI Test Results" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
 
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            echo "- **Triggered by**: Pull Request #${{ github.event.pull_request.number }}" >> "$GITHUB_STEP_SUMMARY"
-            echo "- **PR**: ${{ github.event.pull_request.html_url }}" >> "$GITHUB_STEP_SUMMARY"
-            echo "- **Branch**: ${{ github.head_ref }} -> ${{ github.base_ref }}" >> "$GITHUB_STEP_SUMMARY"
-          elif [ "${{ github.event_name }}" == "push" ]; then
-            echo "- **Triggered by**: Push to ${{ github.ref_name }}" >> "$GITHUB_STEP_SUMMARY"
-            echo "- **Commit**: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
-          elif [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "- **Triggered by**: Manual dispatch" >> "$GITHUB_STEP_SUMMARY"
-            echo "- **Test Type**: ${{ inputs.test_type }}" >> "$GITHUB_STEP_SUMMARY"
-            echo "- **Browser**: ${{ inputs.browser }}" >> "$GITHUB_STEP_SUMMARY"
-          fi
-
           echo "" >> "$GITHUB_STEP_SUMMARY"
 
           # Show test results if available
@@ -151,18 +138,3 @@ jobs:
             jq '.stats' test-results.json >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || echo "Test results available in artifacts" >> "$GITHUB_STEP_SUMMARY"
             echo '```' >> "$GITHUB_STEP_SUMMARY"
           fi
-
-          # List available artifacts
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "### Available Artifacts" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Playwright Report**: Detailed HTML report with test results" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Test Results**: JSON results and raw output files" >> "$GITHUB_STEP_SUMMARY"
-          if [ "${{ job.status }}" == "failure" ]; then
-            echo "- **Test Failures**: Screenshots and videos of failed tests" >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-          # Add quick links
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "### Quick Links" >> "$GITHUB_STEP_SUMMARY"
-          echo "- [SDK Website](https://github.com/${{ github.repository }})" >> "$GITHUB_STEP_SUMMARY"
-          echo "- [UI Tests](https://github.com/${{ github.repository }}/tree/${{ github.sha }}/tests/e2e)" >> "$GITHUB_STEP_SUMMARY"
