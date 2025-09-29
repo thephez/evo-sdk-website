@@ -116,7 +116,7 @@ const PROOF_CAPABLE = new Set([
   'getPrefundedSpecializedBalance', 'getTotalCreditsInPlatform', 'getPathElements',
 ]);
 
-const SUPPORTED_INPUT_TYPES = new Set(['text', 'string', 'textarea', 'number', 'checkbox', 'json', 'select', 'multiselect', 'array']);
+const SUPPORTED_INPUT_TYPES = new Set(['text', 'string', 'textarea', 'number', 'checkbox', 'json', 'select', 'multiselect', 'array', 'button', 'dynamic']);
 
 const state = {
   rawDefinitions: { queries: {}, transitions: {} },
@@ -639,7 +639,11 @@ function renderInputs(def) {
 
     const label = document.createElement('label');
     label.textContent = inputDef.label || inputDef.name || `Parameter ${index + 1}`;
-    wrapper.appendChild(label);
+
+    // Don't add label for dynamic fields since they have their own internal labels
+    if (normalizedType !== 'dynamic') {
+      wrapper.appendChild(label);
+    }
 
     const control = createControl(normalizedType, inputDef);
     if (!control) return;
@@ -735,6 +739,23 @@ function createControl(type, def) {
       }
       break;
     }
+    case 'button': {
+      control = document.createElement('button');
+      control.type = 'button';
+      control.textContent = def.label || 'Click';
+      control.className = 'action-button';
+      control.onclick = async (e) => {
+        e.preventDefault();
+        await handleButtonAction(def.action, def);
+      };
+      break;
+    }
+    case 'dynamic': {
+      control = document.createElement('div');
+      control.className = 'dynamic-fields-container';
+      control.dataset.dynamicType = def.name || 'dynamic';
+      break;
+    }
     case 'array':
     case 'text':
     default: {
@@ -752,11 +773,286 @@ function createControl(type, def) {
   return control;
 }
 
+async function handleButtonAction(action, def) {
+  switch (action) {
+    case 'fetchDocumentSchema':
+      await fetchDocumentSchema();
+      break;
+    case 'loadExistingDocument':
+      await loadExistingDocument();
+      break;
+    default:
+      console.warn('Unknown button action:', action);
+  }
+}
+
+async function fetchDocumentSchema() {
+  const contractIdEl = document.querySelector('[data-input-name="contractId"]');
+  const documentTypeEl = document.querySelector('[data-input-name="documentType"]');
+
+  if (!contractIdEl || !documentTypeEl) {
+    setStatus('Unable to find contract ID or document type fields', 'error');
+    return;
+  }
+
+  const contractId = contractIdEl.value.trim();
+  const documentType = documentTypeEl.value.trim();
+
+  if (!contractId || !documentType) {
+    setStatus('Please enter Contract ID and Document Type first', 'error');
+    return;
+  }
+
+  try {
+    setStatus('Fetching contract schema...', 'loading');
+    const client = await ensureClient();
+    const contract = await client.contracts.fetch(contractId);
+
+    if (!contract || !contract.toJSON().documentSchemas) {
+      setStatus('Contract does not contain document schemas', 'error');
+      return;
+    }
+
+    const schema = contract.toJSON().documentSchemas[documentType];
+    if (!schema) {
+      setStatus(`Document type "${documentType}" not found in contract`, 'error');
+      return;
+    }
+
+    generateDocumentFields(schema, documentType);
+    setStatus('Schema loaded successfully', 'success');
+  } catch (error) {
+    setStatus(`Failed to fetch schema: ${error.message}`, 'error');
+    console.error('Schema fetch error:', error);
+  }
+}
+
+async function loadExistingDocument() {
+  const contractIdEl = document.querySelector('[data-input-name="contractId"]');
+  const documentTypeEl = document.querySelector('[data-input-name="documentType"]');
+  const documentIdEl = document.querySelector('[data-input-name="documentId"]');
+
+  if (!contractIdEl || !documentTypeEl || !documentIdEl) {
+    setStatus('Unable to find required fields', 'error');
+    return;
+  }
+
+  const contractId = contractIdEl.value.trim();
+  const documentType = documentTypeEl.value.trim();
+  const documentId = documentIdEl.value.trim();
+
+  if (!contractId || !documentType || !documentId) {
+    setStatus('Please enter Contract ID, Document Type, and Document ID first', 'error');
+    return;
+  }
+
+  try {
+    setStatus('Loading document...', 'loading');
+    const client = await ensureClient();
+
+    // First fetch the contract to get schema
+    const contract = await client.contracts.fetch(contractId);
+    if (!contract || !contract.toJSON().documentSchemas) {
+      setStatus('Contract does not contain document schemas', 'error');
+      return;
+    }
+
+    const schema = contract.toJSON().documentSchemas[documentType];
+    if (!schema) {
+      setStatus(`Document type "${documentType}" not found in contract`, 'error');
+      return;
+    }
+
+    // Fetch the document
+    const document = await client.documents.get(contractId, documentType, documentId);
+    if (!document) {
+      setStatus('Document not found', 'error');
+      return;
+    }
+
+    // Generate fields with existing values
+    generateDocumentFields(schema, documentType, document);
+    setStatus('Document loaded successfully', 'success');
+  } catch (error) {
+    setStatus(`Failed to load document: ${error.message}`, 'error');
+    console.error('Document load error:', error);
+  }
+}
+
+function generateDocumentFields(schema, documentType, existingDocument = null) {
+  const dynamicContainer = document.querySelector('[data-input-name="documentFields"]');
+  if (!dynamicContainer) {
+    console.error('Dynamic fields container not found');
+    return;
+  }
+
+  // Clear existing fields
+  dynamicContainer.innerHTML = '';
+
+  // Create a container for the schema fields
+  const fieldsContainer = document.createElement('div');
+  fieldsContainer.className = 'document-schema-fields';
+
+  // Add a title
+  const title = document.createElement('h5');
+  title.textContent = `${documentType} Fields`;
+  title.style.marginBottom = '15px';
+  fieldsContainer.appendChild(title);
+
+  // Parse schema properties
+  const properties = schema.properties || {};
+  const required = schema.required || [];
+
+  // Create fields for each property
+  Object.entries(properties).forEach(([propName, propDef]) => {
+    // Skip system fields that are auto-generated
+    if (['$id', '$ownerId', '$createdAt', '$updatedAt', '$revision', '$dataContractId'].includes(propName)) {
+      return;
+    }
+
+    const fieldWrapper = document.createElement('div');
+    fieldWrapper.className = 'schema-field-wrapper';
+    fieldWrapper.style.marginBottom = '10px';
+
+    const label = document.createElement('label');
+    label.textContent = propName;
+    if (required.includes(propName)) {
+      label.textContent += ' *';
+      label.style.fontWeight = 'bold';
+    }
+    fieldWrapper.appendChild(label);
+
+    const input = createSchemaInput(propName, propDef, existingDocument);
+    input.dataset.fieldName = propName;
+    input.dataset.fieldRequired = required.includes(propName) ? 'true' : 'false';
+    fieldWrapper.appendChild(input);
+
+    if (propDef.description) {
+      const help = document.createElement('div');
+      help.style.fontSize = '0.85em';
+      help.style.color = '#666';
+      help.textContent = propDef.description;
+      fieldWrapper.appendChild(help);
+    }
+
+    fieldsContainer.appendChild(fieldWrapper);
+  });
+
+  dynamicContainer.appendChild(fieldsContainer);
+
+  // Set up event listener to track changes
+  fieldsContainer.addEventListener('input', () => {
+    collectDocumentFields();
+  });
+
+  // Collect initial values if document was loaded
+  if (existingDocument) {
+    collectDocumentFields();
+  }
+}
+
+function createSchemaInput(propName, propDef, existingDocument = null) {
+  const type = propDef.type;
+  const existingValue = existingDocument ? existingDocument[propName] : null;
+
+  let input;
+
+  if (type === 'boolean') {
+    input = document.createElement('input');
+    input.type = 'checkbox';
+    if (existingValue !== null && existingValue !== undefined) {
+      input.checked = existingValue;
+    }
+  } else if (type === 'integer' || type === 'number') {
+    input = document.createElement('input');
+    input.type = 'number';
+    if (propDef.minimum !== undefined) input.min = propDef.minimum;
+    if (propDef.maximum !== undefined) input.max = propDef.maximum;
+    if (existingValue !== null && existingValue !== undefined) {
+      input.value = existingValue;
+    }
+  } else if (type === 'object' || type === 'array') {
+    input = document.createElement('textarea');
+    input.rows = 4;
+    input.placeholder = `Enter valid JSON for ${type}`;
+    if (existingValue !== null && existingValue !== undefined) {
+      input.value = JSON.stringify(existingValue, null, 2);
+    }
+  } else {
+    // Default to text input for strings and other types
+    input = document.createElement('input');
+    input.type = 'text';
+    if (propDef.maxLength) input.maxLength = propDef.maxLength;
+    if (propDef.pattern) input.pattern = propDef.pattern;
+    if (existingValue !== null && existingValue !== undefined) {
+      input.value = existingValue;
+    }
+  }
+
+  return input;
+}
+
+function collectDocumentFields() {
+  const dynamicContainer = document.querySelector('[data-input-name="documentFields"]');
+  if (!dynamicContainer) return;
+
+  const fieldsContainer = dynamicContainer.querySelector('.document-schema-fields');
+  if (!fieldsContainer) return;
+
+  const fields = {};
+
+  fieldsContainer.querySelectorAll('[data-field-name]').forEach(input => {
+    const fieldName = input.dataset.fieldName;
+    const isRequired = input.dataset.fieldRequired === 'true';
+
+    let value;
+    if (input.type === 'checkbox') {
+      value = input.checked;
+    } else if (input.type === 'number') {
+      value = input.value ? Number(input.value) : null;
+    } else if (input.tagName === 'TEXTAREA') {
+      // Try to parse as JSON
+      if (input.value.trim()) {
+        try {
+          value = JSON.parse(input.value);
+        } catch (_) {
+          value = input.value; // Fall back to string if not valid JSON
+        }
+      } else {
+        value = null;
+      }
+    } else {
+      value = input.value || null;
+    }
+
+    if (value !== null && value !== '') {
+      fields[fieldName] = value;
+    } else if (isRequired) {
+      fields[fieldName] = null; // Include required fields even if empty
+    }
+  });
+
+  // Update the document field state
+  applyDocumentFieldUpdate({ data: fields });
+}
+
 function collectArgs(definition) {
   const defs = Array.isArray(definition.inputs) ? definition.inputs : [];
   return defs.map((inputDef, index) => {
     const type = normalizeType(inputDef.type);
     if (!SUPPORTED_INPUT_TYPES.has(type)) return undefined;
+
+    // Special handling for dynamic fields
+    if (type === 'dynamic' && inputDef.name === 'documentFields') {
+      // Document fields are handled separately through state.documentFieldValues
+      return undefined;
+    }
+
+    // Special handling for button type - buttons don't have values
+    if (type === 'button') {
+      return undefined;
+    }
+
     const selector = `[data-input-name="${inputDef.name || `param_${index}`}"]`;
     const control = elements.dynamicInputs.querySelector(selector);
     if (!control) {
@@ -817,6 +1113,9 @@ function parseInputValue(type, def, control) {
       return Array.from(control.selectedOptions).map(opt => opt.value);
     case 'select':
       return control.value;
+    case 'dynamic':
+      // Dynamic fields are handled separately through state.documentFieldValues
+      return null;
     case 'textarea':
     case 'text':
     default: {
