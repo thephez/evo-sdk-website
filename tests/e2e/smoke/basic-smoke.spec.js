@@ -241,7 +241,7 @@ test.describe('State Transitions UI Tests', () => {
       'Data Contract Transitions',
       'Document Transitions',
       'Token Transitions',
-      // 'Voting Transitions', // TODO: re-enable once voting transitions are working on the site
+      'Voting Transitions',
     ];
 
     const missing = expected.filter(cat => !categories.includes(cat));
@@ -295,8 +295,8 @@ test.describe('State Transitions UI Tests', () => {
     );
 
     const expected = [
-      // 'Document Create', // TODO: re-enable once supported on the site
-      // 'Document Replace', // TODO: re-enable once supported on the site
+      'Document Create',
+      'Document Replace',
       'Document Delete',
       'Document Transfer',
       'Document Purchase',
