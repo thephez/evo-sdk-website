@@ -80,7 +80,7 @@
               "type": "json",
               "label": "Search Purpose Map",
               "help": "JSON map of purpose -> security level -> filter (e.g. {\"0\": {\"0\": \"current\"}}).",
-              "placeholder": "{\"0\": {\"0\": \"current\"}}",
+              "placeholder": "{\"0\": {\"0\": \"current\"}, \"1\": {\"0\": \"all\"}}",
               "dependsOn": {
                 "field": "keyRequestType",
                 "values": [
@@ -421,7 +421,7 @@
               "name": "where",
               "type": "json",
               "label": "Where Clause (JSON)",
-              "placeholder": "[[\"normalizedParentDomainName\",\"==\",\"dash\"]]"
+              "placeholder": "[[\"normalizedParentDomainName\", \"==\", \"dash\"], [\"normalizedLabel\", \"==\", \"therea1s11mshaddy5\"]]"
             },
             {
               "name": "orderBy",
