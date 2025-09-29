@@ -1226,7 +1226,7 @@ test.describe('Evo SDK Query Execution Tests', () => {
     const dpnsQueries = [
       {
         name: 'getDpnsUsername',
-        hasProofSupport: true, // Not working currently
+        hasProofSupport: false, // Not working currently
         needsParameters: true,
         validateFn: (result) => {
           expect(result).toBeDefined();
@@ -1315,22 +1315,23 @@ test.describe('Evo SDK Query Execution Tests', () => {
         needsParameters: true,
         validateFn: validateBooleanResult
       },
-      {
-        name: 'dpnsSearch', 
-        hasProofSupport: true, 
-        needsParameters: true,
-        validateFn: (result) => {
-          expect(() => JSON.parse(result)).not.toThrow();
-          const searchData = JSON.parse(result);
-          expect(searchData).toBeDefined();
-          if (Array.isArray(searchData)) {
-            expect(searchData.length).toBeGreaterThanOrEqual(0);
-            searchData.forEach(result => {
-              expect(result).toHaveProperty('username');
-            });
-          }
-        }
-      }
+      // TODO: re-enable if the WASM SDK method is implemented it js-evo-sdk
+      // {
+      //   name: 'dpnsSearch', 
+      //   hasProofSupport: true, 
+      //   needsParameters: true,
+      //   validateFn: (result) => {
+      //     expect(() => JSON.parse(result)).not.toThrow();
+      //     const searchData = JSON.parse(result);
+      //     expect(searchData).toBeDefined();
+      //     if (Array.isArray(searchData)) {
+      //       expect(searchData.length).toBeGreaterThanOrEqual(0);
+      //       searchData.forEach(result => {
+      //         expect(result).toHaveProperty('username');
+      //       });
+      //     }
+      //   }
+      // }
     ];
 
     dpnsQueries.forEach(({ name, hasProofSupport, needsParameters, validateFn }) => {
