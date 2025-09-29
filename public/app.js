@@ -126,7 +126,63 @@ const state = {
   clientKey: null,
   currentResult: null,
   advancedOptions: {},
+  documentFieldValues: null,
 };
+
+function cloneDeep(value) {
+  if (value === null || typeof value !== 'object') {
+    return value;
+  }
+  if (typeof structuredClone === 'function') {
+    try {
+      return structuredClone(value);
+    } catch (_) {
+      // Fall back to JSON cloning below.
+    }
+  }
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch (_) {
+    return value;
+  }
+}
+
+function resetDocumentFieldState() {
+  state.documentFieldValues = null;
+}
+
+function applyDocumentFieldUpdate(payload) {
+  if (payload === undefined) {
+    return;
+  }
+  if (payload === null) {
+    resetDocumentFieldState();
+    return;
+  }
+  if (typeof payload !== 'object') {
+    state.documentFieldValues = payload;
+    return;
+  }
+  state.documentFieldValues = cloneDeep(payload);
+}
+
+const DOCUMENT_FIELD_EVENT_NAMES = [
+  'document-fields-updated',
+  'documentFieldsUpdated',
+  'documentFieldValuesChanged',
+];
+
+function registerDocumentFieldListeners() {
+  const handler = (event) => {
+    if (!event) return;
+    if (!('detail' in event)) return;
+    applyDocumentFieldUpdate(event.detail);
+  };
+  DOCUMENT_FIELD_EVENT_NAMES.forEach((eventName) => {
+    window.addEventListener(eventName, handler);
+    document.addEventListener(eventName, handler);
+  });
+}
 
 const TRANSITION_AUTH_REQUIREMENTS = {
   identityCreate: {
@@ -530,6 +586,7 @@ function hideOperationDetails() {
     elements.executeButton.disabled = true;
   }
   state.selected = null;
+  resetDocumentFieldState();
   updateAuthInputsVisibility(null);
 }
 
@@ -566,6 +623,7 @@ function onOperationChange(categoryKey, operationKey) {
 }
 
 function renderInputs(def) {
+  resetDocumentFieldState();
   elements.dynamicInputs.innerHTML = '';
   const inputs = Array.isArray(def.inputs) ? def.inputs : [];
   if (!inputs.length) {
@@ -932,6 +990,69 @@ function buildContractDefinition(params) {
   return JSON.stringify(contractData);
 }
 
+function buildDocumentTransitionPayload(n, options = {}) {
+  const { includeRevision = false, includeDocumentId = false } = options;
+  const payload = {
+    contractId: n.contractId,
+    type: n.documentType,
+    ownerId: n.ownerId,
+    privateKeyWif: n.privateKeyWif,
+  };
+
+  const documentBody = (n.document && typeof n.document === 'object') ? cloneDeep(n.document) : null;
+  const resolvedData = documentBody?.data !== undefined ? documentBody.data : n.data;
+
+  if (resolvedData !== undefined) {
+    payload.data = resolvedData;
+    if (documentBody && documentBody.data === undefined) {
+      documentBody.data = resolvedData;
+    }
+  }
+
+  const entropyHex = documentBody?.entropyHex !== undefined ? documentBody.entropyHex : n.entropyHex;
+  if (entropyHex !== undefined) {
+    if (documentBody) {
+      if (documentBody.entropyHex === undefined) {
+        documentBody.entropyHex = entropyHex;
+      }
+    } else {
+      payload.entropyHex = entropyHex;
+    }
+  }
+
+  if (includeDocumentId && n.documentId !== undefined) {
+    payload.documentId = n.documentId;
+    if (documentBody && documentBody.id === undefined) {
+      documentBody.id = n.documentId;
+    }
+  }
+
+  if (includeRevision) {
+    const revision = documentBody?.revision !== undefined ? documentBody.revision : n.revision;
+    if (revision !== undefined) {
+      payload.revision = revision;
+      if (documentBody && documentBody.revision === undefined) {
+        documentBody.revision = revision;
+      }
+    }
+  }
+
+  if (documentBody) {
+    if (documentBody.ownerId === undefined && n.ownerId !== undefined) {
+      documentBody.ownerId = n.ownerId;
+    }
+    if (documentBody.dataContractId === undefined && n.contractId !== undefined) {
+      documentBody.dataContractId = n.contractId;
+    }
+    if (documentBody.documentType === undefined && n.documentType !== undefined) {
+      documentBody.documentType = n.documentType;
+    }
+    payload.document = documentBody;
+  }
+
+  return payload;
+}
+
 async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArgs = {}) {
   const n = { ...namedArgs(defs, args), ...(extraArgs || {}) };
   const c = client;
@@ -1083,9 +1204,9 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
         ? c.documents.getWithProof(n.dataContractId || n.contractId, n.documentType, n.documentId)
         : c.documents.get(n.dataContractId || n.contractId, n.documentType, n.documentId);
     case 'documentCreate':
-      return c.documents.create({ contractId: n.contractId, type: n.documentType, ownerId: n.ownerId, data: n.data, entropyHex: n.entropyHex, privateKeyWif: n.privateKeyWif });
+      return c.documents.create(buildDocumentTransitionPayload(n));
     case 'documentReplace':
-      return c.documents.replace({ contractId: n.contractId, type: n.documentType, documentId: n.documentId, ownerId: n.ownerId, data: n.data, revision: n.revision, privateKeyWif: n.privateKeyWif });
+      return c.documents.replace(buildDocumentTransitionPayload(n, { includeRevision: true, includeDocumentId: true }));
     case 'documentDelete':
       return c.documents.delete({ contractId: n.contractId, type: n.documentType, documentId: n.documentId, ownerId: n.ownerId, privateKeyWif: n.privateKeyWif });
     case 'documentTransfer':
@@ -1367,6 +1488,67 @@ function formatResult(value) {
   }
 }
 
+function buildDocumentExecutionArgs() {
+  if (!state.selected) return {};
+  const { operationKey } = state.selected;
+  if (operationKey !== 'documentCreate' && operationKey !== 'documentReplace') {
+    return {};
+  }
+
+  const payload = state.documentFieldValues;
+  if (payload == null) {
+    return {};
+  }
+
+  if (typeof payload !== 'object' || Array.isArray(payload)) {
+    return {
+      data: cloneDeep(payload),
+      document: { data: cloneDeep(payload) },
+    };
+  }
+
+  const clone = cloneDeep(payload);
+  const recognizedKeys = new Set(['document', 'data', 'revision', 'entropyHex', 'documentId', 'ownerId', 'dataContractId']);
+  const payloadKeys = Object.keys(clone);
+  const hasRecognizedKey = payloadKeys.some(key => recognizedKeys.has(key));
+
+  if (!hasRecognizedKey) {
+    return {
+      data: clone,
+      document: { data: clone },
+    };
+  }
+
+  const { document, data, revision, ...rest } = clone;
+  const extras = { ...rest };
+
+  if (data !== undefined) {
+    extras.data = data;
+  }
+  if (revision !== undefined) {
+    extras.revision = revision;
+  }
+  if (document && typeof document === 'object') {
+    extras.document = document;
+  }
+
+  if (extras.document) {
+    if (extras.data === undefined && extras.document.data !== undefined) {
+      extras.data = extras.document.data;
+    }
+    if (extras.revision !== undefined && extras.document.revision === undefined) {
+      extras.document.revision = extras.revision;
+    }
+  } else if (extras.data !== undefined) {
+    extras.document = { data: extras.data };
+    if (extras.revision !== undefined) {
+      extras.document.revision = extras.revision;
+    }
+  }
+
+  return extras;
+}
+
 async function executeSelected() {
   if (!state.selected) return;
   try {
@@ -1381,6 +1563,7 @@ async function executeSelected() {
       && elements.proofToggle.checked
       && state.selected.type === 'queries';
     setStatus(`Running ${state.selected.operationKey}${useProof ? ' (proof)' : ''}...`, 'loading');
+    const runtimeArgs = { ...authArgs, ...buildDocumentExecutionArgs() };
     const result = await callEvo(
       client,
       state.selected.categoryKey,
@@ -1388,7 +1571,7 @@ async function executeSelected() {
       definition.inputs || [],
       args,
       useProof,
-      authArgs,
+      runtimeArgs,
     );
     const formatted = formatResult(result);
     elements.resultContent.classList.remove('empty', 'error');
@@ -1598,6 +1781,7 @@ async function init() {
   }
   updateNetworkIndicator();
   attachEventListeners();
+  registerDocumentFieldListeners();
   defaultResultMessage();
   try {
     await loadDefinitions();
@@ -1618,6 +1802,9 @@ Object.assign(window, {
   clearResults,
   copyResults,
   clearCache,
+  updateDocumentFieldState: applyDocumentFieldUpdate,
+  resetDocumentFieldState,
+  getDocumentFieldState: () => cloneDeep(state.documentFieldValues),
 });
 
 if ('serviceWorker' in navigator) {
