@@ -2666,12 +2666,55 @@ function attachEventListeners() {
   }
 }
 
+async function loadVersionInfo() {
+  try {
+    const response = await fetch('/version-info.json');
+    if (!response.ok) {
+      console.warn('Version info not available');
+      return;
+    }
+    const versionInfo = await response.json();
+    const versionElement = document.getElementById('versionInfo');
+    if (versionElement && versionInfo) {
+      const sdkVersion = versionInfo.sdkVersion || 'unknown';
+      const commitHash = versionInfo.commitHash || 'unknown';
+      const buildTime = versionInfo.buildTime || '';
+
+      // Format the build time if available
+      let buildDisplay = '';
+      if (buildTime) {
+        const d = new Date(buildTime);
+        buildDisplay = buildTime && !Number.isNaN(d.getTime()) ? d.toISOString().slice(0, 10) : '';
+      }
+
+      // Create the version display with clickable links
+      const githubUrl = `https://github.com/dashpay/evo-sdk-website/commit/${commitHash}`;
+      const sdkUrl = 'https://www.npmjs.com/package/@dashevo/evo-sdk';
+
+      const linkStyle = 'color: inherit; text-decoration: underline;';
+      versionElement.innerHTML = [
+        `<a href="${sdkUrl}" target="_blank" style="${linkStyle}">v${sdkVersion}↗</a>`,
+        '•',
+        `<a href="${githubUrl}" target="_blank" style="${linkStyle}">${commitHash}↗</a>`,
+        '•',
+        buildDisplay
+      ].join(' ');
+      versionElement.title = `SDK Version: ${sdkVersion}\nWebsite Commit: ${commitHash}\nBuild Time: ${buildTime}`;
+    }
+  } catch (error) {
+    console.warn('Could not load version info:', error);
+  }
+}
+
 async function init() {
   if (elements.preloaderText) {
     elements.preloaderText.textContent = 'Loading Evo SDK...';
   }
   showPreloader('Initializing Evo SDK...');
   setProgress(5, 'Starting...');
+
+  // Load version info early
+  loadVersionInfo();
   const testnetRadio = document.getElementById('testnet');
   const mainnetRadio = document.getElementById('mainnet');
   if (mainnetRadio) {
