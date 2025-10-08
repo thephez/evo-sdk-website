@@ -15,10 +15,10 @@ permissions:
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment
+# Allow only one concurrent deployment, canceling in-progress runs
 concurrency:
   group: "pages"
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -55,7 +55,7 @@ jobs:
       - name: Check documentation
         run: |
           echo "Checking documentation..."
-          yarn check || true
+          yarn check
 
       - name: Setup Pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
