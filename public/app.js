@@ -2668,7 +2668,7 @@ function attachEventListeners() {
 
 async function loadVersionInfo() {
   try {
-    const response = await fetch('/version-info.json');
+    const response = await fetch('version-info.json');
     if (!response.ok) {
       console.warn('Version info not available');
       return;
