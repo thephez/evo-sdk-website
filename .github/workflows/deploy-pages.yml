@@ -1,10 +1,12 @@
 name: Deploy to GitHub Pages
 
 on:
-  # Deploy on pushes to master branch
-  push:
-    branches:
-      - master
+  # Deploy only after tests pass on master branch
+  workflow_run:
+    workflows: ["Test SDK Site"]
+    branches: [master]
+    types:
+      - completed
 
   # Allow manual deployment
   workflow_dispatch:
@@ -24,6 +26,8 @@ jobs:
   build:
     name: Build Documentation
     runs-on: ubuntu-latest
+    # Only run if triggered manually or if tests passed
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - name: Checkout repository
