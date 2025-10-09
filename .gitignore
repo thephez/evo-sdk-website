@@ -19,3 +19,4 @@ test-results.json
 public/dist
 public/docs.html
 public/docs_manifest.json
+public/version-info.json

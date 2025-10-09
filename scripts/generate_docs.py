@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import re
 import shutil
+import subprocess
 import textwrap
 import zipfile
 from datetime import datetime, timezone
@@ -1301,6 +1302,36 @@ def generate_ai_reference_md(query_defs: dict, transition_defs: dict) -> str:
     return '\n'.join(lines) + '\n'
 
 
+def generate_version_info() -> dict:
+    """Generate version information for the website."""
+    version_info = {}
+
+    # Get SDK version from package.json
+    sdk_package_path = NODE_MODULES_DIR / '@dashevo' / 'evo-sdk' / 'package.json'
+    if sdk_package_path.exists():
+        with open(sdk_package_path, 'r', encoding='utf-8') as f:
+            sdk_package = json.load(f)
+            version_info['sdkVersion'] = sdk_package.get('version', 'unknown')
+    else:
+        version_info['sdkVersion'] = 'unknown'
+
+    # Get git commit hash
+    try:
+        commit_hash = subprocess.run(
+            ['git', 'rev-parse', '--short', 'HEAD'],
+            capture_output=True, text=True, cwd=REPO_ROOT
+        ).stdout.strip()
+        version_info['commitHash'] = commit_hash
+    except Exception as e:
+        print(f'Warning: Could not get git information: {e}')
+        version_info['commitHash'] = 'unknown'
+
+    # Add build timestamp
+    version_info['buildTime'] = datetime.now(timezone.utc).isoformat()
+
+    return version_info
+
+
 def main() -> None:
     api_file = PUBLIC_DIR / 'api-definitions.json'
     if not api_file.exists():
@@ -1321,13 +1352,18 @@ def main() -> None:
     else:
         print('Warning: Evo SDK dist not found; ensure dependencies are installed or build the workspace package.')
 
+    # Generate version info
+    version_info = generate_version_info()
+    (PUBLIC_DIR / 'version-info.json').write_text(json.dumps(version_info, indent=2), encoding='utf-8')
+    print(f'Generated version info: SDK {version_info["sdkVersion"]}, commit {version_info["commitHash"]}')
+
     manifest = {
         'generated_at': datetime.now(timezone.utc).isoformat(),
         'source_api': 'api-definitions.json',
-        'files': ['docs.html', 'AI_REFERENCE.md']
+        'files': ['docs.html', 'AI_REFERENCE.md', 'version-info.json']
     }
     (PUBLIC_DIR / 'docs_manifest.json').write_text(json.dumps(manifest, indent=2), encoding='utf-8')
-    print('Generated: docs.html, AI_REFERENCE.md, docs_manifest.json')
+    print('Generated: docs.html, AI_REFERENCE.md, docs_manifest.json, version-info.json')
 
 
 if __name__ == '__main__':

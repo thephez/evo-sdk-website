@@ -20,6 +20,14 @@ body {
   font-weight: 500;
 }
 
+.version-info {
+  font-size: 14px;
+  font-weight: normal;
+  color: #a0b3c7;
+  margin-left: 12px;
+  opacity: 0.9;
+}
+
 .header-nav {
   display: flex;
   gap: 20px;
