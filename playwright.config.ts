@@ -22,7 +22,7 @@ export default defineConfig({
   /* Shared settings for all projects. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: 'http://localhost:8081',
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:8081',
 
     /* Collect trace when retrying the failed test. */
     trace: 'on-first-retry',
@@ -89,8 +89,8 @@ export default defineConfig({
     }]),
   ],
 
-  /* Run your local dev server before starting the tests */
-  webServer: {
+  /* Run local dev server only if testing locally */
+  webServer: process.env.PLAYWRIGHT_BASE_URL ? undefined : {
     command: process.env.DEBUG ? 'python3 -m http.server 8081' : 'python3 -m http.server 8081 2>/dev/null',
     url: 'http://localhost:8081',
     cwd: 'public',
