@@ -35,9 +35,6 @@ class BaseTest {
       timeout: 30000,
       state: 'visible'
     });
-    
-    // Additional wait to ensure stability
-    await this.page.waitForTimeout(500);
   }
 
   /**
@@ -156,14 +153,14 @@ class BaseTest {
   async setNetwork(network = 'testnet') {
     const networkRadio = this.page.locator(`#${network}`);
     await networkRadio.check();
-    
+
     // Wait for network indicator to update
     const indicator = this.page.locator('#networkIndicator');
     await expect(indicator).toContainText(network.toUpperCase());
-    
-    // Network changes might trigger SDK re-initialization, so wait a bit
-    await this.page.waitForTimeout(1000);
-    
+
+    // Network changes trigger SDK re-initialization, wait for it to complete
+    await this.waitForSdkReady();
+
     // console.log(`Network set to ${network}`);
   }
 
@@ -180,10 +177,10 @@ class BaseTest {
    */
   async setQueryCategory(category) {
     await this.selectOption('#queryCategory', category);
-    
-    // Wait for query type dropdown to populate
-    await this.page.waitForTimeout(500);
-    
+
+    // Wait for query type dropdown to populate with options
+    await this.page.locator('#queryType option').first().waitFor({ state: 'attached', timeout: 5000 });
+
     // console.log(`Query category set to ${category}`);
   }
 
@@ -194,10 +191,17 @@ class BaseTest {
     // Make sure query type dropdown is visible
     await this.waitForElement('#queryType');
     await this.selectOption('#queryType', queryType);
-    
-    // Wait for inputs to appear
-    await this.page.waitForTimeout(500);
-    
+
+    // Wait for the query type to be processed by checking that dynamicInputs has been updated
+    // This works whether inputs are visible or not (some queries have no inputs)
+    await this.page.waitForFunction(
+      () => {
+        const executeButton = document.getElementById('executeQuery');
+        return executeButton && !executeButton.disabled;
+      },
+      { timeout: 5000 }
+    );
+
     // console.log(`Query type set to ${queryType}`);
   }
 
