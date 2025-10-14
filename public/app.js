@@ -570,7 +570,13 @@ async function ensureClient(force = false) {
   if (state.client && typeof state.client.disconnect === 'function') {
     try { await state.client.disconnect(); } catch (_) { /* ignore */ }
   }
-  const client = new EvoSDK(options);
+  // const client = new EvoSDK(options);
+  const client = EvoSDK.withAddresses(
+    ['https://44.239.39.153:1443'],  // Specific masternode address
+    'testnet',                        // Network (testnet or mainnet)
+    options
+    );
+  console.log(client)
   await client.connect();
   state.client = client;
   state.clientKey = newKey;

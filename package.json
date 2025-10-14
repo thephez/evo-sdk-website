@@ -1,7 +1,7 @@
 {
   "private": true,
   "dependencies": {
-    "@dashevo/evo-sdk": "^2.1.0-dev.8"
+    "@dashevo/evo-sdk": "portal:../platform/packages/js-evo-sdk"
   },
   "devDependencies": {
     "@playwright/test": "^1.54.1",
@@ -25,5 +25,8 @@
   "packageManager": "yarn@4.0.2",
   "engines": {
     "node": ">=18"
+  },
+  "resolutions": {
+    "@dashevo/wasm-sdk": "portal:../platform/packages/wasm-sdk"
   }
 }
