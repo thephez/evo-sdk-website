@@ -572,11 +572,13 @@ async function ensureClient(force = false) {
   }
   // const client = new EvoSDK(options);
   const client = EvoSDK.withAddresses(
-    ['https://44.239.39.153:1443'],  // Specific masternode address
+    ['https://44.239.39.153:1443'],  // Specific masternode address - RS-DAPI
+    // ['https://54.68.235.201:1443'],  // Specific masternode address
     'testnet',                        // Network (testnet or mainnet)
     options
     );
-  console.log(client)
+  console.log(client.options)
+  console.log(client.options.addresses)
   await client.connect();
   state.client = client;
   state.clientKey = newKey;
