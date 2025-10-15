@@ -671,6 +671,8 @@ test.describe('Evo SDK State Transition Tests', () => {
         );
       });
 
+      await evoSdkPage.page.waitForTimeout(2000);
+
       // Step 2: Purchase the card with secondary identity (tests purchase flow)
       await test.step('Purchase trading card with secondary identity', async () => {
         // Get the configured price from test data

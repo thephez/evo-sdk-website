@@ -257,7 +257,12 @@ class EvoSdkPage extends BaseTest {
       // Fill the first existing field if available
       if (existingCount > 0 && arrayValues.length > 0) {
         const firstInput = existingInputs.first();
-        await firstInput.fill(arrayValues[0].toString());
+        try {
+          await firstInput.fill(arrayValues[0].toString(), { timeout: 2000 });
+        } catch (error) {
+          console.warn(`Failed to fill first array input: ${error.message}`);
+          return false;
+        }
       }
 
       // Look for "Add Item" button (specific to WASM SDK array inputs)
@@ -274,25 +279,41 @@ class EvoSdkPage extends BaseTest {
       // Add remaining items (starting from index 1)
       for (let i = 1; i < arrayValues.length; i++) {
         const value = arrayValues[i];
-        
+        const expectedCount = existingCount + i;
+
         // Click "Add items" button to create new field
         await addButton.click();
-        await this.page.waitForTimeout(500); // Wait for new input to appear
-        
+
+        // Wait for the input count to increase
+        await this.page.waitForFunction(
+          ({ expectedCount }) => {
+            const arrayInputs = document.querySelectorAll('.array-input-container input[type="text"]');
+            const allInputs = document.querySelectorAll('input[type="text"]:not([readonly]), textarea:not([readonly])');
+            const inputs = arrayInputs.length > 0 ? arrayInputs : allInputs;
+            return inputs.length >= expectedCount;
+          },
+          { expectedCount },
+          { timeout: 2000 }
+        );
+
         // Find all input fields again (should be one more now)
         const currentArrayInputs = this.page.locator('.array-input-container input[type="text"]');
         const currentAllInputs = this.page.locator('input[type="text"], textarea').filter({
           hasNot: this.page.locator('[readonly]')
         });
-        
+
         // Use array container inputs if available
         const currentInputs = await currentArrayInputs.count() > 0 ? currentArrayInputs : currentAllInputs;
         const currentCount = await currentInputs.count();
-        
-        if (currentCount > existingCount + (i - 1)) {
+
+        if (currentCount >= expectedCount) {
           // Fill the newest input field
           const newInput = currentInputs.nth(currentCount - 1);
-          await newInput.fill(value.toString());
+          try {
+            await newInput.fill(value.toString(), { timeout: 2000 });
+          } catch (error) {
+            console.warn(`Failed to fill array item ${i + 1}: ${error.message}`);
+          }
         } else {
           console.warn(`Could not find new input field for item ${i + 1}`);
         }
@@ -311,9 +332,6 @@ class EvoSdkPage extends BaseTest {
    * @returns {boolean} - true if successful, false if proof toggle not available
    */
   async _toggleProofInfo(enable) {
-    // Wait a moment for the UI to fully load after query setup
-    await this.page.waitForTimeout(1000);
-    
     const proofContainer = this.page.locator(this.selectors.proofToggleContainer);
     
     // Check if proof container exists and becomes visible
@@ -684,10 +702,7 @@ class EvoSdkPage extends BaseTest {
       throw error;
     }
 
-    // Wait for schema to load and fields to be generated
-    await this.page.waitForTimeout(3000);
-
-    // Check if document fields header is visible (indicates fields are loaded)
+    // Wait for document fields header to appear (indicates fields are loaded)
     const documentFieldsHeader = this.page.locator('.document-fields-header:has-text("Document Fields")');
     await documentFieldsHeader.waitFor({ state: 'visible', timeout: 15000 });
 
@@ -741,8 +756,14 @@ class EvoSdkPage extends BaseTest {
       throw error;
     }
 
-    // Wait for the document to be loaded and fields to be populated
-    await this.page.waitForTimeout(3000);
+    // Wait for document fields to be populated by checking if any doc-field-input has a non-empty value
+    await this.page.waitForFunction(
+      () => {
+        const fields = document.querySelectorAll('.doc-field-input');
+        return Array.from(fields).some(field => field.value && field.value.trim() !== '');
+      },
+      { timeout: 10000 }
+    );
 
     console.log('Document loaded and fields populated');
   }

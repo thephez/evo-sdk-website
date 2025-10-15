@@ -42,30 +42,31 @@ test.describe('Evo SDK Basic Smoke Tests', () => {
     let statusState;
     let attempts = 0;
     const maxAttempts = 3;
-    
+
     while (attempts < maxAttempts) {
       statusState = await evoSdkPage.getStatusBannerState();
-      
+
       if (statusState === 'success') {
         break;
       }
-      
+
       if (statusState === 'loading') {
         // Wait for loading to complete
         await evoSdkPage.waitForSdkReady();
         statusState = await evoSdkPage.getStatusBannerState();
-        
+
         if (statusState === 'success') {
           break;
         }
       }
-      
+
       attempts++;
-      if (attempts < maxAttempts) {
-        await evoSdkPage.page.waitForTimeout(2000);
+      if (attempts < maxAttempts && statusState !== 'success') {
+        // Wait for SDK state to change
+        await evoSdkPage.waitForSdkReady();
       }
     }
-    
+
     // Final check
     expect(statusState).toBe('success');
     
@@ -165,10 +166,7 @@ test.describe('Evo SDK Basic Smoke Tests', () => {
     await evoSdkPage.setOperationType('queries');
     await evoSdkPage.setQueryCategory('identity');
     await evoSdkPage.setQueryType('getIdentity');
-    
-    // Wait a moment for UI to fully load
-    await evoSdkPage.page.waitForTimeout(1000);
-    
+
     // Check if proof toggle is available
     const proofContainer = evoSdkPage.page.locator('#proofToggleContainer');
     
@@ -219,8 +217,6 @@ test.describe('State Transitions UI Tests', () => {
   test('should switch to state transitions operation type correctly', async () => {
     // Start with queries, then switch to transitions
     await evoSdkPage.setOperationType('queries');
-    await evoSdkPage.page.waitForTimeout(500);
-
     await evoSdkPage.setOperationType('transitions');
 
     // Verify the operation type is set correctly

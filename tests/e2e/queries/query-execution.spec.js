@@ -1116,12 +1116,19 @@ test.describe('Evo SDK Query Execution Tests', () => {
       // Don't fill any parameters, try to execute
       const executeButton = evoSdkPage.page.locator('#executeQuery');
       await executeButton.click();
-      
-      // Wait a bit for the error to appear
-      await evoSdkPage.page.waitForTimeout(1000);
-      
-      // Check for error status
+
+      // Wait for status banner to show error
       const statusBanner = evoSdkPage.page.locator('#statusBanner');
+      await statusBanner.waitFor({ state: 'visible', timeout: 5000 });
+      await evoSdkPage.page.waitForFunction(
+        () => {
+          const banner = document.getElementById('statusBanner');
+          return banner && banner.classList.contains('error');
+        },
+        { timeout: 5000 }
+      );
+
+      // Check for error status
       const statusClass = await statusBanner.getAttribute('class');
       const statusText = await evoSdkPage.getStatusBannerText();
       
