@@ -5,6 +5,16 @@ on:
   schedule:  # Run daily at midnight and noon UTC
     - cron: '0 0,12 * * *'
 
+# Needed for create-pull-request
+permissions:
+  contents: write
+  pull-requests: write
+
+# Prevent overlapping runs
+concurrency:
+  group: update-evo-sdk
+  cancel-in-progress: true
+
 jobs:
   check-and-update:
     runs-on: ubuntu-latest
