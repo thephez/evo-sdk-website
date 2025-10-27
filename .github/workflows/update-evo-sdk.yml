@@ -1,0 +1,97 @@
+name: Update evo-sdk version on npm release
+
+on:
+  workflow_dispatch:  # Manual trigger
+  schedule:  # Run daily at midnight and noon UTC
+    - cron: '0 0,12 * * *'
+
+jobs:
+  check-and-update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Check for new evo-sdk version
+        id: check_version
+        run: |
+          # Get current version from package.json
+          CURRENT_VERSION=$(node -p "require('./package.json').dependencies['@dashevo/evo-sdk']")
+          echo "Current version in package.json: $CURRENT_VERSION"
+
+          # Get latest version from npm
+          LATEST_VERSION=$(npm view @dashevo/evo-sdk version)
+          echo "Latest version on npm: $LATEST_VERSION"
+
+          # Store versions for later steps
+          echo "current=$CURRENT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "latest=$LATEST_VERSION" >> "$GITHUB_OUTPUT"
+
+          # Check if versions differ
+          if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ]; then
+            echo "needs_update=true" >> "$GITHUB_OUTPUT"
+            echo "New version available: $LATEST_VERSION"
+          else
+            echo "needs_update=false" >> "$GITHUB_OUTPUT"
+            echo "Already on latest version"
+          fi
+
+      - name: Install dependencies
+        if: steps.check_version.outputs.needs_update == 'true'
+        run: yarn install
+
+      - name: Upgrade evo-sdk
+        if: steps.check_version.outputs.needs_update == 'true'
+        run: |
+          echo "Upgrading @dashevo/evo-sdk to ${{ steps.check_version.outputs.latest }}"
+          yarn upgrade @dashevo/evo-sdk@${{ steps.check_version.outputs.latest }}
+
+      - name: Run smoke tests
+        if: steps.check_version.outputs.needs_update == 'true'
+        continue-on-error: false
+        run: |
+          echo "Installing Playwright browsers..."
+          npx playwright install --with-deps chromium
+          echo "Running smoke tests to verify compatibility..."
+          yarn test:smoke
+
+      - name: Run query tests
+        if: steps.check_version.outputs.needs_update == 'true'
+        continue-on-error: false
+        run: |
+          echo "Running query tests to verify compatibility..."
+          yarn test:queries
+
+      - name: Create Pull Request
+        if: steps.check_version.outputs.needs_update == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: update-deps/evo-sdk-${{ steps.check_version.outputs.latest }}
+          title: "chore: upgrade evo-sdk to ${{ steps.check_version.outputs.latest }}"
+          body: |
+            This PR upgrades `@dashevo/evo-sdk` to the latest version available on npm.
+
+            **Version Change:**
+            - Previous: `${{ steps.check_version.outputs.current }}`
+            - New: `${{ steps.check_version.outputs.latest }}`
+
+            **Automated Checks:**
+            - Smoke tests: Passed
+            - Query tests: Passed
+
+            This PR was automatically created by the [update-evo-sdk workflow](${{ github.server_url }}/${{ github.repository }}/actions/workflows/update-evo-sdk.yml).
+
+            Please review the changes and merge if everything looks good.
+          commit-message: "chore: upgrade evo-sdk to ${{ steps.check_version.outputs.latest }}"
+          reviewers: "thephez,shumkov"
+          delete-branch: true
+          labels: dependencies,automated
