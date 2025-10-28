@@ -38,6 +38,13 @@ jobs:
           CURRENT_VERSION=$(node -p "require('./package.json').dependencies['@dashevo/evo-sdk']")
           echo "Current version in package.json: $CURRENT_VERSION"
 
+          # Validate no version specifiers are present
+          if [[ "$CURRENT_VERSION" =~ ^[~\^\>\<=] ]]; then
+            echo "Error: Version specifiers detected in package.json: $CURRENT_VERSION"
+            echo "Only exact versions are allowed (e.g., '1.2.3', not '^1.2.3')"
+            exit 1
+          fi
+
           # Get latest version from npm
           LATEST_VERSION=$(npm view @dashevo/evo-sdk version)
           echo "Latest version on npm: $LATEST_VERSION"
@@ -65,9 +72,18 @@ jobs:
           echo "Upgrading @dashevo/evo-sdk to ${{ steps.check_version.outputs.latest }}"
           yarn up @dashevo/evo-sdk@${{ steps.check_version.outputs.latest }}
 
+      - name: Verify package signatures
+        if: steps.check_version.outputs.needs_update == 'true'
+        run: |
+          echo "Verifying registry signatures and attestations..."
+          npm audit signatures || {
+            echo "Error: Package signature verification failed"
+            echo "This could indicate a compromised package or registry issue"
+            exit 1
+          }
+
       - name: Run smoke tests
         if: steps.check_version.outputs.needs_update == 'true'
-        continue-on-error: false
         run: |
           echo "Installing Playwright browsers..."
           npx playwright install --with-deps chromium
@@ -76,7 +92,6 @@ jobs:
 
       - name: Run query tests
         if: steps.check_version.outputs.needs_update == 'true'
-        continue-on-error: false
         run: |
           echo "Running query tests to verify compatibility..."
           yarn test:queries
