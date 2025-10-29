@@ -1,4 +1,4 @@
-name: Update evo-sdk version on npm release
+name: Check/Update SDK version
 
 on:
   workflow_dispatch:  # Manual trigger
@@ -21,10 +21,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
         with:
           node-version: '20'
 
@@ -102,7 +102,7 @@ jobs:
 
       - name: Create Pull Request
         if: steps.check_version.outputs.needs_update == 'true'
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
         with:
           draft: ${{ steps.smoke_tests.outcome != 'success' || steps.query_tests.outcome != 'success' }}
           branch: update-deps/evo-sdk-${{ steps.check_version.outputs.latest }}
