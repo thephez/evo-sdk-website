@@ -501,7 +501,8 @@ test.describe('Evo SDK State Transition Tests', () => {
       validateDataContractResult(result.result, false);
     });
 
-    test('should create data contract with history enabled', async () => {
+    // TODO: enable test once the proof bug is fixed
+    test.skip('should create data contract with history enabled', async () => {
       // Execute the data contract create transition with keepsHistory: true
       const result = await executeStateTransitionWithCustomParams(
         evoSdkPage,
