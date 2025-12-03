@@ -1957,6 +1957,16 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
     return Number.isNaN(num) ? fallback : num;
   };
 
+  const parseJson = (value, label = 'field') => {
+    if (value === undefined || value === null || value === '') return undefined;
+    if (typeof value !== 'string') return value;
+    try {
+      return JSON.parse(value);
+    } catch (e) {
+      throw new Error(`Invalid JSON in ${label}: ${e.message}`);
+    }
+  };
+
   switch (itemKey) {
     // Identity queries
     case 'getIdentity':
@@ -1964,27 +1974,30 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
     case 'getIdentityUnproved':
       return c.identities.fetchUnproved(n.id);
     case 'getIdentityKeys': {
+      const requestType = n.requestType || n.keyRequestType || 'all';
       const specificKeyIds = toNumberArray(n.specificKeyIds);
-      if (useProof) {
-        if (n.keyRequestType === 'search') {
-          throw new Error('Identity key search does not support proof responses. Disable proof to search by purpose.');
-        }
-        return c.identities.getKeysWithProof({
-          identityId: n.identityId,
-          keyRequestType: n.keyRequestType,
-          specificKeyIds,
-          limit: n.limit ?? null,
-          offset: n.offset ?? null,
-        });
+      let purposeMap = n.purposeMap ?? n.searchPurposeMap;
+      if (purposeMap !== undefined) {
+        purposeMap = parseJson(purposeMap, 'Purpose Map');
       }
-      return c.identities.getKeys({
+
+      let request;
+      if (requestType === 'specific') {
+        request = { type: 'specific', specificKeyIds };
+      } else if (requestType === 'search') {
+        request = { type: 'search', purposeMap: purposeMap || {} };
+      } else {
+        request = { type: 'all' };
+      }
+
+      const query = {
         identityId: n.identityId,
-        keyRequestType: n.keyRequestType,
-        specificKeyIds,
-        searchPurposeMap: n.searchPurposeMap,
-        limit: n.limit ?? null,
-        offset: n.offset ?? null,
-      });
+        request,
+        limit: n.limit ?? undefined,
+        offset: n.offset ?? undefined,
+      };
+
+      return useProof ? c.identities.getKeysWithProof(query) : c.identities.getKeys(query);
     }
     case 'getIdentitiesContractKeys': {
       const identityIds = toStringArray(n.identityIds);
@@ -2011,8 +2024,8 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
     case 'getIdentityByPublicKeyHash':
       return useProof ? c.identities.byPublicKeyHashWithProof(n.publicKeyHash) : c.identities.byPublicKeyHash(n.publicKeyHash);
     case 'getIdentityByNonUniquePublicKeyHash': {
-      const opts = { startAfter: n.startAfter || null };
-      return useProof ? c.identities.byNonUniquePublicKeyHashWithProof(n.publicKeyHash, opts) : c.identities.byNonUniquePublicKeyHash(n.publicKeyHash, opts);
+      const startAfter = n.startAfter || undefined;
+      return useProof ? c.identities.byNonUniquePublicKeyHashWithProof(n.publicKeyHash, startAfter) : c.identities.byNonUniquePublicKeyHash(n.publicKeyHash, startAfter);
     }
     case 'getIdentityTokenBalances': {
       const tokenIds = toStringArray(n.tokenIds);
@@ -2024,13 +2037,9 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
     }
     case 'getIdentityTokenInfos': {
       const tokenIds = toStringArray(n.tokenIds);
-      if (useProof) {
-        return c.tokens.identityTokenInfosWithProof(n.identityId, tokenIds);
-      }
-      return c.tokens.identityTokenInfos(n.identityId, tokenIds, {
-        limit: n.limit ?? null,
-        offset: n.offset ?? null,
-      });
+      return useProof
+        ? c.tokens.identityTokenInfosWithProof(n.identityId, tokenIds)
+        : c.tokens.identityTokenInfos(n.identityId, tokenIds);
     }
     case 'getIdentitiesTokenInfos': {
       const identityIds = toStringArray(n.identityIds);
@@ -2054,8 +2063,8 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
       return useProof ? c.contracts.fetchWithProof(n.id) : c.contracts.fetch(n.id);
     case 'getDataContractHistory':
       return useProof
-        ? c.contracts.getHistoryWithProof({ contractId: n.dataContractId || n.id, limit: n.limit ?? null, startAtMs: n.startAtMs ?? null })
-        : c.contracts.getHistory({ contractId: n.dataContractId || n.id, limit: n.limit ?? null, startAtMs: n.startAtMs ?? null });
+        ? c.contracts.getHistoryWithProof({ dataContractId: n.dataContractId || n.id, limit: n.limit ?? undefined, startAtMs: n.startAtMs ?? undefined })
+        : c.contracts.getHistory({ dataContractId: n.dataContractId || n.id, limit: n.limit ?? undefined, startAtMs: n.startAtMs ?? undefined });
     case 'getDataContracts':
       return useProof ? c.contracts.getManyWithProof(n.ids) : c.contracts.getMany(n.ids);
     case 'dataContractCreate': {
@@ -2080,13 +2089,13 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
     // Documents
     case 'getDocuments': {
       const payload = {
-        contractId: n.dataContractId || n.contractId,
-        type: n.documentType,
-        where: n.where,
-        orderBy: n.orderBy,
-        limit: n.limit ?? null,
-        startAfter: n.startAfter ?? null,
-        startAt: n.startAt ?? null,
+        dataContractId: n.dataContractId || n.contractId,
+        documentTypeName: n.documentTypeName || n.documentType,
+        where: parseJson(n.where, 'Where'),
+        orderBy: parseJson(n.orderBy, 'Order By'),
+        limit: n.limit ?? undefined,
+        startAfter: n.startAfter ?? undefined,
+        startAt: n.startAt ?? undefined,
       };
       return useProof ? c.documents.queryWithProof(payload) : c.documents.query(payload);
     }
@@ -2143,7 +2152,9 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
     case 'getDpnsUsername':
       return useProof ? c.dpns.usernameWithProof(n.identityId) : c.dpns.username(n.identityId);
     case 'getDpnsUsernames':
-      return useProof ? c.dpns.usernamesWithProof(n.identityId, { limit: n.limit ?? null }) : c.dpns.usernames(n.identityId, { limit: n.limit ?? null });
+      return useProof
+        ? c.dpns.usernamesWithProof({ identityId: n.identityId, limit: n.limit ?? undefined })
+        : c.dpns.usernames({ identityId: n.identityId, limit: n.limit ?? undefined });
     case 'getDpnsUsernameByName':
       return useProof ? c.dpns.getUsernameByNameWithProof(n.username) : c.dpns.getUsernameByName(n.username);
     case 'dpnsResolve':
@@ -2193,16 +2204,26 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
       return useProof ? c.epoch.evonodesProposedBlocksByIdsWithProof(n.epoch, toStringArray(n.ids)) : c.epoch.evonodesProposedBlocksByIds(n.epoch, toStringArray(n.ids));
     case 'getEvonodesProposedEpochBlocksByRange':
       return useProof
-        ? c.epoch.evonodesProposedBlocksByRangeWithProof(n.epoch, { limit: n.limit ?? null, startAfter: n.startAfter ?? null, orderAscending: n.orderAscending ?? null })
-        : c.epoch.evonodesProposedBlocksByRange(n.epoch, { limit: n.limit ?? null, startAfter: n.startAfter ?? null, orderAscending: n.orderAscending ?? null });
+        ? c.epoch.evonodesProposedBlocksByRangeWithProof({
+          epoch: n.epoch,
+          limit: n.limit ?? undefined,
+          startAfter: n.startAfter ?? undefined,
+          orderAscending: n.orderAscending ?? undefined,
+        })
+        : c.epoch.evonodesProposedBlocksByRange({
+          epoch: n.epoch,
+          limit: n.limit ?? undefined,
+          startAfter: n.startAfter ?? undefined,
+          orderAscending: n.orderAscending ?? undefined,
+        });
 
     // Protocol
     case 'getProtocolVersionUpgradeState':
       return useProof ? c.protocol.versionUpgradeStateWithProof() : c.protocol.versionUpgradeState();
     case 'getProtocolVersionUpgradeVoteStatus':
       return useProof
-        ? c.protocol.versionUpgradeVoteStatusWithProof({ startProTxHash: n.startProTxHash ?? null, count: n.count ?? null })
-        : c.protocol.versionUpgradeVoteStatus({ startProTxHash: n.startProTxHash ?? null, count: n.count ?? null });
+        ? c.protocol.versionUpgradeVoteStatusWithProof(n.startProTxHash, n.count ?? undefined)
+        : c.protocol.versionUpgradeVoteStatus(n.startProTxHash, n.count ?? undefined);
 
     // Tokens
     case 'getTokenStatuses':
@@ -2251,38 +2272,46 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
     }
     case 'getGroupInfos': {
       const contractId = n.dataContractId || n.contractId;
-      return useProof ? c.group.infosWithProof(contractId, n.startAtInfo ?? null, n.count ?? null) : c.group.infos(contractId, n.startAtInfo ?? null, n.count ?? null);
+      return useProof
+        ? c.group.infosWithProof({ dataContractId: contractId, startAt: n.startAtInfo ?? undefined, limit: n.count ?? undefined })
+        : c.group.infos({ dataContractId: contractId, startAt: n.startAtInfo ?? undefined, limit: n.count ?? undefined });
     }
     case 'getGroupMembers': {
       const contractId = n.dataContractId || n.contractId;
       const position = toNumber(n.groupContractPosition, 0);
       const memberIds = toStringArray(n.memberIds);
-      const opts = { memberIds: memberIds.length ? memberIds : null, startAt: n.startAt ?? null, limit: n.limit ?? null };
-      return useProof ? c.group.membersWithProof(contractId, position, opts) : c.group.members(contractId, position, opts);
+      const opts = {
+        dataContractId: contractId,
+        groupContractPosition: position,
+        memberIds: memberIds.length ? memberIds : undefined,
+        startAtMemberId: n.startAt ?? undefined,
+        limit: n.limit ?? undefined,
+      };
+      return useProof ? c.group.membersWithProof(opts) : c.group.members(opts);
     }
     case 'getGroupActions': {
       const contractId = n.dataContractId || n.contractId;
       const position = toNumber(n.groupContractPosition, 0);
-      const opts = { startAtInfo: n.startAtInfo ?? null, count: n.count ?? null };
-      return useProof ? c.group.actionsWithProof(contractId, position, n.status, opts) : c.group.actions(contractId, position, n.status, opts);
+      const opts = { dataContractId: contractId, groupContractPosition: position, status: n.status, startAt: n.startAtInfo ?? undefined, limit: n.count ?? undefined };
+      return useProof ? c.group.actionsWithProof(opts) : c.group.actions(opts);
     }
     case 'getGroupActionSigners': {
       const contractId = n.dataContractId || n.contractId;
       const position = toNumber(n.groupContractPosition, 0);
-      return useProof
-        ? c.group.actionSignersWithProof(contractId, position, n.status, n.actionId)
-        : c.group.actionSigners(contractId, position, n.status, n.actionId);
+      const payload = { dataContractId: contractId, groupContractPosition: position, status: n.status, actionId: n.actionId };
+      return useProof ? c.group.actionSignersWithProof(payload) : c.group.actionSigners(payload);
     }
     case 'getIdentityGroups': {
       const memberDataContracts = toStringArray(n.memberDataContracts);
       const ownerDataContracts = toStringArray(n.ownerDataContracts);
       const moderatorDataContracts = toStringArray(n.moderatorDataContracts);
       const opts = {
-        memberDataContracts: memberDataContracts.length ? memberDataContracts : null,
-        ownerDataContracts: ownerDataContracts.length ? ownerDataContracts : null,
-        moderatorDataContracts: moderatorDataContracts.length ? moderatorDataContracts : null,
+        identityId: n.identityId,
+        memberDataContracts: memberDataContracts.length ? memberDataContracts : undefined,
+        ownerDataContracts: ownerDataContracts.length ? ownerDataContracts : undefined,
+        moderatorDataContracts: moderatorDataContracts.length ? moderatorDataContracts : undefined,
       };
-      return useProof ? c.group.identityGroupsWithProof(n.identityId, opts) : c.group.identityGroups(n.identityId, opts);
+      return useProof ? c.group.identityGroupsWithProof(opts) : c.group.identityGroups(opts);
     }
     case 'getGroupsDataContracts': {
       const contractIds = toStringArray(n.dataContractIds || n.contractIds);
@@ -2293,83 +2322,77 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
     case 'getContestedResources': {
       const contractId = n.dataContractId || n.contractId;
       const payload = {
+        dataContractId: contractId,
         documentTypeName: n.documentTypeName,
-        contractId,
         indexName: n.indexName,
-        startAtValue: n.startAtValue ?? null,
-        limit: n.limit ?? null,
-        orderAscending: n.orderAscending ?? null,
+        startAtValue: n.startAtValue ?? undefined,
+        limit: n.limit ?? undefined,
+        orderAscending: n.orderAscending ?? undefined,
       };
       return useProof ? c.group.contestedResourcesWithProof(payload) : c.group.contestedResources(payload);
     }
     case 'getContestedResourceVotersForIdentity': {
       const contractId = n.dataContractId || n.contractId;
       const payload = {
-        contractId,
+        dataContractId: contractId,
         documentTypeName: n.documentTypeName,
         indexName: n.indexName,
         indexValues: toStringArray(n.indexValues),
         contestantId: n.contestantId,
-        orderAscending: n.orderAscending ?? null,
+        orderAscending: n.orderAscending ?? undefined,
       };
       if (useProof) {
         return c.group.contestedResourceVotersForIdentityWithProof({
           ...payload,
-          startAtIdentifierInfo: n.startAtIdentifierInfo ?? null,
-          count: n.count ?? null,
+          startAtVoterId: n.startAtVoterId ?? n.startAtIdentifierInfo ?? undefined,
+          startAtIncluded: n.startAtIncluded ?? undefined,
+          limit: n.limit ?? n.count ?? undefined,
         });
       }
       return c.group.contestedResourceVotersForIdentity({
         ...payload,
-        startAtVoterInfo: n.startAtVoterInfo ?? null,
-        limit: n.limit ?? null,
+        startAtVoterId: n.startAtVoterId ?? n.startAtVoterInfo ?? undefined,
+        startAtIncluded: n.startAtIncluded ?? undefined,
+        limit: n.limit ?? undefined,
       });
     }
     case 'getContestedResourceVoteState': {
       const contractId = n.dataContractId || n.contractId;
       const payload = {
-        contractId,
+        dataContractId: contractId,
         documentTypeName: n.documentTypeName,
         indexName: n.indexName,
         indexValues: toStringArray(n.indexValues),
         resultType: n.resultType,
-        allowIncludeLockedAndAbstainingVoteTally: n.allowIncludeLockedAndAbstainingVoteTally ?? null,
-        startAtIdentifierInfo: n.startAtIdentifierInfo ?? null,
-        count: n.count ?? null,
-        orderAscending: n.orderAscending ?? null,
+        includeLockedAndAbstaining: n.includeLockedAndAbstaining ?? n.allowIncludeLockedAndAbstainingVoteTally ?? undefined,
+        startAtContenderId: n.startAtContenderId ?? n.startAtIdentifierInfo ?? undefined,
+        startAtIncluded: n.startAtIncluded ?? undefined,
+        limit: n.count ?? n.limit ?? undefined,
+        orderAscending: n.orderAscending ?? undefined,
       };
       return useProof ? c.voting.contestedResourceVoteStateWithProof(payload) : c.voting.contestedResourceVoteState(payload);
     }
     case 'getContestedResourceIdentityVotes': {
-      if (useProof) {
-        return c.voting.contestedResourceIdentityVotesWithProof(n.identityId, {
-          limit: n.limit ?? null,
-          offset: n.offset ?? null,
-          orderAscending: n.orderAscending ?? null,
-        });
-      }
-      return c.voting.contestedResourceIdentityVotes(n.identityId, {
-        limit: n.limit ?? null,
-        startAtVotePollIdInfo: n.startAtVotePollIdInfo ?? null,
-        orderAscending: n.orderAscending ?? null,
-      });
+      const query = {
+        identityId: n.identityId,
+        limit: n.limit ?? undefined,
+        startAtVoteId: n.startAtVoteId ?? n.startAtVotePollIdInfo ?? undefined,
+        startAtIncluded: n.startAtIncluded ?? undefined,
+        orderAscending: n.orderAscending ?? undefined,
+      };
+      return useProof ? c.voting.contestedResourceIdentityVotesWithProof(query) : c.voting.contestedResourceIdentityVotes(query);
     }
     case 'getVotePollsByEndDate': {
-      if (useProof) {
-        return c.voting.votePollsByEndDateWithProof({
-          startTimeMs: n.startTimeMs ?? null,
-          endTimeMs: n.endTimeMs ?? null,
-          limit: n.limit ?? null,
-          offset: n.offset ?? null,
-          orderAscending: n.orderAscending ?? null,
-        });
-      }
-      return c.voting.votePollsByEndDate({
-        startTimeInfo: n.startTimeInfo ?? null,
-        endTimeInfo: n.endTimeInfo ?? null,
-        limit: n.limit ?? null,
-        orderAscending: n.orderAscending ?? null,
-      });
+      const query = {
+        startTimeMs: n.startTimeMs ?? undefined,
+        startTimeIncluded: n.startTimeIncluded ?? undefined,
+        endTimeMs: n.endTimeMs ?? undefined,
+        endTimeIncluded: n.endTimeIncluded ?? undefined,
+        limit: n.limit ?? undefined,
+        offset: n.offset ?? undefined,
+        orderAscending: n.orderAscending ?? undefined,
+      };
+      return useProof ? c.voting.votePollsByEndDateWithProof(query) : c.voting.votePollsByEndDate(query);
     }
 
     case 'masternodeVote': {
@@ -2435,13 +2458,65 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
 }
 
 function formatResult(value) {
-  if (value === undefined) return 'Completed (no result returned)';
-  if (value === null) return 'null';
-  if (typeof value === 'string') return value;
+  const seen = new WeakSet();
+
+  const toSerializable = (val) => {
+    if (val === undefined) return undefined;
+    if (val === null) return null;
+    const t = typeof val;
+    if (t === 'string' || t === 'number' || t === 'boolean') return val;
+    if (t === 'bigint') return val.toString();
+
+    if (t === 'function') return undefined;
+    if (t !== 'object') return String(val);
+
+    if (seen.has(val)) return '[Circular]';
+    seen.add(val);
+
+    if (typeof val.toJSON === 'function') {
+      try { return toSerializable(val.toJSON()); } catch (_) { /* fallthrough */ }
+    }
+    if (typeof val.toObject === 'function') {
+      try { return toSerializable(val.toObject()); } catch (_) { /* fallthrough */ }
+    }
+
+    if (val instanceof Map) {
+      const obj = {};
+      for (const [k, v] of val.entries()) {
+        const key = typeof k === 'string' ? k : String(k);
+        obj[key] = toSerializable(v);
+      }
+      return obj;
+    }
+
+    if (Array.isArray(val)) {
+      return val.map(item => toSerializable(item));
+    }
+
+    if (ArrayBuffer.isView(val)) {
+      return Array.from(val);
+    }
+
+    const obj = {};
+    for (const [k, v] of Object.entries(val)) {
+      obj[k] = toSerializable(v);
+    }
+    return obj;
+  };
+
+  const normalized = toSerializable(value);
+  if (normalized === undefined) return 'Completed (no result returned)';
+  if (normalized === null) return 'null';
+  if (typeof normalized === 'string') return normalized;
+
   try {
-    return JSON.stringify(value, null, 2);
+    return JSON.stringify(normalized, null, 2);
   } catch (_) {
-    return String(value);
+    try {
+      return String(normalized);
+    } catch {
+      return '[Unserializable result]';
+    }
   }
 }
 

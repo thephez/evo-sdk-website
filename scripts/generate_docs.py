@@ -90,7 +90,7 @@ def evo_example_for_query(key: str, inputs: List[dict]):
         'getIdentityKeys': example(f"""
             return await sdk.identities.getKeys({{
                 identityId: '{data['identity_id']}',
-                keyRequestType: 'all',
+                request: {{ type: 'all' }},
                 limit: 10,
                 offset: 0
             }})
@@ -106,9 +106,9 @@ def evo_example_for_query(key: str, inputs: List[dict]):
         """),
         'getDataContractHistory': example(f"""
             return await sdk.contracts.getHistory({{
-                contractId: '{data['data_contract_history_id']}',
+                dataContractId: '{data['data_contract_history_id']}',
                 limit: 10,
-                startAtMs: '0'
+                startAtMs: 0
             }})
         """),
         'getDataContracts': example(f"""
@@ -119,10 +119,10 @@ def evo_example_for_query(key: str, inputs: List[dict]):
         """),
         'getDocuments': example(f"""
             return await sdk.documents.query({{
-                contractId: '{data['data_contract_id']}',
-                type: '{data['document_type']}',
-                where: JSON.stringify([["normalizedParentDomainName", "==", "dash"]]),
-                orderBy: JSON.stringify([["normalizedLabel", "asc"]]),
+                dataContractId: '{data['data_contract_id']}',
+                documentTypeName: '{data['document_type']}',
+                where: [["normalizedParentDomainName", "==", "dash"]],
+                orderBy: [["normalizedLabel", "asc"]],
                 limit: 10
             }})
         """),
@@ -137,7 +137,7 @@ def evo_example_for_query(key: str, inputs: List[dict]):
             return await sdk.dpns.username('{data['identity_id']}')
         """),
         'getDpnsUsernames': example(f"""
-            return await sdk.dpns.usernames('{data['identity_id']}', {{ limit: 10 }})
+            return await sdk.dpns.usernames({{ identityId: '{data['identity_id']}', limit: 10 }})
         """),
         'getDpnsUsernameByName': example("""
             return await sdk.dpns.getUsernameByName('alice.dash')
@@ -159,7 +159,7 @@ def evo_example_for_query(key: str, inputs: List[dict]):
         """),
         'getContestedResources': example(f"""
             return await sdk.group.contestedResources({{
-                contractId: '{data['data_contract_id']}',
+                dataContractId: '{data['data_contract_id']}',
                 documentTypeName: 'domain',
                 indexName: 'parentNameAndLabel',
                 startAtValue: null,
@@ -169,18 +169,18 @@ def evo_example_for_query(key: str, inputs: List[dict]):
         """),
         'getContestedResourceVoteState': example(f"""
             return await sdk.voting.contestedResourceVoteState({{
-                contractId: '{data['data_contract_id']}',
+                dataContractId: '{data['data_contract_id']}',
                 documentTypeName: 'domain',
                 indexName: 'parentNameAndLabel',
                 indexValues: ['dash', 'alice'],
                 resultType: 'documents',
-                count: 10,
+                limit: 10,
                 orderAscending: true
             }})
         """),
         'getContestedResourceVotersForIdentity': example(f"""
             return await sdk.group.contestedResourceVotersForIdentity({{
-                contractId: '{data['data_contract_id']}',
+                dataContractId: '{data['data_contract_id']}',
                 documentTypeName: 'domain',
                 indexName: 'parentNameAndLabel',
                 indexValues: ['dash', 'alice'],
@@ -190,15 +190,16 @@ def evo_example_for_query(key: str, inputs: List[dict]):
             }})
         """),
         'getContestedResourceIdentityVotes': example(f"""
-            return await sdk.voting.contestedResourceIdentityVotes(
-                '{data['identity_id']}',
-                {{ limit: 10, orderAscending: true }}
-            )
+            return await sdk.voting.contestedResourceIdentityVotes({{
+                identityId: '{data['identity_id']}',
+                limit: 10,
+                orderAscending: true
+            }})
         """),
         'getVotePollsByEndDate': example("""
             return await sdk.voting.votePollsByEndDate({
-                startTimeInfo: null,
-                endTimeInfo: null,
+                startTimeMs: null,
+                endTimeMs: null,
                 limit: 10,
                 orderAscending: true,
             })
@@ -207,10 +208,7 @@ def evo_example_for_query(key: str, inputs: List[dict]):
             return await sdk.protocol.versionUpgradeState()
         """),
         'getProtocolVersionUpgradeVoteStatus': example(f"""
-            return await sdk.protocol.versionUpgradeVoteStatus({{
-                startProTxHash: '{data['pro_tx_hash']}',
-                count: 10
-            }})
+            return await sdk.protocol.versionUpgradeVoteStatus('{data['pro_tx_hash']}', 10)
         """),
         'getEpochsInfo': example(f"""
             return await sdk.epoch.epochsInfo({{
@@ -236,7 +234,8 @@ def evo_example_for_query(key: str, inputs: List[dict]):
             )
         """),
         'getEvonodesProposedEpochBlocksByRange': example(f"""
-            return await sdk.epoch.evonodesProposedBlocksByRange({data['epoch']}, {{
+            return await sdk.epoch.evonodesProposedBlocksByRange({{
+                epoch: {data['epoch']},
                 limit: 5,
                 orderAscending: true
             }})

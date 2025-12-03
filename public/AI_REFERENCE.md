@@ -82,7 +82,7 @@ Example:
 ```javascript
 const result = await sdk.identities.getKeys({
     identityId: '5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk',
-    keyRequestType: 'all',
+    request: { type: 'all' },
     limit: 10,
     offset: 0
 });
@@ -238,10 +238,6 @@ Parameters:
 - `Token IDs (optional)` (array, optional)
   - Example: `["Hqyu8WcRwXCTwbNxdga4CN5gsVEGc67wng4TFzceyLUv"]`
 
-- `Limit` (number, optional)
-
-- `Offset` (number, optional)
-
 Example:
 ```javascript
 const result = await sdk.tokens.identityTokenInfos('5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk', ['Hqyu8WcRwXCTwbNxdga4CN5gsVEGc67wng4TFzceyLUv'], { limit: 10, offset: 0 });
@@ -290,9 +286,9 @@ Parameters:
 Example:
 ```javascript
 const result = await sdk.contracts.getHistory({
-    contractId: 'HLY575cNazmc5824FxqaEMEBuzFeE4a98GDRNKbyJqCM',
+    dataContractId: 'HLY575cNazmc5824FxqaEMEBuzFeE4a98GDRNKbyJqCM',
     limit: 10,
-    startAtMs: '0'
+    startAtMs: 0
 });
 ```
 
@@ -338,10 +334,10 @@ Parameters:
 Example:
 ```javascript
 const result = await sdk.documents.query({
-    contractId: 'GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec',
-    type: 'domain',
-    where: JSON.stringify([["normalizedParentDomainName", "==", "dash"]]),
-    orderBy: JSON.stringify([["normalizedLabel", "asc"]]),
+    dataContractId: 'GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec',
+    documentTypeName: 'domain',
+    where: [["normalizedParentDomainName", "==", "dash"]],
+    orderBy: [["normalizedLabel", "asc"]],
     limit: 10
 });
 ```
@@ -393,7 +389,7 @@ Parameters:
 
 Example:
 ```javascript
-const result = await sdk.dpns.usernames('5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk', { limit: 10 });
+const result = await sdk.dpns.usernames({ identityId: '5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk', limit: 10 });
 ```
 
 **Get Username by Name** - `dpns.getUsernameByName`
@@ -482,6 +478,11 @@ Parameters:
 
 - `Index Name` (text, required)
 
+- `Start Index Values` (json, optional)
+  - Example: `["dash","alice"]`
+
+- `End Index Values` (json, optional)
+
 - `Start At Value` (text, optional)
 
 - `Limit` (number, optional)
@@ -491,7 +492,7 @@ Parameters:
 Example:
 ```javascript
 const result = await sdk.group.contestedResources({
-    contractId: 'GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec',
+    dataContractId: 'GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec',
     documentTypeName: 'domain',
     indexName: 'parentNameAndLabel',
     startAtValue: null,
@@ -520,7 +521,9 @@ Parameters:
 
 - `Include Locked & Abstaining Tallies` (checkbox, optional)
 
-- `Start At Identifier Info` (text, optional)
+- `Start At Contender ID` (text, optional)
+
+- `Include Start Contender` (checkbox, optional)
 
 - `Count` (number, optional)
 
@@ -529,12 +532,12 @@ Parameters:
 Example:
 ```javascript
 const result = await sdk.voting.contestedResourceVoteState({
-    contractId: 'GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec',
+    dataContractId: 'GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec',
     documentTypeName: 'domain',
     indexName: 'parentNameAndLabel',
     indexValues: ['dash', 'alice'],
     resultType: 'documents',
-    count: 10,
+    limit: 10,
     orderAscending: true
 });
 ```
@@ -557,20 +560,18 @@ Parameters:
 - `Contestant Identity ID` (text, required)
   - Example: `5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk`
 
-- `Start At Voter Info` (text, optional)
+- `Start At Voter ID` (text, optional)
 
-- `Start At Identifier Info (Proof)` (text, optional)
+- `Include Start Voter` (checkbox, optional)
 
 - `Limit` (number, optional)
-
-- `Count (Proof)` (number, optional)
 
 - `Order Ascending` (checkbox, optional)
 
 Example:
 ```javascript
 const result = await sdk.group.contestedResourceVotersForIdentity({
-    contractId: 'GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec',
+    dataContractId: 'GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec',
     documentTypeName: 'domain',
     indexName: 'parentNameAndLabel',
     indexValues: ['dash', 'alice'],
@@ -589,43 +590,44 @@ Parameters:
 
 - `Limit` (number, optional)
 
-- `Start At Vote Poll Info` (text, optional)
+- `Start At Vote ID` (text, optional)
 
-- `Offset (Proof)` (number, optional)
+- `Include Start Vote` (checkbox, optional)
 
 - `Order Ascending` (checkbox, optional)
 
 Example:
 ```javascript
-const result = await sdk.voting.contestedResourceIdentityVotes(
-    '5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk',
-    { limit: 10, orderAscending: true }
-);
+const result = await sdk.voting.contestedResourceIdentityVotes({
+    identityId: '5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk',
+    limit: 10,
+    orderAscending: true
+});
 ```
 
 **Get Vote Polls by End Date** - `voting.votePollsByEndDate`
-*Fetch vote polls filtered by end time. Use JSON time info for standard responses or millisecond timestamps with proof.*
+*Fetch vote polls filtered by end time using millisecond timestamps.*
 
 Parameters:
-- `Start Time Info (JSON)` (json, optional)
-
-- `End Time Info (JSON)` (json, optional)
-
 - `Start Time (ms)` (number, optional)
+
+- `Include Start Time` (checkbox, optional)
 
 - `End Time (ms)` (number, optional)
 
+- `Include End Time` (checkbox, optional)
+
 - `Limit` (number, optional)
 
-- `Offset (Proof)` (number, optional)
+- `Offset` (number, optional)
 
 - `Order Ascending` (checkbox, optional)
 
 Example:
 ```javascript
 const result = await sdk.voting.votePollsByEndDate({
-    startTimeInfo: null,
-    endTimeInfo: null,
+    startTimeMs: null,
+    endTimeMs: null,
     limit: 10,
     orderAscending: true,
 });
@@ -654,10 +656,7 @@ Parameters:
 
 Example:
 ```javascript
-const result = await sdk.protocol.versionUpgradeVoteStatus({
-    startProTxHash: '143dcd6a6b7684fde01e88a10e5d65de9a29244c5ecd586d14a342657025f113',
-    count: 10
-});
+const result = await sdk.protocol.versionUpgradeVoteStatus('143dcd6a6b7684fde01e88a10e5d65de9a29244c5ecd586d14a342657025f113', 10);
 ```
 
 #### Epoch & Block Queries
@@ -742,7 +741,8 @@ Parameters:
 
 Example:
 ```javascript
-const result = await sdk.epoch.evonodesProposedBlocksByRange(8635, {
+const result = await sdk.epoch.evonodesProposedBlocksByRange({
+    epoch: 8635,
     limit: 5,
     orderAscending: true
 });

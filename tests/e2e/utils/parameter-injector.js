@@ -80,6 +80,7 @@ class ParameterInjector {
       
       // Document parameters
       'documentType': ['#documentType', '[name="documentType"]', 'input[placeholder*="Document Type"]'],
+      'documentTypeName': ['#documentTypeName', '[name="documentTypeName"]', 'input[placeholder*="Document Type"]'],
       'documentId': ['#documentId', '[name="documentId"]', 'input[placeholder*="Document ID"]'],
       
       // Key parameters

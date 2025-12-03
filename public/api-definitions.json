@@ -46,7 +46,7 @@
               "placeholder": "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk"
             },
             {
-              "name": "keyRequestType",
+              "name": "requestType",
               "type": "select",
               "label": "Key Request Type",
               "required": true,
@@ -71,20 +71,20 @@
               "label": "Specific Key IDs",
               "placeholder": "[0,1,2]",
               "dependsOn": {
-                "field": "keyRequestType",
+                "field": "requestType",
                 "values": [
                   "specific"
                 ]
               }
             },
             {
-              "name": "searchPurposeMap",
+              "name": "purposeMap",
               "type": "json",
               "label": "Search Purpose Map",
               "help": "JSON map of purpose -> security level -> filter (e.g. {\"0\": {\"0\": \"current\"}}).",
               "placeholder": "{\"0\": {\"0\": \"current\"}, \"1\": {\"0\": \"all\"}}",
               "dependsOn": {
-                "field": "keyRequestType",
+                "field": "requestType",
                 "values": [
                   "search"
                 ]
@@ -320,16 +320,6 @@
               "type": "array",
               "label": "Token IDs (optional)",
               "placeholder": "[\"Hqyu8WcRwXCTwbNxdga4CN5gsVEGc67wng4TFzceyLUv\"]"
-            },
-            {
-              "name": "limit",
-              "type": "number",
-              "label": "Limit"
-            },
-            {
-              "name": "offset",
-              "type": "number",
-              "label": "Offset"
             }
           ],
           "sdk_method": "tokens.identityTokenInfos"
@@ -429,7 +419,7 @@
               "placeholder": "GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec"
             },
             {
-              "name": "documentType",
+              "name": "documentTypeName",
               "type": "text",
               "label": "Document Type",
               "required": true,
@@ -479,7 +469,7 @@
               "placeholder": "GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec"
             },
             {
-              "name": "documentType",
+              "name": "documentTypeName",
               "type": "text",
               "label": "Document Type",
               "required": true,
@@ -634,7 +624,7 @@
               "placeholder": "domain"
             },
             {
-              "name": "contractId",
+              "name": "dataContractId",
               "type": "text",
               "label": "Data Contract ID",
               "required": true,
@@ -645,6 +635,19 @@
               "type": "text",
               "label": "Index Name",
               "required": true
+            },
+            {
+              "name": "startIndexValues",
+              "type": "json",
+              "label": "Start Index Values",
+              "placeholder": "[\"dash\",\"alice\"]",
+              "help": "Optional lower bound for range queries."
+            },
+            {
+              "name": "endIndexValues",
+              "type": "json",
+              "label": "End Index Values",
+              "help": "Optional upper bound for range queries."
             },
             {
               "name": "startAtValue",
@@ -669,7 +672,7 @@
           "description": "Retrieve vote tallies for a contested resource.",
           "inputs": [
             {
-              "name": "contractId",
+              "name": "dataContractId",
               "type": "text",
               "label": "Data Contract ID",
               "required": true,
@@ -703,17 +706,22 @@
               "placeholder": "documents"
             },
             {
-              "name": "allowIncludeLockedAndAbstainingVoteTally",
+              "name": "includeLockedAndAbstaining",
               "type": "checkbox",
               "label": "Include Locked & Abstaining Tallies"
             },
             {
-              "name": "startAtIdentifierInfo",
+              "name": "startAtContenderId",
               "type": "text",
-              "label": "Start At Identifier Info"
+              "label": "Start At Contender ID"
             },
             {
-              "name": "count",
+              "name": "startAtIncluded",
+              "type": "checkbox",
+              "label": "Include Start Contender"
+            },
+            {
+              "name": "limit",
               "type": "number",
               "label": "Count"
             },
@@ -730,7 +738,7 @@
           "description": "List voters that voted for a specific identity in a contested resource.",
           "inputs": [
             {
-              "name": "contractId",
+              "name": "dataContractId",
               "type": "text",
               "label": "Data Contract ID",
               "required": true,
@@ -764,24 +772,19 @@
               "placeholder": "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk"
             },
             {
-              "name": "startAtVoterInfo",
+              "name": "startAtVoterId",
               "type": "text",
-              "label": "Start At Voter Info"
+              "label": "Start At Voter ID"
             },
             {
-              "name": "startAtIdentifierInfo",
-              "type": "text",
-              "label": "Start At Identifier Info (Proof)"
+              "name": "startAtIncluded",
+              "type": "checkbox",
+              "label": "Include Start Voter"
             },
             {
               "name": "limit",
               "type": "number",
               "label": "Limit"
-            },
-            {
-              "name": "count",
-              "type": "number",
-              "label": "Count (Proof)"
             },
             {
               "name": "orderAscending",
@@ -808,14 +811,14 @@
               "label": "Limit"
             },
             {
-              "name": "startAtVotePollIdInfo",
+              "name": "startAtVoteId",
               "type": "text",
-              "label": "Start At Vote Poll Info"
+              "label": "Start At Vote ID"
             },
             {
-              "name": "offset",
-              "type": "number",
-              "label": "Offset (Proof)"
+              "name": "startAtIncluded",
+              "type": "checkbox",
+              "label": "Include Start Vote"
             },
             {
               "name": "orderAscending",
@@ -827,31 +830,29 @@
         },
         "getVotePollsByEndDate": {
           "label": "Get Vote Polls by End Date",
-          "description": "Fetch vote polls filtered by end time. Use JSON time info for standard responses or millisecond timestamps with proof.",
+          "description": "Fetch vote polls filtered by end time using millisecond timestamps.",
           "inputs": [
-            {
-              "name": "startTimeInfo",
-              "type": "json",
-              "label": "Start Time Info (JSON)",
-              "help": "Used when proofs are disabled."
-            },
-            {
-              "name": "endTimeInfo",
-              "type": "json",
-              "label": "End Time Info (JSON)",
-              "help": "Used when proofs are disabled."
-            },
             {
               "name": "startTimeMs",
               "type": "number",
               "label": "Start Time (ms)",
-              "help": "Used when proofs are enabled."
+              "help": "Optional lower bound timestamp."
+            },
+            {
+              "name": "startTimeIncluded",
+              "type": "checkbox",
+              "label": "Include Start Time"
             },
             {
               "name": "endTimeMs",
               "type": "number",
               "label": "End Time (ms)",
-              "help": "Used when proofs are enabled."
+              "help": "Optional upper bound timestamp."
+            },
+            {
+              "name": "endTimeIncluded",
+              "type": "checkbox",
+              "label": "Include End Time"
             },
             {
               "name": "limit",
@@ -861,7 +862,7 @@
             {
               "name": "offset",
               "type": "number",
-              "label": "Offset (Proof)"
+              "label": "Offset"
             },
             {
               "name": "orderAscending",
@@ -1117,7 +1118,7 @@
           "description": "Fetch metadata for a specific group contract position.",
           "inputs": [
             {
-              "name": "contractId",
+              "name": "dataContractId",
               "type": "text",
               "label": "Group Contract ID",
               "required": true,
@@ -1138,7 +1139,7 @@
           "description": "List group information entries for a contract.",
           "inputs": [
             {
-              "name": "contractId",
+              "name": "dataContractId",
               "type": "text",
               "label": "Group Contract ID",
               "required": true,
@@ -1162,7 +1163,7 @@
           "description": "Retrieve member entries for a group.",
           "inputs": [
             {
-              "name": "contractId",
+              "name": "dataContractId",
               "type": "text",
               "label": "Group Contract ID",
               "required": true,
@@ -1198,7 +1199,7 @@
           "description": "Fetch actions associated with a group.",
           "inputs": [
             {
-              "name": "contractId",
+              "name": "dataContractId",
               "type": "text",
               "label": "Group Contract ID",
               "required": true,
@@ -1253,7 +1254,7 @@
           "description": "List signers for a specific group action.",
           "inputs": [
             {
-              "name": "contractId",
+              "name": "dataContractId",
               "type": "text",
               "label": "Group Contract ID",
               "required": true,
