@@ -84,11 +84,11 @@ const testData = {
         testnet: [
           { 
             identityId: "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk",
-            keyRequestType: "all"
+            requestType: "all"
           },
           {
             identityId: "5RG84o6KsTaZudDqS8ytbaRB8QP4YYQ2uwzb6Hj8cfjX",
-            keyRequestType: "specific",
+            requestType: "specific",
             specificKeyIds: ["1", "2"]
           }
         ]
@@ -216,7 +216,7 @@ const testData = {
           { 
             dataContractId: "HLY575cNazmc5824FxqaEMEBuzFeE4a98GDRNKbyJqCM",
             limit: 10,
-            offset: 0
+            startAtMs: 0
           }
         ]
       }
@@ -227,7 +227,7 @@ const testData = {
         testnet: [
           {
             dataContractId: "GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec",
-            documentType: "domain",
+            documentTypeName: "domain",
             limit: 10,
             where: '[["normalizedParentDomainName", "==", "dash"], ["normalizedLabel", "startsWith", "test"]]',
             orderBy: '[["normalizedLabel", "asc"]]'
@@ -238,7 +238,7 @@ const testData = {
         testnet: [
           {
             dataContractId: "GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec",
-            documentType: "domain",
+            documentTypeName: "domain",
             documentId: "7NYmEKQsYtniQRUmxwdPGeVcirMoPh5ZPyAKz8BWFy3r"
           }
         ]
@@ -438,10 +438,9 @@ const testData = {
         testnet: [
           {
             documentTypeName: "domain",
-            contractId: "GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec",
+            dataContractId: "GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec",
             indexName: "parentNameAndLabel",
             limit: 10,
-            offset: 0,
             orderAscending: true
           }
         ]
@@ -449,13 +448,13 @@ const testData = {
       getContestedResourceVoteState: {
         testnet: [
           {
-            contractId: "GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec",
+            dataContractId: "GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec",
             documentTypeName: "domain",
             indexName: "parentNameAndLabel",
             indexValues: ["dash", "alice"],
             resultType: "contenders",
-            allowIncludeLockedAndAbstainingVoteTally: false,
-            count: 10,
+            includeLockedAndAbstaining: false,
+            limit: 10,
             orderAscending: true
           }
         ]
@@ -463,12 +462,12 @@ const testData = {
       getContestedResourceVotersForIdentity: {
         testnet: [
           {
-            contractId: "GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec",
+            dataContractId: "GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec",
             documentTypeName: "domain",
             indexName: "parentNameAndLabel",
             indexValues: ["dash", "alice"],
             contestantId: "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk",
-            count: 10,
+            limit: 10,
             orderAscending: true
           }
         ]
@@ -478,7 +477,6 @@ const testData = {
           {
             identityId: "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk",
             limit: 10,
-            offset: 0,
             orderAscending: true
           }
         ]
@@ -498,7 +496,7 @@ const testData = {
       getGroupInfo: {
         testnet: [
           {
-            contractId: "49PJEnNx7ReCitzkLdkDNr4s6RScGsnNexcdSZJ1ph5N",
+            dataContractId: "49PJEnNx7ReCitzkLdkDNr4s6RScGsnNexcdSZJ1ph5N",
             groupContractPosition: 0
           }
         ]
@@ -506,7 +504,7 @@ const testData = {
       getGroupInfos: {
         testnet: [
           {
-            contractId: "49PJEnNx7ReCitzkLdkDNr4s6RScGsnNexcdSZJ1ph5N",
+            dataContractId: "49PJEnNx7ReCitzkLdkDNr4s6RScGsnNexcdSZJ1ph5N",
             count: 100
           }
         ]
@@ -514,7 +512,7 @@ const testData = {
       getGroupActions: {
         testnet: [
           {
-            contractId: "49PJEnNx7ReCitzkLdkDNr4s6RScGsnNexcdSZJ1ph5N",
+            dataContractId: "49PJEnNx7ReCitzkLdkDNr4s6RScGsnNexcdSZJ1ph5N",
             groupContractPosition: 0,
             status: "ACTIVE",
             count: 10
@@ -524,7 +522,7 @@ const testData = {
       getGroupActionSigners: {
         testnet: [
           {
-            contractId: "49PJEnNx7ReCitzkLdkDNr4s6RScGsnNexcdSZJ1ph5N",
+            dataContractId: "49PJEnNx7ReCitzkLdkDNr4s6RScGsnNexcdSZJ1ph5N",
             groupContractPosition: 0,
             status: "ACTIVE",
             actionId: "6XJzL6Qb8Zhwxt4HFwh8NAn7q1u4dwdoUf8EmgzDudFZ"
