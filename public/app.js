@@ -2460,6 +2460,86 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
 function formatResult(value) {
   const seen = new WeakSet();
 
+  // Check if object is a WASM object (has __wbg_ptr)
+  const isWasmObject = (val) => {
+    return val && typeof val === 'object' && '__wbg_ptr' in val;
+  };
+
+  // Convert Identifier to string (base58)
+  const identifierToString = (id) => {
+    if (!id) return String(id);
+    if (typeof id === 'string') return id;
+    if (!isWasmObject(id)) return String(id);
+    // Try 'to' method with 'base58' encoding (WASM Identifier)
+    if (typeof id.to === 'function') {
+      try { return id.to('base58'); } catch (_) {}
+    }
+    // Try 'base' method (might return base58)
+    if (typeof id.base === 'function') {
+      try { return id.base(); } catch (_) {}
+    }
+    // Try toBase58
+    if (typeof id.toBase58 === 'function') {
+      try { return id.toBase58(); } catch (_) {}
+    }
+    // Try toHex and convert
+    if (typeof id.toHex === 'function') {
+      try { return id.toHex(); } catch (_) {}
+    }
+    // Try toJSON which often returns the string representation
+    if (typeof id.toJSON === 'function') {
+      try {
+        const json = id.toJSON();
+        if (typeof json === 'string') return json;
+      } catch (_) {}
+    }
+    // Check for __type property which WASM objects often have
+    if (id.__type === 'Identifier' && typeof id.to === 'function') {
+      try { return id.to('base58'); } catch (_) {}
+    }
+    // Fallback: return [object Object] which will be caught later
+    return '[Identifier]';
+  };
+
+  // Extract data from WASM Document object (Document lacks toJSON/toObject)
+  const extractDocument = (doc) => {
+    const result = {};
+    try {
+      if (doc.id) result.id = identifierToString(doc.id);
+      if (doc.ownerId) result.ownerId = identifierToString(doc.ownerId);
+      if (doc.revision !== undefined) result.revision = Number(doc.revision);
+      if (doc.dataContractId) result.dataContractId = identifierToString(doc.dataContractId);
+      if (doc.documentTypeName) result.documentTypeName = doc.documentTypeName;
+      if (doc.properties) result.properties = toSerializable(doc.properties);
+      if (doc.createdAt) result.createdAt = Number(doc.createdAt);
+      if (doc.updatedAt) result.updatedAt = Number(doc.updatedAt);
+    } catch (_) {}
+    return Object.keys(result).length > 0 ? result : null;
+  };
+
+  // Try to extract meaningful data from WASM object
+  const extractWasmData = (val) => {
+    // Try toJSON first (works for Identity, DataContract, ProofMetadataResponse, etc.)
+    if (typeof val.toJSON === 'function') {
+      try { return val.toJSON(); } catch (_) {}
+    }
+    // Try toObject
+    if (typeof val.toObject === 'function') {
+      try { return val.toObject(); } catch (_) {}
+    }
+    // Document lacks toJSON/toObject, use manual extraction
+    if ('ownerId' in val || 'properties' in val) {
+      const doc = extractDocument(val);
+      if (doc) return doc;
+    }
+    // Fallback: try toString
+    if (typeof val.toString === 'function' && val.toString !== Object.prototype.toString) {
+      const str = val.toString();
+      if (str && str !== '[object Object]') return str;
+    }
+    return null;
+  };
+
   const toSerializable = (val) => {
     if (val === undefined) return undefined;
     if (val === null) return null;
@@ -2473,6 +2553,12 @@ function formatResult(value) {
     if (seen.has(val)) return '[Circular]';
     seen.add(val);
 
+    // Handle WASM objects specially
+    if (isWasmObject(val)) {
+      const extracted = extractWasmData(val);
+      if (extracted !== null) return toSerializable(extracted);
+    }
+
     if (typeof val.toJSON === 'function') {
       try { return toSerializable(val.toJSON()); } catch (_) { /* fallthrough */ }
     }
@@ -2483,7 +2569,17 @@ function formatResult(value) {
     if (val instanceof Map) {
       const obj = {};
       for (const [k, v] of val.entries()) {
-        const key = typeof k === 'string' ? k : String(k);
+        // Handle WASM Identifier keys
+        let key;
+        if (isWasmObject(k)) {
+          key = identifierToString(k);
+        } else if (typeof k === 'string') {
+          key = k;
+        } else if (k && typeof k.toString === 'function') {
+          key = k.toString();
+        } else {
+          key = String(k);
+        }
         obj[key] = toSerializable(v);
       }
       return obj;
@@ -2499,6 +2595,7 @@ function formatResult(value) {
 
     const obj = {};
     for (const [k, v] of Object.entries(val)) {
+      if (k === '__wbg_ptr') continue; // Skip WASM pointer
       obj[k] = toSerializable(v);
     }
     return obj;

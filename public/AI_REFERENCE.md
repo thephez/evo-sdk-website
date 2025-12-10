@@ -750,6 +750,21 @@ const result = await sdk.epoch.evonodesProposedBlocksByRange({
 
 #### Token Queries
 
+**Calculate Token ID** - `tokens.calculateId`
+*Calculate a token ID from a contract ID and token position. This is a utility method that does not require network connection.*
+
+Parameters:
+- `Contract ID` (text, required)
+  - Example: `ALybvzfcCwMs7sinDwmtumw17NneuW7RgFtFHgjKmF3A`
+
+- `Token Position` (number, required)
+  - Example: `0`
+
+Example:
+```javascript
+const result = await sdk.tokens.calculateId('ALybvzfcCwMs7sinDwmtumw17NneuW7RgFtFHgjKmF3A', 0);
+```
+
 **Get Token Statuses** - `tokens.statuses`
 *Retrieve status information for one or more tokens.*
 
@@ -1051,7 +1066,7 @@ Parameters:
 - `Asset Lock Proof` (string, required)
   - Hex-encoded JSON asset lock proof
 
-- `Asset Lock Proof Private Key` (string, required)
+- `Asset Lock Private Key (WIF)` (string, required)
   - WIF format private key
 
 - `Public Keys` (string, required)
@@ -1061,7 +1076,7 @@ Example:
 ```javascript
 // Asset lock proof is a hex-encoded JSON object
 const assetLockProof = "a9147d3b... (hex-encoded)";
-const assetLockProofPrivateKey = "XFfpaSbZq52HPy3WWwe1dXsZMiU1bQn8vQd34HNXkSZThevBWRn1"; // WIF format
+const assetLockPrivateKeyWif = "XFfpaSbZq52HPy3WWwe1dXsZMiU1bQn8vQd34HNXkSZThevBWRn1"; // WIF format
 
 // Public keys array with proper key types
 const publicKeys = JSON.stringify([
@@ -1094,7 +1109,7 @@ const publicKeys = JSON.stringify([
   }
 ]);
 
-const result = await sdk.identities.create({ assetLockProof, assetLockProofPrivateKey, publicKeys });
+const result = await sdk.identities.create({ assetLockProof, assetLockPrivateKeyWif, publicKeys });
 ```
 
 **Identity Top Up** - `identities.topup`
@@ -1107,16 +1122,16 @@ Parameters:
 - `Asset Lock Proof` (string, required)
   - Hex-encoded JSON asset lock proof
 
-- `Asset Lock Proof Private Key` (string, required)
+- `Asset Lock Private Key (WIF)` (string, required)
   - WIF format private key
 
 Example:
 ```javascript
 const identityId = "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk"; // base58
 const assetLockProof = "a9147d3b... (hex-encoded)";
-const assetLockProofPrivateKey = "XFfpaSbZq52HPy3WWve1dXsZMiU1bQn8vQd34HNXkSZThevBWRn1"; // WIF format
+const assetLockPrivateKeyWif = "XFfpaSbZq52HPy3WWve1dXsZMiU1bQn8vQd34HNXkSZThevBWRn1"; // WIF format
 
-const result = await sdk.identities.topup({ identityId, assetLockProof, assetLockProofPrivateKey });
+const result = await sdk.identities.topUp({ identityId, assetLockProof, assetLockPrivateKeyWif });
 ```
 
 **Identity Update** - `identities.update`

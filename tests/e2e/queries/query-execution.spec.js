@@ -183,17 +183,24 @@ function validateDocumentResult(resultStr) {
   expect(() => JSON.parse(resultStr)).not.toThrow();
   const documentData = JSON.parse(resultStr);
   expect(documentData).toBeDefined();
-  // Documents can be arrays or single objects
+  // Documents can be arrays, single objects, or Map-like objects (keyed by document ID)
   if (Array.isArray(documentData)) {
     expect(documentData.length).toBeGreaterThanOrEqual(0);
     // Validate each document in the array has ownerId
     documentData.forEach(document => {
       expect(document).toHaveProperty('ownerId');
     });
-  } else {
-    expect(documentData).toBeInstanceOf(Object);
-    // Validate single document has ownerId
-    expect(documentData).toHaveProperty('ownerId');
+  } else if (documentData && typeof documentData === 'object') {
+    // Check if it's a Map-like object (documents keyed by ID)
+    const keys = Object.keys(documentData);
+    if (keys.length > 0 && !documentData.ownerId) {
+      // It's a Map<Identifier, Document> - validate first document
+      const firstDoc = documentData[keys[0]];
+      expect(firstDoc).toHaveProperty('ownerId');
+    } else {
+      // It's a single document
+      expect(documentData).toHaveProperty('ownerId');
+    }
   }
 }
 

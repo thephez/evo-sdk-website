@@ -240,6 +240,9 @@ def evo_example_for_query(key: str, inputs: List[dict]):
                 orderAscending: true
             }})
         """),
+        'calculateTokenId': example(f"""
+            return await sdk.tokens.calculateId('{data['token_contract_id']}', 0)
+        """),
         'getTokenStatuses': example(f"""
             return await sdk.tokens.statuses([
                 '{data['token_id']}',
@@ -620,8 +623,113 @@ def generate_docs_script() -> str:
             if (typeof output === 'string') {
                 return output;
             }
+
+            const seen = new WeakSet();
+
+            // Check if object is a WASM object (has __wbg_ptr and getter methods)
+            const isWasmObject = (val) => {
+                return val && typeof val === 'object' && '__wbg_ptr' in val;
+            };
+
+            // Extract data from WASM Document object (Document lacks toJSON/toObject)
+            const extractDocument = (doc) => {
+                const result = {};
+                try {
+                    if (doc.id) result.id = doc.id.toString();
+                    if (doc.ownerId) result.ownerId = doc.ownerId.toString();
+                    if (doc.revision !== undefined) result.revision = Number(doc.revision);
+                    if (doc.dataContractId) result.dataContractId = doc.dataContractId.toString();
+                    if (doc.documentTypeName) result.documentTypeName = doc.documentTypeName;
+                    if (doc.properties) result.properties = toSerializable(doc.properties);
+                    if (doc.createdAt) result.createdAt = Number(doc.createdAt);
+                    if (doc.updatedAt) result.updatedAt = Number(doc.updatedAt);
+                } catch (_) {}
+                return Object.keys(result).length > 0 ? result : null;
+            };
+
+            // Try to extract meaningful data from WASM object
+            const extractWasmData = (val) => {
+                // Try toJSON first (works for Identity, DataContract, ProofMetadataResponse, etc.)
+                if (typeof val.toJSON === 'function') {
+                    try { return val.toJSON(); } catch (_) {}
+                }
+                // Try toObject
+                if (typeof val.toObject === 'function') {
+                    try { return val.toObject(); } catch (_) {}
+                }
+                // Document lacks toJSON/toObject, use manual extraction
+                if ('ownerId' in val || 'properties' in val) {
+                    const doc = extractDocument(val);
+                    if (doc) return doc;
+                }
+                // Fallback: try toString
+                if (typeof val.toString === 'function' && val.toString !== Object.prototype.toString) {
+                    const str = val.toString();
+                    if (str && str !== '[object Object]') return str;
+                }
+                return null;
+            };
+
+            const toSerializable = (val) => {
+                if (val === undefined) return undefined;
+                if (val === null) return null;
+                const t = typeof val;
+                if (t === 'string' || t === 'number' || t === 'boolean') return val;
+                if (t === 'bigint') return val.toString();
+                if (t === 'function') return undefined;
+                if (t !== 'object') return String(val);
+
+                if (seen.has(val)) return '[Circular]';
+                seen.add(val);
+
+                // Handle WASM objects specially
+                if (isWasmObject(val)) {
+                    const extracted = extractWasmData(val);
+                    if (extracted !== null) return toSerializable(extracted);
+                }
+
+                if (typeof val.toJSON === 'function') {
+                    try { return toSerializable(val.toJSON()); } catch (_) {}
+                }
+                if (typeof val.toObject === 'function') {
+                    try { return toSerializable(val.toObject()); } catch (_) {}
+                }
+
+                if (val instanceof Map) {
+                    const obj = {};
+                    for (const [k, v] of val.entries()) {
+                        // Handle WASM Identifier keys
+                        let key;
+                        if (isWasmObject(k) && typeof k.toString === 'function') {
+                            key = k.toString();
+                        } else if (k && typeof k.toString === 'function') {
+                            key = k.toString();
+                        } else {
+                            key = String(k);
+                        }
+                        obj[key] = toSerializable(v);
+                    }
+                    return obj;
+                }
+
+                if (Array.isArray(val)) {
+                    return val.map(toSerializable);
+                }
+
+                if (ArrayBuffer.isView(val)) {
+                    return Array.from(val);
+                }
+
+                const result = {};
+                for (const [k, v] of Object.entries(val)) {
+                    if (k === '__wbg_ptr') continue; // Skip WASM pointer
+                    result[k] = toSerializable(v);
+                }
+                return result;
+            };
+
             try {
-                return JSON.stringify(output, null, 2);
+                return JSON.stringify(toSerializable(output), null, 2);
             } catch (error) {
                 return String(output);
             }
