@@ -2101,8 +2101,8 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
     }
     case 'getDocument':
       return useProof
-        ? c.documents.getWithProof(n.dataContractId || n.contractId, n.documentType, n.documentId)
-        : c.documents.get(n.dataContractId || n.contractId, n.documentType, n.documentId);
+        ? c.documents.getWithProof(n.dataContractId || n.contractId, n.documentTypeName || n.documentType, n.documentId)
+        : c.documents.get(n.dataContractId || n.contractId, n.documentTypeName || n.documentType, n.documentId);
     case 'documentCreate': {
       const dynamic = (typeof n.documentFields === 'object' && n.documentFields !== null) ? n.documentFields : {};
       const data = n.data ?? dynamic.data;
@@ -2111,8 +2111,8 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
       }
       const entropyHex = n.entropyHex ?? dynamic.entropyHex ?? generateEntropyHex();
       return c.documents.create({
-        contractId: n.contractId,
-        type: n.documentType,
+        contractId: n.dataContractId || n.contractId,
+        type: n.documentTypeName || n.documentType,
         ownerId: n.ownerId,
         data,
         entropyHex,
@@ -2130,8 +2130,8 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
         throw new Error('Document revision is missing. Click "Load Document" before replacing.');
       }
       return c.documents.replace({
-        contractId: n.contractId,
-        type: n.documentType,
+        contractId: n.dataContractId || n.contractId,
+        type: n.documentTypeName || n.documentType,
         documentId: n.documentId,
         ownerId: n.ownerId,
         data,
@@ -2140,13 +2140,13 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
       });
     }
     case 'documentDelete':
-      return c.documents.delete({ contractId: n.contractId, type: n.documentType, documentId: n.documentId, ownerId: n.ownerId, privateKeyWif: n.privateKeyWif });
+      return c.documents.delete({ contractId: n.dataContractId || n.contractId, type: n.documentTypeName || n.documentType, documentId: n.documentId, ownerId: n.ownerId, privateKeyWif: n.privateKeyWif });
     case 'documentTransfer':
-      return c.documents.transfer({ contractId: n.contractId, type: n.documentType, documentId: n.documentId, ownerId: n.ownerId, recipientId: n.recipientId, privateKeyWif: n.privateKeyWif });
+      return c.documents.transfer({ contractId: n.dataContractId || n.contractId, type: n.documentTypeName || n.documentType, documentId: n.documentId, ownerId: n.ownerId, recipientId: n.recipientId, privateKeyWif: n.privateKeyWif });
     case 'documentPurchase':
-      return c.documents.purchase({ contractId: n.contractId, type: n.documentType, documentId: n.documentId, buyerId: n.buyerId, price: n.price, privateKeyWif: n.privateKeyWif });
+      return c.documents.purchase({ contractId: n.dataContractId || n.contractId, type: n.documentTypeName || n.documentType, documentId: n.documentId, buyerId: n.buyerId, price: n.price, privateKeyWif: n.privateKeyWif });
     case 'documentSetPrice':
-      return c.documents.setPrice({ contractId: n.contractId, type: n.documentType, documentId: n.documentId, ownerId: n.ownerId, price: n.price, privateKeyWif: n.privateKeyWif });
+      return c.documents.setPrice({ contractId: n.dataContractId || n.contractId, type: n.documentTypeName || n.documentType, documentId: n.documentId, ownerId: n.ownerId, price: n.price, privateKeyWif: n.privateKeyWif });
 
     // DPNS
     case 'getDpnsUsername':
@@ -2385,9 +2385,9 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
     case 'getVotePollsByEndDate': {
       const query = {
         startTimeMs: n.startTimeMs ?? undefined,
-        startTimeIncluded: n.startTimeIncluded ?? undefined,
+        startTimeIncluded: n.startTimeMs ? (n.startTimeIncluded ?? undefined) : undefined,
         endTimeMs: n.endTimeMs ?? undefined,
-        endTimeIncluded: n.endTimeIncluded ?? undefined,
+        endTimeIncluded: n.endTimeMs ? (n.endTimeIncluded ?? undefined) : undefined,
         limit: n.limit ?? undefined,
         offset: n.offset ?? undefined,
         orderAscending: n.orderAscending ?? undefined,
@@ -2472,30 +2472,30 @@ function formatResult(value) {
     if (!isWasmObject(id)) return String(id);
     // Try 'to' method with 'base58' encoding (WASM Identifier)
     if (typeof id.to === 'function') {
-      try { return id.to('base58'); } catch (_) {}
+      try { return id.to('base58'); } catch (_) { }
     }
     // Try 'base' method (might return base58)
     if (typeof id.base === 'function') {
-      try { return id.base(); } catch (_) {}
+      try { return id.base(); } catch (_) { }
     }
     // Try toBase58
     if (typeof id.toBase58 === 'function') {
-      try { return id.toBase58(); } catch (_) {}
+      try { return id.toBase58(); } catch (_) { }
     }
     // Try toHex and convert
     if (typeof id.toHex === 'function') {
-      try { return id.toHex(); } catch (_) {}
+      try { return id.toHex(); } catch (_) { }
     }
     // Try toJSON which often returns the string representation
     if (typeof id.toJSON === 'function') {
       try {
         const json = id.toJSON();
         if (typeof json === 'string') return json;
-      } catch (_) {}
+      } catch (_) { }
     }
     // Check for __type property which WASM objects often have
     if (id.__type === 'Identifier' && typeof id.to === 'function') {
-      try { return id.to('base58'); } catch (_) {}
+      try { return id.to('base58'); } catch (_) { }
     }
     // Fallback: return [object Object] which will be caught later
     return '[Identifier]';
@@ -2513,7 +2513,7 @@ function formatResult(value) {
       if (doc.properties) result.properties = toSerializable(doc.properties);
       if (doc.createdAt) result.createdAt = Number(doc.createdAt);
       if (doc.updatedAt) result.updatedAt = Number(doc.updatedAt);
-    } catch (_) {}
+    } catch (_) { }
     return Object.keys(result).length > 0 ? result : null;
   };
 
@@ -2521,11 +2521,11 @@ function formatResult(value) {
   const extractWasmData = (val) => {
     // Try toJSON first (works for Identity, DataContract, ProofMetadataResponse, etc.)
     if (typeof val.toJSON === 'function') {
-      try { return val.toJSON(); } catch (_) {}
+      try { return val.toJSON(); } catch (_) { }
     }
     // Try toObject
     if (typeof val.toObject === 'function') {
-      try { return val.toObject(); } catch (_) {}
+      try { return val.toObject(); } catch (_) { }
     }
     // Document lacks toJSON/toObject, use manual extraction
     if ('ownerId' in val || 'properties' in val) {
