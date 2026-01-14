@@ -273,19 +273,19 @@ def evo_example_for_query(key: str, inputs: List[dict]):
             return await sdk.group.info('{data['group_contract_id']}', 0)
         """),
         'getGroupInfos': example(f"""
-            return await sdk.group.infos('{data['group_contract_id']}', null, 10)
+            return await sdk.group.infos({{ dataContractId: '{data['group_contract_id']}', startAt: null, limit: 10 }})
         """),
         'getGroupMembers': example(f"""
-            return await sdk.group.members('{data['group_contract_id']}', 0, {{ limit: 10 }})
+            return await sdk.group.members({{ dataContractId: '{data['group_contract_id']}', groupContractPosition: 0, limit: 10 }})
         """),
         'getGroupActions': example(f"""
-            return await sdk.group.actions('{data['group_contract_id']}', 0, 'ACTIVE', {{ count: 10 }})
+            return await sdk.group.actions({{ dataContractId: '{data['group_contract_id']}', groupContractPosition: 0, status: 'ACTIVE', limit: 10 }})
         """),
         'getGroupActionSigners': example(f"""
-            return await sdk.group.actionSigners('{data['group_contract_id']}', 0, 'ACTIVE', '6XJzL6Qb8Zhwxt4HFwh8NAn7q1u4dwdoUf8EmgzDudFZ')
+            return await sdk.group.actionSigners({{ dataContractId: '{data['group_contract_id']}', groupContractPosition: 0, status: 'ACTIVE', actionId: '6XJzL6Qb8Zhwxt4HFwh8NAn7q1u4dwdoUf8EmgzDudFZ' }})
         """),
         'getIdentityGroups': example(f"""
-            return await sdk.group.identityGroups('{data['identity_id']}', {{}})
+            return await sdk.group.identityGroups({{ identityId: '{data['identity_id']}' }})
         """),
         'getGroupsDataContracts': example(f"""
             return await sdk.group.groupsDataContracts(['{data['data_contract_id']}'])
@@ -346,7 +346,7 @@ def evo_example_for_query(key: str, inputs: List[dict]):
             return await sdk.identities.byPublicKeyHash('{data['public_key_hash_unique']}')
         """),
         'getIdentityByNonUniquePublicKeyHash': example(f"""
-            return await sdk.identities.byNonUniquePublicKeyHash('{data['public_key_hash_non_unique']}', {{ startAfter: null }})
+            return await sdk.identities.byNonUniquePublicKeyHash('{data['public_key_hash_non_unique']}')
         """),
     }
     return examples.get(key)

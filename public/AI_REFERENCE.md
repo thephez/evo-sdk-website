@@ -195,7 +195,7 @@ Parameters:
 
 Example:
 ```javascript
-const result = await sdk.identities.byNonUniquePublicKeyHash('518038dc858461bcee90478fd994bba8057b7531', { startAfter: null });
+const result = await sdk.identities.byNonUniquePublicKeyHash('518038dc858461bcee90478fd994bba8057b7531');
 ```
 
 **Get Identity Token Balances** - `identities.tokenBalances`
@@ -881,7 +881,7 @@ Parameters:
 
 Example:
 ```javascript
-const result = await sdk.group.infos('49PJEnNx7ReCitzkLdkDNr4s6RScGsnNexcdSZJ1ph5N', null, 10);
+const result = await sdk.group.infos({ dataContractId: '49PJEnNx7ReCitzkLdkDNr4s6RScGsnNexcdSZJ1ph5N', startAt: null, limit: 10 });
 ```
 
 **Get Group Members** - `group.members`
@@ -902,7 +902,7 @@ Parameters:
 
 Example:
 ```javascript
-const result = await sdk.group.members('49PJEnNx7ReCitzkLdkDNr4s6RScGsnNexcdSZJ1ph5N', 0, { limit: 10 });
+const result = await sdk.group.members({ dataContractId: '49PJEnNx7ReCitzkLdkDNr4s6RScGsnNexcdSZJ1ph5N', groupContractPosition: 0, limit: 10 });
 ```
 
 **Get Group Actions** - `group.actions`
@@ -924,7 +924,7 @@ Parameters:
 
 Example:
 ```javascript
-const result = await sdk.group.actions('49PJEnNx7ReCitzkLdkDNr4s6RScGsnNexcdSZJ1ph5N', 0, 'ACTIVE', { count: 10 });
+const result = await sdk.group.actions({ dataContractId: '49PJEnNx7ReCitzkLdkDNr4s6RScGsnNexcdSZJ1ph5N', groupContractPosition: 0, status: 'ACTIVE', limit: 10 });
 ```
 
 **Get Group Action Signers** - `group.actionSigners`
@@ -944,7 +944,7 @@ Parameters:
 
 Example:
 ```javascript
-const result = await sdk.group.actionSigners('49PJEnNx7ReCitzkLdkDNr4s6RScGsnNexcdSZJ1ph5N', 0, 'ACTIVE', '6XJzL6Qb8Zhwxt4HFwh8NAn7q1u4dwdoUf8EmgzDudFZ');
+const result = await sdk.group.actionSigners({ dataContractId: '49PJEnNx7ReCitzkLdkDNr4s6RScGsnNexcdSZJ1ph5N', groupContractPosition: 0, status: 'ACTIVE', actionId: '6XJzL6Qb8Zhwxt4HFwh8NAn7q1u4dwdoUf8EmgzDudFZ' });
 ```
 
 **Get Identity Groups** - `group.identityGroups`
@@ -962,7 +962,7 @@ Parameters:
 
 Example:
 ```javascript
-const result = await sdk.group.identityGroups('5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk', {});
+const result = await sdk.group.identityGroups({ identityId: '5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk' });
 ```
 
 **Get Groups Data Contracts** - `group.groupsDataContracts`
