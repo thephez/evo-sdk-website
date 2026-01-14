@@ -1437,6 +1437,39 @@
           "sdk_method": "system.waitForStateTransitionResult"
         }
       }
+    },
+    "address": {
+      "label": "Platform Address Queries",
+      "queries": {
+        "getPlatformAddress": {
+          "label": "Get Platform Address",
+          "description": "Fetch information about a Platform address including its nonce and balance.",
+          "inputs": [
+            {
+              "name": "address",
+              "type": "text",
+              "label": "Platform Address",
+              "required": true,
+              "placeholder": "tdashevo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqrglsvm"
+            }
+          ],
+          "sdk_method": "addresses.get"
+        },
+        "getPlatformAddresses": {
+          "label": "Get Multiple Platform Addresses",
+          "description": "Fetch information about multiple Platform addresses.",
+          "inputs": [
+            {
+              "name": "addresses",
+              "type": "array",
+              "label": "Platform Addresses",
+              "required": true,
+              "placeholder": "[\"tdashevo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqrglsvm\"]"
+            }
+          ],
+          "sdk_method": "addresses.getMany"
+        }
+      }
     }
   },
   "transitions": {
@@ -1737,7 +1770,7 @@
               "required": false
             }
           ],
-          "sdk_method": "contracts.create"
+          "sdk_method": "contracts.publish"
         },
         "dataContractUpdate": {
           "label": "Data Contract Update",
@@ -2137,7 +2170,7 @@
               "required": false
             }
           ],
-          "sdk_method": "tokens.setPriceForDirectPurchase"
+          "sdk_method": "tokens.setPrice"
         },
         "tokenDirectPurchase": {
           "label": "Token Direct Purchase",
@@ -2170,9 +2203,9 @@
           ],
           "sdk_method": "tokens.directPurchase"
         },
-        "tokenConfigUpdate": {
-          "label": "Token Config Update",
-          "description": "Update token configuration settings",
+        "tokenEmergencyAction": {
+          "label": "Token Emergency Action",
+          "description": "Perform an emergency action on a token",
           "inputs": [
             {
               "name": "contractId",
@@ -2187,62 +2220,20 @@
               "required": true
             },
             {
-              "name": "configItemType",
+              "name": "actionType",
               "type": "select",
-              "label": "Config Item Type",
+              "label": "Action Type",
               "required": true,
               "options": [
                 {
-                  "value": "conventions",
-                  "label": "Conventions"
+                  "value": "pause",
+                  "label": "Pause"
                 },
                 {
-                  "value": "max_supply",
-                  "label": "Max Supply"
-                },
-                {
-                  "value": "perpetual_distribution",
-                  "label": "Perpetual Distribution"
-                },
-                {
-                  "value": "new_tokens_destination_identity",
-                  "label": "New Tokens Destination Identity"
-                },
-                {
-                  "value": "minting_allow_choosing_destination",
-                  "label": "Minting Allow Choosing Destination"
-                },
-                {
-                  "value": "manual_minting",
-                  "label": "Manual Minting"
-                },
-                {
-                  "value": "manual_burning",
-                  "label": "Manual Burning"
-                },
-                {
-                  "value": "conventions_control_group",
-                  "label": "Conventions Control Group"
-                },
-                {
-                  "value": "conventions_admin_group",
-                  "label": "Conventions Admin Group"
-                },
-                {
-                  "value": "max_supply_control_group",
-                  "label": "Max Supply Control Group"
-                },
-                {
-                  "value": "max_supply_admin_group",
-                  "label": "Max Supply Admin Group"
+                  "value": "resume",
+                  "label": "Resume"
                 }
               ]
-            },
-            {
-              "name": "configValue",
-              "type": "text",
-              "label": "Config Value (JSON or specific value)",
-              "required": true
             },
             {
               "name": "publicNote",
@@ -2251,7 +2242,7 @@
               "required": false
             }
           ],
-          "sdk_method": "tokens.configUpdate"
+          "sdk_method": "tokens.emergencyAction"
         },
         "tokenTransfer": {
           "label": "Token Transfer",
@@ -2488,6 +2479,194 @@
             }
           ],
           "sdk_method": "voting.masternodeVote"
+        }
+      }
+    },
+    "address": {
+      "label": "Platform Address Transitions",
+      "transitions": {
+        "addressTransfer": {
+          "label": "Address Transfer",
+          "description": "Transfer credits between Platform addresses",
+          "inputs": [
+            {
+              "name": "senderAddress",
+              "type": "text",
+              "label": "Sender Platform Address",
+              "required": true,
+              "placeholder": "tdashevo1..."
+            },
+            {
+              "name": "senderNonce",
+              "type": "number",
+              "label": "Sender Nonce",
+              "required": true,
+              "placeholder": "0"
+            },
+            {
+              "name": "amount",
+              "type": "text",
+              "label": "Amount (credits)",
+              "required": true
+            },
+            {
+              "name": "recipientAddress",
+              "type": "text",
+              "label": "Recipient Platform Address",
+              "required": true,
+              "placeholder": "tdashevo1..."
+            }
+          ],
+          "sdk_method": "addresses.transfer"
+        },
+        "addressTopUpIdentity": {
+          "label": "Top Up Identity from Address",
+          "description": "Top up an identity using Platform address credits",
+          "inputs": [
+            {
+              "name": "identityId",
+              "type": "text",
+              "label": "Identity ID to Top Up",
+              "required": true,
+              "placeholder": "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk"
+            },
+            {
+              "name": "senderAddress",
+              "type": "text",
+              "label": "Sender Platform Address",
+              "required": true,
+              "placeholder": "tdashevo1..."
+            },
+            {
+              "name": "senderNonce",
+              "type": "number",
+              "label": "Sender Nonce",
+              "required": true,
+              "placeholder": "0"
+            },
+            {
+              "name": "amount",
+              "type": "text",
+              "label": "Amount (credits)",
+              "required": true
+            }
+          ],
+          "sdk_method": "addresses.topUpIdentity"
+        },
+        "addressWithdraw": {
+          "label": "Withdraw to Core",
+          "description": "Withdraw Platform address credits to Dash Core",
+          "inputs": [
+            {
+              "name": "senderAddress",
+              "type": "text",
+              "label": "Sender Platform Address",
+              "required": true,
+              "placeholder": "tdashevo1..."
+            },
+            {
+              "name": "senderNonce",
+              "type": "number",
+              "label": "Sender Nonce",
+              "required": true,
+              "placeholder": "0"
+            },
+            {
+              "name": "amount",
+              "type": "text",
+              "label": "Amount (credits)",
+              "required": true
+            },
+            {
+              "name": "toAddress",
+              "type": "text",
+              "label": "Dash Core Address",
+              "required": true,
+              "placeholder": "yXxx..."
+            },
+            {
+              "name": "coreFeePerByte",
+              "type": "number",
+              "label": "Core Fee Per Byte",
+              "required": false,
+              "placeholder": "1"
+            }
+          ],
+          "sdk_method": "addresses.withdraw"
+        },
+        "addressTransferFromIdentity": {
+          "label": "Transfer from Identity to Address",
+          "description": "Transfer credits from an identity to Platform addresses",
+          "inputs": [
+            {
+              "name": "recipientAddress",
+              "type": "text",
+              "label": "Recipient Platform Address",
+              "required": true,
+              "placeholder": "tdashevo1..."
+            },
+            {
+              "name": "amount",
+              "type": "text",
+              "label": "Amount (credits)",
+              "required": true
+            }
+          ],
+          "sdk_method": "addresses.transferFromIdentity"
+        },
+        "addressFundFromAssetLock": {
+          "label": "Fund Address from Asset Lock",
+          "description": "Fund Platform addresses from an asset lock",
+          "inputs": [
+            {
+              "name": "recipientAddress",
+              "type": "text",
+              "label": "Recipient Platform Address",
+              "required": true,
+              "placeholder": "tdashevo1..."
+            },
+            {
+              "name": "amount",
+              "type": "text",
+              "label": "Amount (credits)",
+              "required": true
+            }
+          ],
+          "sdk_method": "addresses.fundFromAssetLock"
+        },
+        "addressCreateIdentity": {
+          "label": "Create Identity from Address",
+          "description": "Create a new identity funded from Platform addresses",
+          "inputs": [
+            {
+              "name": "senderAddress",
+              "type": "text",
+              "label": "Sender Platform Address",
+              "required": true,
+              "placeholder": "tdashevo1..."
+            },
+            {
+              "name": "senderNonce",
+              "type": "number",
+              "label": "Sender Nonce",
+              "required": true,
+              "placeholder": "0"
+            },
+            {
+              "name": "amount",
+              "type": "text",
+              "label": "Amount (credits)",
+              "required": true
+            },
+            {
+              "name": "publicKeys",
+              "type": "json",
+              "label": "Public Keys (JSON)",
+              "required": true,
+              "placeholder": "[{\"id\":0,\"type\":0,\"purpose\":0,\"securityLevel\":0,\"data\":\"...\"}]"
+            }
+          ],
+          "sdk_method": "addresses.createIdentity"
         }
       }
     }

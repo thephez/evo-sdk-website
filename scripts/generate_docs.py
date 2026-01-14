@@ -308,6 +308,13 @@ def evo_example_for_query(key: str, inputs: List[dict]):
         'waitForStateTransitionResult': example("""
             return await sdk.system.waitForStateTransitionResult('0000000000000000000000000000000000000000000000000000000000000000')
         """),
+        # Platform Addresses
+        'getPlatformAddress': example("""
+            return await sdk.addresses.get('tdashevo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqrglsvm')
+        """),
+        'getPlatformAddresses': example("""
+            return await sdk.addresses.getMany(['tdashevo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqrglsvm'])
+        """),
         'getIdentityTokenBalances': example(f"""
             return await sdk.identities.tokenBalances('{data['identity_id']}', ['{data['token_id']}'])
         """),
@@ -353,7 +360,7 @@ def evo_example_for_transition(key: str):
         'identityCreditTransfer': "await client.identities.creditTransfer({ senderId, recipientId, amount, privateKeyWif, keyId })",
         'identityCreditWithdrawal': "await client.identities.creditWithdrawal({ identityId, toAddress, amount, coreFeePerByte, privateKeyWif, keyId })",
         'identityUpdate': "await client.identities.update({ identityId, addPublicKeys, disablePublicKeyIds, privateKeyWif })",
-        'dataContractCreate': "await client.contracts.create({ ownerId, definition, privateKeyWif, keyId })",
+        'dataContractCreate': "await client.contracts.publish({ ownerId, definition, privateKeyWif, keyId })",
         'dataContractUpdate': "await client.contracts.update({ contractId, ownerId, updates, privateKeyWif, keyId })",
         # Documents
         'documentCreate': "await client.documents.create({ contractId, type: documentType, ownerId, data, entropyHex, privateKeyWif })",
@@ -369,14 +376,21 @@ def evo_example_for_transition(key: str):
         'tokenFreeze': "await client.tokens.freeze({ contractId, tokenPosition, identityToFreeze, freezerId, privateKeyWif, publicNote })",
         'tokenUnfreeze': "await client.tokens.unfreeze({ contractId, tokenPosition, identityToUnfreeze, unfreezerId, privateKeyWif, publicNote })",
         'tokenDestroyFrozen': "await client.tokens.destroyFrozen({ contractId, tokenPosition, identityId: frozenIdentityId, destroyerId, privateKeyWif, publicNote })",
-        'tokenSetPriceForDirectPurchase': "await client.tokens.setPriceForDirectPurchase({ contractId, tokenPosition, identityId, priceType, priceData, privateKeyWif, publicNote })",
+        'tokenSetPriceForDirectPurchase': "await client.tokens.setPrice({ contractId, tokenPosition, identityId, priceType, priceData, privateKeyWif, publicNote })",
         'tokenDirectPurchase': "await client.tokens.directPurchase({ contractId, tokenPosition, amount, identityId, totalAgreedPrice, privateKeyWif })",
         'tokenClaim': "await client.tokens.claim({ contractId, tokenPosition, distributionType, identityId, privateKeyWif, publicNote })",
-        'tokenConfigUpdate': "await client.tokens.configUpdate({ contractId, tokenPosition, configItemType, configValue, identityId, privateKeyWif, publicNote })",
+        'tokenEmergencyAction': "await client.tokens.emergencyAction({ contractId, tokenPosition, actionType, identityId, privateKeyWif, publicNote })",
         # Voting
         'dpnsUsername': "await client.voting.masternodeVote({ masternodeProTxHash, contractId, documentTypeName, indexName, indexValues, voteChoice, votingKeyWif })",
         'masternodeVote': "await client.voting.masternodeVote({ masternodeProTxHash, contractId, documentTypeName, indexName, indexValues, voteChoice, votingKeyWif })",
         'dpnsRegister': "await client.dpns.registerName({ label, identityId, publicKeyId, privateKeyWif, onPreorder })",
+        # Platform Addresses
+        'addressTransfer': "await client.addresses.transfer({ inputs, outputs, signer })",
+        'addressTopUpIdentity': "await client.addresses.topUpIdentity({ identityId, inputs, signer })",
+        'addressWithdraw': "await client.addresses.withdraw({ inputs, coreFeePerByte, pooling, outputScript, signer })",
+        'addressTransferFromIdentity': "await client.addresses.transferFromIdentity({ identityId, outputs, signer })",
+        'addressFundFromAssetLock': "await client.addresses.fundFromAssetLock({ assetLockProof, assetLockPrivateKey, outputs, signer })",
+        'addressCreateIdentity': "await client.addresses.createIdentity({ identity, inputs, identitySigner, addressSigner })",
     }
     return m.get(key)
 

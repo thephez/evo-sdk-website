@@ -1048,6 +1048,32 @@ Example:
 const result = await sdk.system.waitForStateTransitionResult('0000000000000000000000000000000000000000000000000000000000000000');
 ```
 
+#### Platform Address Queries
+
+**Get Platform Address** - `addresses.get`
+*Fetch information about a Platform address including its nonce and balance.*
+
+Parameters:
+- `Platform Address` (text, required)
+  - Example: `tdashevo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqrglsvm`
+
+Example:
+```javascript
+const result = await sdk.addresses.get('tdashevo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqrglsvm');
+```
+
+**Get Multiple Platform Addresses** - `addresses.getMany`
+*Fetch information about multiple Platform addresses.*
+
+Parameters:
+- `Platform Addresses` (array, required)
+  - Example: `["tdashevo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqrglsvm"]`
+
+Example:
+```javascript
+const result = await sdk.addresses.getMany(['tdashevo1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqrglsvm']);
+```
+
 ## State Transition Operations
 
 ### Pattern
@@ -1179,7 +1205,7 @@ const result = await sdk.identities.creditWithdrawal({ identityId, toAddress, am
 
 #### Data Contract Transitions
 
-**Data Contract Create** - `contracts.create`
+**Data Contract Create** - `contracts.publish`
 *Create a new data contract*
 
 Parameters (payload fields):
@@ -1227,7 +1253,7 @@ Parameters (payload fields):
 
 Example:
 ```javascript
-const result = await sdk.contracts.create({ ownerId, definition, privateKeyWif, keyId });
+const result = await sdk.contracts.publish({ ownerId, definition, privateKeyWif, keyId });
 ```
 
 **Data Contract Update** - `contracts.update`
@@ -1435,7 +1461,7 @@ Example:
 const result = await sdk.tokens.claim({ contractId, tokenPosition, distributionType, identityId, privateKeyWif, publicNote });
 ```
 
-**Token Set Price** - `tokens.setPriceForDirectPurchase`
+**Token Set Price** - `tokens.setPrice`
 *Set or update the price for direct token purchases*
 
 Parameters (payload fields):
@@ -1453,7 +1479,7 @@ Parameters (payload fields):
 
 Example:
 ```javascript
-const result = await sdk.tokens.setPriceForDirectPurchase({ contractId, tokenPosition, identityId, priceType, priceData, privateKeyWif, publicNote });
+const result = await sdk.tokens.setPrice({ contractId, tokenPosition, identityId, priceType, priceData, privateKeyWif, publicNote });
 ```
 
 **Token Direct Purchase** - `tokens.directPurchase`
@@ -1473,24 +1499,22 @@ Example:
 const result = await sdk.tokens.directPurchase({ contractId, tokenPosition, amount, identityId, totalAgreedPrice, privateKeyWif });
 ```
 
-**Token Config Update** - `tokens.configUpdate`
-*Update token configuration settings*
+**Token Emergency Action** - `tokens.emergencyAction`
+*Perform an emergency action on a token*
 
 Parameters (payload fields):
 - `Data Contract ID` (text, required)
 
 - `Token Contract Position` (number, required)
 
-- `Config Item Type` (select, required)
-  - Options: `conventions` (Conventions), `max_supply` (Max Supply), `perpetual_distribution` (Perpetual Distribution), `new_tokens_destination_identity` (New Tokens Destination Identity), `minting_allow_choosing_destination` (Minting Allow Choosing Destination), `manual_minting` (Manual Minting), `manual_burning` (Manual Burning), `conventions_control_group` (Conventions Control Group), `conventions_admin_group` (Conventions Admin Group), `max_supply_control_group` (Max Supply Control Group), `max_supply_admin_group` (Max Supply Admin Group)
-
-- `Config Value (JSON or specific value)` (text, required)
+- `Action Type` (select, required)
+  - Options: `pause` (Pause), `resume` (Resume)
 
 - `Public Note` (text, optional)
 
 Example:
 ```javascript
-const result = await sdk.tokens.configUpdate({ contractId, tokenPosition, configItemType, configValue, identityId, privateKeyWif, publicNote });
+const result = await sdk.tokens.emergencyAction({ contractId, tokenPosition, actionType, identityId, privateKeyWif, publicNote });
 ```
 
 **Token Transfer** - `tokens.transfer`
@@ -1603,6 +1627,119 @@ Parameters (payload fields):
 Example:
 ```javascript
 const result = await sdk.voting.masternodeVote({ masternodeProTxHash, contractId, documentTypeName, indexName, indexValues, voteChoice, votingKeyWif });
+```
+
+#### Platform Address Transitions
+
+**Address Transfer** - `addresses.transfer`
+*Transfer credits between Platform addresses*
+
+Parameters (payload fields):
+- `Sender Platform Address` (text, required)
+  - Example: `tdashevo1...`
+
+- `Sender Nonce` (number, required)
+  - Example: `0`
+
+- `Amount (credits)` (text, required)
+
+- `Recipient Platform Address` (text, required)
+  - Example: `tdashevo1...`
+
+Example:
+```javascript
+const result = await sdk.addresses.transfer({ inputs, outputs, signer });
+```
+
+**Top Up Identity from Address** - `addresses.topUpIdentity`
+*Top up an identity using Platform address credits*
+
+Parameters (payload fields):
+- `Identity ID to Top Up` (text, required)
+  - Example: `5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk`
+
+- `Sender Platform Address` (text, required)
+  - Example: `tdashevo1...`
+
+- `Sender Nonce` (number, required)
+  - Example: `0`
+
+- `Amount (credits)` (text, required)
+
+Example:
+```javascript
+const result = await sdk.addresses.topUpIdentity({ identityId, inputs, signer });
+```
+
+**Withdraw to Core** - `addresses.withdraw`
+*Withdraw Platform address credits to Dash Core*
+
+Parameters (payload fields):
+- `Sender Platform Address` (text, required)
+  - Example: `tdashevo1...`
+
+- `Sender Nonce` (number, required)
+  - Example: `0`
+
+- `Amount (credits)` (text, required)
+
+- `Dash Core Address` (text, required)
+  - Example: `yXxx...`
+
+- `Core Fee Per Byte` (number, optional)
+  - Example: `1`
+
+Example:
+```javascript
+const result = await sdk.addresses.withdraw({ inputs, coreFeePerByte, pooling, outputScript, signer });
+```
+
+**Transfer from Identity to Address** - `addresses.transferFromIdentity`
+*Transfer credits from an identity to Platform addresses*
+
+Parameters (payload fields):
+- `Recipient Platform Address` (text, required)
+  - Example: `tdashevo1...`
+
+- `Amount (credits)` (text, required)
+
+Example:
+```javascript
+const result = await sdk.addresses.transferFromIdentity({ identityId, outputs, signer });
+```
+
+**Fund Address from Asset Lock** - `addresses.fundFromAssetLock`
+*Fund Platform addresses from an asset lock*
+
+Parameters (payload fields):
+- `Recipient Platform Address` (text, required)
+  - Example: `tdashevo1...`
+
+- `Amount (credits)` (text, required)
+
+Example:
+```javascript
+const result = await sdk.addresses.fundFromAssetLock({ assetLockProof, assetLockPrivateKey, outputs, signer });
+```
+
+**Create Identity from Address** - `addresses.createIdentity`
+*Create a new identity funded from Platform addresses*
+
+Parameters (payload fields):
+- `Sender Platform Address` (text, required)
+  - Example: `tdashevo1...`
+
+- `Sender Nonce` (number, required)
+  - Example: `0`
+
+- `Amount (credits)` (text, required)
+
+- `Public Keys (JSON)` (json, required)
+  - Example: `[{"id":0,"type":0,"purpose":0,"securityLevel":0,"data":"..."}]`
+
+Example:
+```javascript
+const result = await sdk.addresses.createIdentity({ identity, inputs, identitySigner, addressSigner });
 ```
 
 ## Common Patterns

@@ -74,14 +74,18 @@ const SUPPORTED_QUERIES = new Set([
   // System
   'getStatus', 'getCurrentQuorumsInfo', 'getPrefundedSpecializedBalance', 'getTotalCreditsInPlatform', 'getPathElements',
   'waitForStateTransitionResult',
+  // Platform Addresses
+  'getPlatformAddress', 'getPlatformAddresses',
 ]);
 
 const SUPPORTED_TRANSITIONS = new Set([
   'identityCreate', 'identityTopUp', 'identityCreditTransfer', 'identityCreditWithdrawal', 'identityUpdate',
   'dataContractCreate', 'dataContractUpdate',
   'documentCreate', 'documentReplace', 'documentDelete', 'documentTransfer', 'documentPurchase', 'documentSetPrice',
-  'tokenMint', 'tokenBurn', 'tokenTransfer', 'tokenFreeze', 'tokenUnfreeze', 'tokenDestroyFrozen', 'tokenSetPriceForDirectPurchase', 'tokenDirectPurchase', 'tokenClaim', 'tokenConfigUpdate',
+  'tokenMint', 'tokenBurn', 'tokenTransfer', 'tokenFreeze', 'tokenUnfreeze', 'tokenDestroyFrozen', 'tokenSetPriceForDirectPurchase', 'tokenDirectPurchase', 'tokenClaim', 'tokenEmergencyAction',
   'masternodeVote',
+  // Platform Addresses
+  'addressTransfer', 'addressTopUpIdentity', 'addressWithdraw', 'addressTransferFromIdentity', 'addressFundFromAssetLock', 'addressCreateIdentity',
 ]);
 
 const DPNS_CATEGORY_DEFINITIONS = {
@@ -340,13 +344,38 @@ const TRANSITION_AUTH_REQUIREMENTS = {
     identity: { required: true, targets: ['identityId'] },
     privateKey: { required: true, targets: ['privateKeyWif'], allowKeyId: true },
   },
-  tokenConfigUpdate: {
+  tokenEmergencyAction: {
     identity: { required: true, targets: ['identityId'] },
     privateKey: { required: true, targets: ['privateKeyWif'], allowKeyId: true },
   },
   masternodeVote: {
     identity: { required: true, targets: ['masternodeProTxHash'] },
     privateKey: { required: true, targets: ['votingKeyWif'] },
+  },
+  // Platform Address transitions
+  addressTransfer: {
+    identity: { required: false },
+    privateKey: { required: true, targets: ['privateKeyWif'] },
+  },
+  addressTopUpIdentity: {
+    identity: { required: false },
+    privateKey: { required: true, targets: ['privateKeyWif'] },
+  },
+  addressWithdraw: {
+    identity: { required: false },
+    privateKey: { required: true, targets: ['privateKeyWif'] },
+  },
+  addressTransferFromIdentity: {
+    identity: { required: true, targets: ['identityId'] },
+    privateKey: { required: true, targets: ['privateKeyWif'] },
+  },
+  addressFundFromAssetLock: {
+    identity: { required: false },
+    privateKey: { required: true, targets: ['assetLockPrivateKeyWif'] },
+  },
+  addressCreateIdentity: {
+    identity: { required: false },
+    privateKey: { required: true, targets: ['privateKeyWif'] },
   },
 };
 
@@ -2069,7 +2098,7 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
       return useProof ? c.contracts.getManyWithProof(n.ids) : c.contracts.getMany(n.ids);
     case 'dataContractCreate': {
       const definition = buildContractDefinition(n);
-      return c.contracts.create({ ownerId: n.ownerId, definition: definition, privateKeyWif: n.privateKeyWif, keyId: n.keyId });
+      return c.contracts.publish({ ownerId: n.ownerId, definition: definition, privateKeyWif: n.privateKeyWif, keyId: n.keyId });
     }
     case 'dataContractUpdate': {
       // First fetch the existing contract to get its current state
@@ -2256,13 +2285,13 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
     case 'tokenDestroyFrozen':
       return c.tokens.destroyFrozen({ contractId: n.contractId, tokenPosition: n.tokenPosition, identityId: n.frozenIdentityId, destroyerId: n.destroyerId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
     case 'tokenSetPriceForDirectPurchase':
-      return c.tokens.setPriceForDirectPurchase({ contractId: n.contractId, tokenPosition: n.tokenPosition, identityId: n.identityId, priceType: n.priceType, priceData: n.priceData, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
+      return c.tokens.setPrice({ contractId: n.contractId, tokenPosition: n.tokenPosition, identityId: n.identityId, priceType: n.priceType, priceData: n.priceData, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
     case 'tokenDirectPurchase':
       return c.tokens.directPurchase({ contractId: n.contractId, tokenPosition: n.tokenPosition, amount: n.amount, identityId: n.identityId, totalAgreedPrice: n.totalAgreedPrice, privateKeyWif: n.privateKeyWif });
     case 'tokenClaim':
       return c.tokens.claim({ contractId: n.contractId, tokenPosition: n.tokenPosition, distributionType: n.distributionType, identityId: n.identityId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
-    case 'tokenConfigUpdate':
-      return c.tokens.configUpdate({ contractId: n.contractId, tokenPosition: n.tokenPosition, configItemType: n.configItemType, configValue: n.configValue, identityId: n.identityId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
+    case 'tokenEmergencyAction':
+      return c.tokens.emergencyAction({ contractId: n.contractId, tokenPosition: n.tokenPosition, actionType: n.actionType, identityId: n.identityId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
 
     // Group queries
     case 'getGroupInfo': {
@@ -2451,6 +2480,34 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
     }
     case 'waitForStateTransitionResult':
       return c.system.waitForStateTransitionResult(n.stateTransitionHash);
+
+    // Platform Address queries
+    case 'getPlatformAddress':
+      return useProof ? c.addresses.getWithProof(n.address) : c.addresses.get(n.address);
+    case 'getPlatformAddresses': {
+      const addresses = toStringArray(n.addresses);
+      return useProof ? c.addresses.getManyWithProof(addresses) : c.addresses.getMany(addresses);
+    }
+
+    // Platform Address transitions
+    case 'addressTransfer':
+      // Note: This is a simplified implementation. Full implementation requires PlatformAddressSigner
+      throw new Error('Address Transfer requires complex signer setup. Please use the SDK directly.');
+    case 'addressTopUpIdentity':
+      // Note: This is a simplified implementation. Full implementation requires PlatformAddressSigner
+      throw new Error('Address Top Up Identity requires complex signer setup. Please use the SDK directly.');
+    case 'addressWithdraw':
+      // Note: This is a simplified implementation. Full implementation requires PlatformAddressSigner
+      throw new Error('Address Withdraw requires complex signer setup. Please use the SDK directly.');
+    case 'addressTransferFromIdentity':
+      // Note: This is a simplified implementation. Full implementation requires IdentitySigner
+      throw new Error('Address Transfer From Identity requires complex signer setup. Please use the SDK directly.');
+    case 'addressFundFromAssetLock':
+      // Note: This is a simplified implementation. Full implementation requires PlatformAddressSigner
+      throw new Error('Address Fund From Asset Lock requires complex signer setup. Please use the SDK directly.');
+    case 'addressCreateIdentity':
+      // Note: This is a simplified implementation. Full implementation requires multiple signers
+      throw new Error('Address Create Identity requires complex signer setup. Please use the SDK directly.');
 
     default:
       throw new Error(`Operation ${itemKey} is not supported in the demo UI.`);
