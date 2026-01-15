@@ -529,6 +529,25 @@ const testData = {
           }
         ]
       }
+    },
+
+    address: {
+      getPlatformAddress: {
+        testnet: [
+          {
+            // Valid bech32m platform address from platform tests
+            address: "tdashevo1qrma5z3ttj75la4m93xcndna9ullamq9y5aawfeu"
+          }
+        ]
+      },
+      getPlatformAddresses: {
+        testnet: [
+          {
+            // Valid bech32m platform addresses from platform tests
+            addresses: ["tdashevo1qrma5z3ttj75la4m93xcndna9ullamq9y5aawfeu", "tdashevo1q9pl5xpu70aka8nacc4kj2htflydspzkxcm49vzl"]
+          }
+        ]
+      }
     }
   },
 
@@ -810,17 +829,16 @@ const testData = {
           }
         ]
       },
-      tokenConfigUpdate: {
+      tokenEmergencyAction: {
         testnet: [
           {
             identityId: "7XcruVSsGQVSgTcmPewaE4tXLutnW1F6PXxwMbo8GYQC",
             privateKey: process.env.TEST_PRIVATE_KEY_CONTRACT || "PLACEHOLDER_CONTRACT_KEY",
             contractId: "Afk9QSj9UDE14K1y9y3iSx6kUSm5LLmhbdAvPvWL4P2i",
             tokenPosition: 0,
-            configItemType: "max_supply",
-            configValue: "1000000",
-            publicNote: "Update max supply test",
-            description: "Update token configuration max supply"
+            actionType: "pause",
+            publicNote: "Emergency action test",
+            description: "Perform emergency action on token"
           }
         ]
       },

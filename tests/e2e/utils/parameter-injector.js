@@ -128,6 +128,10 @@ class ParameterInjector {
       'includeLockedAndAbstaining': ['#includeLockedAndAbstaining', '[name="includeLockedAndAbstaining"]', 'input[type="checkbox"][name="includeLockedAndAbstaining"]'],
       'startAtIdentifierInfo': ['#startAtIdentifierInfo', '[name="startAtIdentifierInfo"]'],
 
+      // Platform Address parameters
+      'address': ['#address', '[name="address"]', 'input[placeholder*="Platform Address"]'],
+      'addresses': ['input[placeholder="Enter value"]', '.array-input-container input[type="text"]', '[data-array-name="addresses"] input[type="text"]', '.array-input-container[data-array-name="addresses"] input', '#addresses', '[name="addresses"]', 'input[placeholder*="Platform Addresses"]'],
+
       // Group parameters
       'groupContractPosition': ['#groupContractPosition', '[name="groupContractPosition"]'],
       'startAtGroupContractPosition': ['#startAtGroupContractPosition', '[name="startAtGroupContractPosition"]'],
@@ -174,7 +178,7 @@ class ParameterInjector {
    */
   async tryFillParameter(paramName, value, fieldMapping) {
     const possibleSelectors = fieldMapping[paramName] || [];
-
+    2
     // Add generic fallback selectors
     possibleSelectors.push(
       `#${paramName}`,

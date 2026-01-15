@@ -2522,9 +2522,24 @@ function formatResult(value) {
     return val && typeof val === 'object' && '__wbg_ptr' in val;
   };
 
+  // Check if this is a ProofMetadataResponse (has data, metadata, proof properties)
+  const isProofMetadataResponse = (val) => {
+    return val && typeof val === 'object' &&
+           'data' in val && 'metadata' in val && 'proof' in val;
+  };
+
   // Try to extract meaningful data from WASM object
   const extractWasmData = (val) => {
-    // Try toJSON first (works for Identity, DataContract, Document, ProofMetadataResponse, etc.)
+    // Special handling for ProofMetadataResponse - manually construct the result
+    // to properly handle Maps in the data field
+    if (isProofMetadataResponse(val)) {
+      return {
+        data: val.data,  // Will be processed by toSerializable which handles Maps
+        metadata: val.metadata,
+        proof: val.proof
+      };
+    }
+    // Try toJSON first (works for Identity, DataContract, Document, etc.)
     if (typeof val.toJSON === 'function') {
       try { return val.toJSON(); } catch (_) { }
     }
