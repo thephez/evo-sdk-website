@@ -143,7 +143,14 @@ class ParameterInjector {
 
       // Time parameters
       'startTimeMs': ['#startTimeMs', '[name="startTimeMs"]'],
-      'endTimeMs': ['#endTimeMs', '[name="endTimeMs"]']
+      'endTimeMs': ['#endTimeMs', '[name="endTimeMs"]'],
+
+      // Path Elements parameters
+      'path': ['#path', '[name="path"]'],
+      'keys': ['#keys', '[name="keys"]'],
+
+      // Token price parameters
+      'tokenPosition': ['#tokenPosition', '[name="tokenPosition"]']
     };
   }
 

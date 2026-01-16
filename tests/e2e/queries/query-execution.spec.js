@@ -718,6 +718,18 @@ test.describe('Evo SDK Query Execution Tests', () => {
           const balance = BigInt(parsed.balance);
           expect(balance).toBeGreaterThanOrEqual(0n);
         }
+      },
+      {
+        name: 'getPathElements',
+        hasProofSupport: true,
+        needsParameters: true,
+        validateFn: (result) => {
+          // Result is an array of path elements from GroveDB
+          expect(() => JSON.parse(result)).not.toThrow();
+          const elements = JSON.parse(result);
+          expect(elements).toBeDefined();
+          expect(Array.isArray(elements)).toBe(true);
+        }
       }
     ];
 
@@ -986,6 +998,9 @@ test.describe('Evo SDK Query Execution Tests', () => {
           expect(typeof supplyData === 'object').toBe(true);
         }
       }
+      // Note: getTokenPriceByContract requires a token contract with specific pricing configuration.
+      // As of now, no tokens on testnet have pricing configured, so this test is skipped.
+      // Error: "No pricing schedule found for token at contract ... position 0"
     ];
 
     tokenQueries.forEach(({ name, hasProofSupport, needsParameters, validateFn }) => {
@@ -1187,6 +1202,40 @@ test.describe('Evo SDK Query Execution Tests', () => {
           const actionSigners = JSON.parse(result);
           expect(actionSigners).toBeDefined();
           expect(typeof actionSigners === 'object').toBe(true);
+        }
+      },
+      {
+        name: 'getGroupMembers',
+        hasProofSupport: true,
+        needsParameters: true,
+        validateFn: (result) => {
+          expect(() => JSON.parse(result)).not.toThrow();
+          const members = JSON.parse(result);
+          expect(members).toBeDefined();
+          expect(typeof members === 'object').toBe(true);
+        }
+      },
+      {
+        name: 'getGroupsDataContracts',
+        hasProofSupport: true,
+        needsParameters: true,
+        validateFn: (result) => {
+          expect(() => JSON.parse(result)).not.toThrow();
+          const groupsData = JSON.parse(result);
+          expect(groupsData).toBeDefined();
+          expect(typeof groupsData === 'object').toBe(true);
+        }
+      },
+      {
+        name: 'getIdentityGroups',
+        hasProofSupport: true,
+        needsParameters: true,
+        validateFn: (result) => {
+          expect(() => JSON.parse(result)).not.toThrow();
+          const identityGroups = JSON.parse(result);
+          expect(identityGroups).toBeDefined();
+          // Can be array or object
+          expect(typeof identityGroups === 'object' || Array.isArray(identityGroups)).toBe(true);
         }
       }
     ];
@@ -1703,6 +1752,21 @@ test.describe('Evo SDK Query Execution Tests', () => {
           });
         }
       });
+    });
+
+    // getIdentityUnproved - no proof support and will never be implemented (by design)
+    test('getIdentityUnproved query', async () => {
+      await evoSdkPage.setupQuery('identity', 'getIdentityUnproved');
+      await evoSdkPage.disableProofInfo();
+
+      const success = await parameterInjector.injectParameters('identity', 'getIdentityUnproved', 'testnet');
+      expect(success).toBe(true);
+
+      const result = await evoSdkPage.executeQueryAndGetResult();
+      validateBasicQueryResult(result);
+      expect(result.result.length).toBeGreaterThan(0);
+      validateResultWithoutProof(result);
+      validateIdentityResult(result.result);
     });
   });
 });

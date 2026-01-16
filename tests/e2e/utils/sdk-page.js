@@ -14,7 +14,9 @@ const DYNAMIC_ARRAY_PARAMETERS = {
 const JSON_ARRAY_PARAMETERS = {
   'indexValues': true,
   'startIndexValues': true,
-  'endIndexValues': true
+  'endIndexValues': true,
+  'path': true,  // getPathElements path segments
+  'keys': true   // getPathElements keys
 };
 
 const PARAM_SPECIFIC_FALLBACK_SELECTORS = {
@@ -24,7 +26,10 @@ const PARAM_SPECIFIC_FALLBACK_SELECTORS = {
   schema: ['textarea[placeholder*="Schema"]'],
   indexValues: ['.index-values-group textarea', 'textarea[placeholder*="value1"]'],
   startIndexValues: ['textarea[placeholder*="value1"]'],
-  endIndexValues: ['textarea[placeholder*="value1"]']
+  endIndexValues: ['textarea[placeholder*="value1"]'],
+  // Path Elements query parameters - use exact placeholder match
+  path: ['input[placeholder=\'["32"]\']'],
+  keys: ['input[placeholder=\'["5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk"]\']']
 };
 
 // Mapping from test data parameter names to UI input field names
@@ -192,18 +197,22 @@ class EvoSdkPage extends BaseTest {
     // Check if input exists
     if (await input.count() === 0) {
       // Try alternative selectors based on common patterns
-      const alternativeSelectors = [
+      // Start with specific fallback selectors if defined (they are more reliable)
+      const alternativeSelectors = [];
+
+      if (PARAM_SPECIFIC_FALLBACK_SELECTORS[uiParamName]) {
+        alternativeSelectors.push(...PARAM_SPECIFIC_FALLBACK_SELECTORS[uiParamName]);
+      }
+
+      // Then add generic selectors
+      alternativeSelectors.push(
         `#${uiParamName}`,
         `[id*="${uiParamName}"]`,
         `[placeholder*="${uiParamName}"]`,
         `label:has-text("${uiParamName}") + input`,
         `label:has-text("${uiParamName}") + select`,
         `label:has-text("${uiParamName}") + textarea`,
-      ];
-
-      if (PARAM_SPECIFIC_FALLBACK_SELECTORS[uiParamName]) {
-        alternativeSelectors.push(...PARAM_SPECIFIC_FALLBACK_SELECTORS[uiParamName]);
-      }
+      );
       
       let found = false;
       for (const selector of alternativeSelectors) {

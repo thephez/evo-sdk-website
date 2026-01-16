@@ -191,6 +191,11 @@ const testData = {
             tokenId: "4tyvbA2ZGFLvjXLnJRCacSoMbFfpmBwGRrAZsVwnfYri"
           }
         ]
+      },
+      getIdentityUnproved: {
+        testnet: [
+          { id: "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk" }
+        ]
       }
     },
 
@@ -258,6 +263,15 @@ const testData = {
       getPrefundedSpecializedBalance: {
         testnet: [
           { identityId: "AzaU7zqCT7X1kxh8yWxkT9PxAgNqWDu4Gz13emwcRyAT" }
+        ]
+      },
+      getPathElements: {
+        testnet: [
+          {
+            // Query total system credits from Misc tree (104) with key "D"
+            path: ["104"],
+            keys: ["D"]
+          }
         ]
       }
     },
@@ -430,6 +444,15 @@ const testData = {
             tokenId: "Hqyu8WcRwXCTwbNxdga4CN5gsVEGc67wng4TFzceyLUv"
           }
         ]
+      },
+      getTokenPriceByContract: {
+        testnet: [
+          {
+            // Using the same contract ID as in the UI placeholder
+            contractId: "ALybvzfcCwMs7sinDwmtumw17NneuW7RgFtFHgjKmF3A",
+            tokenPosition: 0
+          }
+        ]
       }
     },
 
@@ -526,6 +549,33 @@ const testData = {
             groupContractPosition: 0,
             status: "ACTIVE",
             actionId: "6XJzL6Qb8Zhwxt4HFwh8NAn7q1u4dwdoUf8EmgzDudFZ"
+          }
+        ]
+      },
+      getGroupMembers: {
+        testnet: [
+          {
+            dataContractId: "49PJEnNx7ReCitzkLdkDNr4s6RScGsnNexcdSZJ1ph5N",
+            groupContractPosition: 0,
+            count: 100
+          }
+        ]
+      },
+      getGroupsDataContracts: {
+        testnet: [
+          {
+            dataContractIds: [
+              "49PJEnNx7ReCitzkLdkDNr4s6RScGsnNexcdSZJ1ph5N",
+              "GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec"
+            ]
+          }
+        ]
+      },
+      getIdentityGroups: {
+        testnet: [
+          {
+            identityId: "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk",
+            count: 100
           }
         ]
       }
