@@ -34,9 +34,10 @@ const PARAM_SPECIFIC_FALLBACK_SELECTORS = {
 
 // Mapping from test data parameter names to UI input field names
 // Only applied for state transitions - queries use the standard SDK naming
+// Note: Most parameters match directly, only add mappings for mismatches
 const PARAM_NAME_MAPPING_FOR_TRANSITIONS = {
-  dataContractId: 'contractId',
   documentTypeName: 'documentType'
+  // dataContractId is now the correct name in the UI, no mapping needed
 };
 
 /**

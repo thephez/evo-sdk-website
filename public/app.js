@@ -1,4 +1,4 @@
-import { EvoSDK, wallet } from './dist/evo-sdk.module.js';
+import { EvoSDK, wallet, DataContract, IdentitySigner } from './dist/evo-sdk.module.js';
 
 const identityIdInputEl = document.getElementById('identityId');
 const assetLockProofInputEl = document.getElementById('assetLockProof');
@@ -2097,22 +2097,150 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
     case 'getDataContracts':
       return useProof ? c.contracts.getManyWithProof(n.ids) : c.contracts.getMany(n.ids);
     case 'dataContractCreate': {
-      const definition = buildContractDefinition(n);
-      return c.contracts.publish({ ownerId: n.ownerId, definition: definition, privateKeyWif: n.privateKeyWif, keyId: n.keyId });
+      // Fetch identity and create signer for SDK 3.0 API
+      const identity = await c.identities.fetch(n.ownerId);
+      if (!identity) {
+        throw new Error(`Identity not found: ${n.ownerId}`);
+      }
+
+      // Get the identity's public key (use keyId if provided, otherwise find suitable key)
+      // Contract creation requires CRITICAL or HIGH security level keys
+      let identityKey;
+      if (n.keyId !== undefined) {
+        identityKey = identity.getPublicKeyById(n.keyId);
+      } else {
+        // Find a key with CRITICAL or HIGH security level
+        const validSecurityLevels = ['CRITICAL', 'HIGH'];
+        identityKey = identity.getPublicKeys().find(k =>
+          validSecurityLevels.includes(k.securityLevel)
+        );
+      }
+      if (!identityKey) {
+        throw new Error('No suitable identity key found for signing (requires CRITICAL or HIGH security level)');
+      }
+
+      // Create signer and add private key
+      const signer = new IdentitySigner();
+      signer.addKeyFromWif(n.privateKeyWif);
+
+      // Get next identity nonce for contract creation
+      const identityNonce = await c.identities.nonce(n.ownerId);
+      const nextNonce = (identityNonce || 0n) + 1n;
+
+      // Parse document schemas
+      let documentSchemas;
+      if (!n.documentSchemas) {
+        throw new Error('Document Schemas JSON is required');
+      }
+      try {
+        documentSchemas = typeof n.documentSchemas === 'string'
+          ? JSON.parse(n.documentSchemas)
+          : n.documentSchemas;
+      } catch (e) {
+        throw new Error(`Invalid JSON in Document Schemas field: ${e.message}`);
+      }
+
+      // Parse optional tokens
+      let tokens = null;
+      if (n.tokens && n.tokens !== '{}') {
+        try {
+          const parsedTokens = typeof n.tokens === 'string' ? JSON.parse(n.tokens) : n.tokens;
+          if (Object.keys(parsedTokens).length > 0) {
+            tokens = parsedTokens;
+          }
+        } catch (e) {
+          throw new Error(`Invalid JSON in Tokens field: ${e.message}`);
+        }
+      }
+
+      // Create DataContract using constructor
+      const dataContract = new DataContract(
+        n.ownerId,           // js_owner_id
+        nextNonce,           // identity_nonce
+        documentSchemas,     // js_schema
+        undefined,           // js_definitions
+        tokens || undefined, // js_tokens (undefined if empty)
+        false,               // full_validation
+        undefined            // js_platform_version
+      );
+
+      const publishedContract = await c.contracts.publish({ dataContract, identityKey, signer });
+
+      // Return in expected format for UI/tests
+      return {
+        status: 'success',
+        contractId: publishedContract.id?.toString() || dataContract.id?.toString(),
+        ownerId: publishedContract.ownerId?.toString() || n.ownerId,
+        version: publishedContract.version || 1,
+        documentTypes: Object.keys(documentSchemas),
+        message: `Data contract created successfully with ID: ${publishedContract.id?.toString()}`
+      };
     }
     case 'dataContractUpdate': {
       // First fetch the existing contract to get its current state
       const contractId = n.dataContractId || n.contractId;
+      if (!contractId) {
+        throw new Error('Data Contract ID is required');
+      }
       const existingContract = await c.contracts.fetch(contractId);
-      const contractJson = normalizeContract(existingContract);
+      if (!existingContract) {
+        throw new Error(`Data contract not found: ${contractId}`);
+      }
 
-      // Build updates using the entire existing contract as base
-      const updates = buildContractUpdates({
-        ...n,
-        existingContract: contractJson
-      });
+      // Fetch identity and create signer for SDK 3.0 API
+      const identity = await c.identities.fetch(n.ownerId);
+      if (!identity) {
+        throw new Error(`Identity not found: ${n.ownerId}`);
+      }
 
-      return c.contracts.update({ contractId: contractId, ownerId: n.ownerId, updates: updates, privateKeyWif: n.privateKeyWif, keyId: n.keyId });
+      // Get the identity's public key (use keyId if provided, otherwise find suitable key)
+      // Contract update requires CRITICAL or HIGH security level keys
+      let identityKey;
+      if (n.keyId !== undefined) {
+        identityKey = identity.getPublicKeyById(n.keyId);
+      } else {
+        const validSecurityLevels = ['CRITICAL', 'HIGH'];
+        identityKey = identity.getPublicKeys().find(k =>
+          validSecurityLevels.includes(k.securityLevel)
+        );
+      }
+      if (!identityKey) {
+        throw new Error('No suitable identity key found for signing (requires CRITICAL or HIGH security level)');
+      }
+
+      // Create signer and add private key
+      const signer = new IdentitySigner();
+      signer.addKeyFromWif(n.privateKeyWif);
+
+      // Modify the existing contract directly
+      // Increment version
+      existingContract.version = (existingContract.version || 1) + 1;
+
+      // Update document schemas if provided
+      if (n.newDocumentSchemas) {
+        let newSchemas;
+        try {
+          newSchemas = typeof n.newDocumentSchemas === 'string'
+            ? JSON.parse(n.newDocumentSchemas)
+            : n.newDocumentSchemas;
+        } catch (e) {
+          throw new Error(`Invalid JSON in New Document Schemas field: ${e.message}`);
+        }
+        // Get existing schemas and merge
+        const existingSchemas = existingContract.getSchemas() || {};
+        const mergedSchemas = { ...existingSchemas, ...newSchemas };
+        existingContract.setSchemas(mergedSchemas, undefined, false, undefined);
+      }
+
+      await c.contracts.update({ dataContract: existingContract, identityKey, signer });
+
+      // Return in expected format for UI/tests
+      return {
+        status: 'success',
+        contractId: contractId,
+        version: existingContract.version,
+        message: `Data contract updated successfully. New version: ${existingContract.version}`
+      };
     }
 
     // Documents
