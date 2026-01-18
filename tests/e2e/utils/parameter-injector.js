@@ -74,13 +74,13 @@ class ParameterInjector {
       'identitiesIds': ['input[placeholder="Enter value"]', '.array-input-container input[type="text"]', '[data-array-name="identitiesIds"] input[type="text"]', '.array-input-container[data-array-name="identitiesIds"] input', '#identitiesIds', '[name="identitiesIds"]', 'input[placeholder*="Identity IDs"]'],
 
       // Data contract parameters
-      'dataContractId': ['#dataContractId', '[name="dataContractId"]', 'input[placeholder*="Contract ID"]'],
-      'contractId': ['#contractId', '[name="contractId"]', 'input[placeholder*="Contract ID"]'],
+      'dataContractId': ['#dataContractId', '[name="dataContractId"]', '#contractId', '[name="contractId"]', 'input[placeholder*="Contract ID"]'],
+      'contractId': ['#contractId', '[name="contractId"]', '#dataContractId', '[name="dataContractId"]', 'input[placeholder*="Contract ID"]'],
       'ids': ['input[placeholder="Enter value"]', '.array-input-container input[type="text"]', '[data-array-name="ids"] input[type="text"]', '.array-input-container[data-array-name="ids"] input', '#ids', '[name="ids"]', 'input[placeholder*="Contract IDs"]', 'input[placeholder*="Data Contract ID"]'],
 
       // Document parameters
-      'documentType': ['#documentType', '[name="documentType"]', 'input[placeholder*="Document Type"]'],
-      'documentTypeName': ['#documentTypeName', '[name="documentTypeName"]', 'input[placeholder*="Document Type"]'],
+      'documentType': ['#documentType', '[name="documentType"]', '#documentTypeName', '[name="documentTypeName"]', 'input[placeholder*="Document Type"]'],
+      'documentTypeName': ['#documentTypeName', '[name="documentTypeName"]', '#documentType', '[name="documentType"]', 'input[placeholder*="Document Type"]'],
       'documentId': ['#documentId', '[name="documentId"]', 'input[placeholder*="Document ID"]'],
 
       // Key parameters

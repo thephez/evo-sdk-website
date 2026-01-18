@@ -1,4 +1,4 @@
-import { EvoSDK, wallet, DataContract, IdentitySigner } from './dist/evo-sdk.module.js';
+import { EvoSDK, wallet, DataContract, Document, IdentitySigner, Identifier } from './dist/evo-sdk.module.js';
 
 const identityIdInputEl = document.getElementById('identityId');
 const assetLockProofInputEl = document.getElementById('assetLockProof');
@@ -321,15 +321,15 @@ const TRANSITION_AUTH_REQUIREMENTS = {
     privateKey: { required: true, targets: ['privateKeyWif'], allowKeyId: true },
   },
   tokenFreeze: {
-    identity: { required: true, targets: ['freezerId'] },
+    identity: { required: true, targets: ['identityId'] },
     privateKey: { required: true, targets: ['privateKeyWif'], allowKeyId: true },
   },
   tokenUnfreeze: {
-    identity: { required: true, targets: ['unfreezerId'] },
+    identity: { required: true, targets: ['identityId'] },
     privateKey: { required: true, targets: ['privateKeyWif'], allowKeyId: true },
   },
   tokenDestroyFrozen: {
-    identity: { required: true, targets: ['destroyerId'] },
+    identity: { required: true, targets: ['identityId'] },
     privateKey: { required: true, targets: ['privateKeyWif'], allowKeyId: true },
   },
   tokenSetPriceForDirectPurchase: {
@@ -1500,6 +1500,14 @@ function generateEntropyHex() {
   return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
 }
 
+function hexToBytes(hex) {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < bytes.length; i += 1) {
+    bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
+  }
+  return bytes;
+}
+
 function normalizeContract(contract) {
   if (!contract) return null;
   let value = contract;
@@ -2080,12 +2088,94 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
       return c.identities.create({ assetLockProof: n.assetLockProof, assetLockPrivateKeyWif: n.assetLockPrivateKeyWif, publicKeys: n.publicKeys });
     case 'identityTopUp':
       return c.identities.topUp({ identityId: n.identityId, assetLockProof: n.assetLockProof, assetLockPrivateKeyWif: n.assetLockPrivateKeyWif });
-    case 'identityCreditTransfer':
-      return c.identities.creditTransfer({ senderId: n.senderId, recipientId: n.recipientId, amount: n.amount, privateKeyWif: n.privateKeyWif, keyId: n.keyId });
-    case 'identityCreditWithdrawal':
-      return c.identities.creditWithdrawal({ identityId: n.identityId, toAddress: n.toAddress, amount: n.amount, coreFeePerByte: n.coreFeePerByte, privateKeyWif: n.privateKeyWif, keyId: n.keyId });
-    case 'identityUpdate':
-      return c.identities.update({ identityId: n.identityId, addPublicKeys: n.addPublicKeys, disablePublicKeyIds: n.disablePublicKeyIds, privateKeyWif: n.privateKeyWif });
+    case 'identityCreditTransfer': {
+      // Fetch sender identity
+      const senderId = n.senderId || n.identityId;
+      const identity = await c.identities.fetch(senderId);
+      if (!identity) {
+        throw new Error(`Identity not found: ${senderId}`);
+      }
+
+      // Create signer and add private key
+      const signer = new IdentitySigner();
+      signer.addKeyFromWif(n.privateKeyWif);
+
+      // Parse amount as BigInt
+      const amount = BigInt(n.amount);
+
+      const result = await c.identities.creditTransfer({
+        identity,
+        recipientId: n.recipientId,
+        amount,
+        signer,
+      });
+
+      return {
+        status: 'success',
+        senderBalance: result.senderBalance?.toString(),
+        recipientBalance: result.recipientBalance?.toString(),
+        message: `Transferred ${amount} credits to ${n.recipientId}`
+      };
+    }
+    case 'identityCreditWithdrawal': {
+      // Fetch identity
+      const identity = await c.identities.fetch(n.identityId);
+      if (!identity) {
+        throw new Error(`Identity not found: ${n.identityId}`);
+      }
+
+      // Create signer and add private key
+      const signer = new IdentitySigner();
+      signer.addKeyFromWif(n.privateKeyWif);
+
+      // Parse amount as BigInt
+      const amount = BigInt(n.amount);
+
+      const remainingBalance = await c.identities.creditWithdrawal({
+        identity,
+        amount,
+        toAddress: n.toAddress || undefined,
+        coreFeePerByte: n.coreFeePerByte ? Number(n.coreFeePerByte) : undefined,
+        signer,
+      });
+
+      return {
+        status: 'success',
+        remainingBalance: remainingBalance?.toString(),
+        withdrawnAmount: amount.toString(),
+        toAddress: n.toAddress,
+        message: `Withdrew ${amount} credits. Remaining balance: ${remainingBalance}`
+      };
+    }
+    case 'identityUpdate': {
+      // Fetch identity
+      const identity = await c.identities.fetch(n.identityId);
+      if (!identity) {
+        throw new Error(`Identity not found: ${n.identityId}`);
+      }
+
+      // Create signer and add private key
+      const signer = new IdentitySigner();
+      signer.addKeyFromWif(n.privateKeyWif);
+
+      // Parse disable key IDs as numbers
+      const disablePublicKeys = n.disablePublicKeyIds
+        ? (Array.isArray(n.disablePublicKeyIds) ? n.disablePublicKeyIds : [n.disablePublicKeyIds]).map(Number)
+        : undefined;
+
+      await c.identities.update({
+        identity,
+        addPublicKeys: n.addPublicKeys || undefined,
+        disablePublicKeys,
+        signer,
+      });
+
+      return {
+        status: 'success',
+        identityId: n.identityId,
+        message: 'Identity updated successfully'
+      };
+    }
 
     // Data contracts
     case 'getDataContract':
@@ -2266,15 +2356,60 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
       if (!data) {
         throw new Error('Document data is required. Click "Fetch Schema" and fill the document fields.');
       }
+
+      // Fetch identity for signing
+      const identity = await c.identities.fetch(n.ownerId);
+      if (!identity) {
+        throw new Error(`Identity not found: ${n.ownerId}`);
+      }
+
+      // Get the identity's public key (use keyId if provided, otherwise find suitable key)
+      let identityKey;
+      if (n.keyId !== undefined) {
+        identityKey = identity.getPublicKeyById(n.keyId);
+      } else {
+        const validSecurityLevels = ['CRITICAL', 'HIGH', 'MEDIUM'];
+        identityKey = identity.getPublicKeys().find(k =>
+          validSecurityLevels.includes(k.securityLevel)
+        );
+      }
+      if (!identityKey) {
+        throw new Error('No suitable identity key found for signing');
+      }
+
+      // Create signer and add private key
+      const signer = new IdentitySigner();
+      signer.addKeyFromWif(n.privateKeyWif);
+
+      // Generate entropy for document ID
       const entropyHex = n.entropyHex ?? dynamic.entropyHex ?? generateEntropyHex();
-      return c.documents.create({
-        contractId: n.dataContractId || n.contractId,
-        type: n.documentTypeName || n.documentType,
+      const entropyBytes = hexToBytes(entropyHex);
+
+      // Generate document ID from entropy
+      const contractId = n.dataContractId || n.contractId;
+      const documentTypeName = n.documentTypeName || n.documentType;
+      const documentIdBytes = Document.generateId(documentTypeName, n.ownerId, contractId, entropyBytes);
+
+      // Create the Document object
+      const document = new Document(
+        data,                    // js_raw_document (document properties/data)
+        documentTypeName,        // js_document_type_name
+        1n,                      // js_revision (1 for new documents)
+        contractId,              // js_data_contract_id
+        n.ownerId,               // js_owner_id
+        documentIdBytes          // js_document_id
+      );
+      document.entropy = entropyBytes;
+
+      await c.documents.create({ document, identityKey, signer });
+
+      return {
+        status: 'success',
+        documentId: document.id?.toString(),
         ownerId: n.ownerId,
-        data,
-        entropyHex,
-        privateKeyWif: n.privateKeyWif,
-      });
+        documentType: documentTypeName,
+        message: `Document created successfully with ID: ${document.id?.toString()}`
+      };
     }
     case 'documentReplace': {
       const dynamic = (typeof n.documentFields === 'object' && n.documentFields !== null) ? n.documentFields : {};
@@ -2286,24 +2421,254 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
       if (revision == null) {
         throw new Error('Document revision is missing. Click "Load Document" before replacing.');
       }
-      return c.documents.replace({
-        contractId: n.dataContractId || n.contractId,
-        type: n.documentTypeName || n.documentType,
+
+      // Fetch identity for signing
+      const identity = await c.identities.fetch(n.ownerId);
+      if (!identity) {
+        throw new Error(`Identity not found: ${n.ownerId}`);
+      }
+
+      // Get the identity's public key
+      let identityKey;
+      if (n.keyId !== undefined) {
+        identityKey = identity.getPublicKeyById(n.keyId);
+      } else {
+        const validSecurityLevels = ['CRITICAL', 'HIGH', 'MEDIUM'];
+        identityKey = identity.getPublicKeys().find(k =>
+          validSecurityLevels.includes(k.securityLevel)
+        );
+      }
+      if (!identityKey) {
+        throw new Error('No suitable identity key found for signing');
+      }
+
+      // Create signer and add private key
+      const signer = new IdentitySigner();
+      signer.addKeyFromWif(n.privateKeyWif);
+
+      const contractId = n.dataContractId || n.contractId;
+      const documentTypeName = n.documentTypeName || n.documentType;
+
+      // Create the Document object with incremented revision
+      const document = new Document(
+        data,                           // js_raw_document
+        documentTypeName,               // js_document_type_name
+        BigInt(revision) + 1n,          // js_revision (increment for replace)
+        contractId,                     // js_data_contract_id
+        n.ownerId,                      // js_owner_id
+        n.documentId                    // js_document_id
+      );
+
+      await c.documents.replace({ document, identityKey, signer });
+
+      return {
+        status: 'success',
         documentId: n.documentId,
-        ownerId: n.ownerId,
-        data,
-        revision,
-        privateKeyWif: n.privateKeyWif,
-      });
+        newRevision: (BigInt(revision) + 1n).toString(),
+        message: `Document replaced successfully. New revision: ${BigInt(revision) + 1n}`
+      };
     }
-    case 'documentDelete':
-      return c.documents.delete({ contractId: n.dataContractId || n.contractId, type: n.documentTypeName || n.documentType, documentId: n.documentId, ownerId: n.ownerId, privateKeyWif: n.privateKeyWif });
-    case 'documentTransfer':
-      return c.documents.transfer({ contractId: n.dataContractId || n.contractId, type: n.documentTypeName || n.documentType, documentId: n.documentId, ownerId: n.ownerId, recipientId: n.recipientId, privateKeyWif: n.privateKeyWif });
-    case 'documentPurchase':
-      return c.documents.purchase({ contractId: n.dataContractId || n.contractId, type: n.documentTypeName || n.documentType, documentId: n.documentId, buyerId: n.buyerId, price: n.price, privateKeyWif: n.privateKeyWif });
-    case 'documentSetPrice':
-      return c.documents.setPrice({ contractId: n.dataContractId || n.contractId, type: n.documentTypeName || n.documentType, documentId: n.documentId, ownerId: n.ownerId, price: n.price, privateKeyWif: n.privateKeyWif });
+    case 'documentDelete': {
+      // Fetch identity for signing
+      const identity = await c.identities.fetch(n.ownerId);
+      if (!identity) {
+        throw new Error(`Identity not found: ${n.ownerId}`);
+      }
+
+      // Get the identity's public key
+      let identityKey;
+      if (n.keyId !== undefined) {
+        identityKey = identity.getPublicKeyById(n.keyId);
+      } else {
+        const validSecurityLevels = ['CRITICAL', 'HIGH', 'MEDIUM'];
+        identityKey = identity.getPublicKeys().find(k =>
+          validSecurityLevels.includes(k.securityLevel)
+        );
+      }
+      if (!identityKey) {
+        throw new Error('No suitable identity key found for signing');
+      }
+
+      // Create signer and add private key
+      const signer = new IdentitySigner();
+      signer.addKeyFromWif(n.privateKeyWif);
+
+      const contractId = n.dataContractId || n.contractId;
+      const documentTypeName = n.documentTypeName || n.documentType;
+
+      // For delete, we can pass document identifiers directly
+      await c.documents.delete({
+        document: {
+          id: n.documentId,
+          ownerId: n.ownerId,
+          dataContractId: contractId,
+          documentTypeName: documentTypeName
+        },
+        identityKey,
+        signer
+      });
+
+      return {
+        status: 'success',
+        documentId: n.documentId,
+        message: `Document deleted successfully`
+      };
+    }
+    case 'documentTransfer': {
+      // Fetch identity for signing
+      const identity = await c.identities.fetch(n.ownerId);
+      if (!identity) {
+        throw new Error(`Identity not found: ${n.ownerId}`);
+      }
+
+      // Refresh nonce to ensure we have the latest (prevents "tx already exists in cache" errors)
+      await c.wasm.refreshIdentityNonce(Identifier.fromBase58(n.ownerId));
+
+      // Get the identity's public key
+      let identityKey;
+      if (n.keyId !== undefined) {
+        identityKey = identity.getPublicKeyById(n.keyId);
+      } else {
+        const validSecurityLevels = ['CRITICAL', 'HIGH', 'MEDIUM'];
+        identityKey = identity.getPublicKeys().find(k =>
+          validSecurityLevels.includes(k.securityLevel)
+        );
+      }
+      if (!identityKey) {
+        throw new Error('No suitable identity key found for signing');
+      }
+
+      // Create signer and add private key
+      const signer = new IdentitySigner();
+      signer.addKeyFromWif(n.privateKeyWif);
+
+      const contractId = n.dataContractId || n.contractId;
+      const documentTypeName = n.documentTypeName || n.documentType;
+
+      // Fetch the actual document from platform (SDK requires Document object)
+      const document = await c.documents.get(contractId, documentTypeName, n.documentId);
+      if (!document) {
+        throw new Error(`Document not found: ${n.documentId}`);
+      }
+
+      await c.documents.transfer({
+        document,
+        recipientId: n.recipientId,
+        identityKey,
+        signer
+      });
+
+      return {
+        status: 'success',
+        documentId: n.documentId,
+        recipientId: n.recipientId,
+        message: `Document transferred to ${n.recipientId}`
+      };
+    }
+    case 'documentPurchase': {
+      // Fetch buyer identity for signing
+      const identity = await c.identities.fetch(n.buyerId);
+      if (!identity) {
+        throw new Error(`Buyer identity not found: ${n.buyerId}`);
+      }
+
+      // Refresh nonce to ensure we have the latest (prevents "tx already exists in cache" errors)
+      await c.wasm.refreshIdentityNonce(Identifier.fromBase58(n.buyerId));
+
+      // Get the identity's public key
+      let identityKey;
+      if (n.keyId !== undefined) {
+        identityKey = identity.getPublicKeyById(n.keyId);
+      } else {
+        const validSecurityLevels = ['CRITICAL', 'HIGH', 'MEDIUM'];
+        identityKey = identity.getPublicKeys().find(k =>
+          validSecurityLevels.includes(k.securityLevel)
+        );
+      }
+      if (!identityKey) {
+        throw new Error('No suitable identity key found for signing');
+      }
+
+      // Create signer and add private key
+      const signer = new IdentitySigner();
+      signer.addKeyFromWif(n.privateKeyWif);
+
+      const contractId = n.dataContractId || n.contractId;
+      const documentTypeName = n.documentTypeName || n.documentType;
+
+      // Fetch the actual document from platform (SDK requires Document object)
+      const document = await c.documents.get(contractId, documentTypeName, n.documentId);
+      if (!document) {
+        throw new Error(`Document not found: ${n.documentId}`);
+      }
+
+      await c.documents.purchase({
+        document,
+        buyerId: n.buyerId,
+        price: BigInt(n.price),
+        identityKey,
+        signer
+      });
+
+      return {
+        status: 'success',
+        documentId: n.documentId,
+        buyerId: n.buyerId,
+        price: n.price,
+        message: `Document purchased for ${n.price} credits`
+      };
+    }
+    case 'documentSetPrice': {
+      // Fetch owner identity for signing
+      const identity = await c.identities.fetch(n.ownerId);
+      if (!identity) {
+        throw new Error(`Identity not found: ${n.ownerId}`);
+      }
+
+      // Refresh nonce to ensure we have the latest (prevents "tx already exists in cache" errors)
+      await c.wasm.refreshIdentityNonce(Identifier.fromBase58(n.ownerId));
+
+      // Get the identity's public key
+      let identityKey;
+      if (n.keyId !== undefined) {
+        identityKey = identity.getPublicKeyById(n.keyId);
+      } else {
+        const validSecurityLevels = ['CRITICAL', 'HIGH', 'MEDIUM'];
+        identityKey = identity.getPublicKeys().find(k =>
+          validSecurityLevels.includes(k.securityLevel)
+        );
+      }
+      if (!identityKey) {
+        throw new Error('No suitable identity key found for signing');
+      }
+
+      // Create signer and add private key
+      const signer = new IdentitySigner();
+      signer.addKeyFromWif(n.privateKeyWif);
+
+      const contractId = n.dataContractId || n.contractId;
+      const documentTypeName = n.documentTypeName || n.documentType;
+
+      // Fetch the actual document from platform (SDK requires Document object)
+      const document = await c.documents.get(contractId, documentTypeName, n.documentId);
+      if (!document) {
+        throw new Error(`Document not found: ${n.documentId}`);
+      }
+
+      await c.documents.setPrice({
+        document,
+        price: BigInt(n.price),
+        identityKey,
+        signer
+      });
+
+      return {
+        status: 'success',
+        documentId: n.documentId,
+        price: n.price,
+        message: `Document price set to ${n.price} credits`
+      };
+    }
 
     // DPNS
     case 'getDpnsUsername':
@@ -2400,26 +2765,419 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
       const tokenPosition = toNumber(n.tokenPosition, 0);
       return c.tokens.priceByContract(contractId, tokenPosition);
     }
-    case 'tokenMint':
-      return c.tokens.mint({ contractId: n.contractId, tokenPosition: n.tokenPosition, amount: n.amount, identityId: n.identityId, privateKeyWif: n.privateKeyWif, recipientId: n.recipientId, publicNote: n.publicNote });
-    case 'tokenBurn':
-      return c.tokens.burn({ contractId: n.contractId, tokenPosition: n.tokenPosition, amount: n.amount, identityId: n.identityId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
-    case 'tokenTransfer':
-      return c.tokens.transfer({ contractId: n.contractId, tokenPosition: n.tokenPosition, amount: n.amount, senderId: n.senderId, recipientId: n.recipientId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
-    case 'tokenFreeze':
-      return c.tokens.freeze({ contractId: n.contractId, tokenPosition: n.tokenPosition, identityToFreeze: n.identityToFreeze, freezerId: n.freezerId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
-    case 'tokenUnfreeze':
-      return c.tokens.unfreeze({ contractId: n.contractId, tokenPosition: n.tokenPosition, identityToUnfreeze: n.identityToUnfreeze, unfreezerId: n.unfreezerId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
-    case 'tokenDestroyFrozen':
-      return c.tokens.destroyFrozen({ contractId: n.contractId, tokenPosition: n.tokenPosition, identityId: n.frozenIdentityId, destroyerId: n.destroyerId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
-    case 'tokenSetPriceForDirectPurchase':
-      return c.tokens.setPrice({ contractId: n.contractId, tokenPosition: n.tokenPosition, identityId: n.identityId, priceType: n.priceType, priceData: n.priceData, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
-    case 'tokenDirectPurchase':
-      return c.tokens.directPurchase({ contractId: n.contractId, tokenPosition: n.tokenPosition, amount: n.amount, identityId: n.identityId, totalAgreedPrice: n.totalAgreedPrice, privateKeyWif: n.privateKeyWif });
-    case 'tokenClaim':
-      return c.tokens.claim({ contractId: n.contractId, tokenPosition: n.tokenPosition, distributionType: n.distributionType, identityId: n.identityId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
-    case 'tokenEmergencyAction':
-      return c.tokens.emergencyAction({ contractId: n.contractId, tokenPosition: n.tokenPosition, actionType: n.actionType, identityId: n.identityId, privateKeyWif: n.privateKeyWif, publicNote: n.publicNote });
+    case 'tokenMint': {
+      // Fetch identity for signing
+      const identity = await c.identities.fetch(n.identityId);
+      if (!identity) {
+        throw new Error(`Identity not found: ${n.identityId}`);
+      }
+
+      // Get the identity's public key
+      let identityKey;
+      if (n.keyId !== undefined) {
+        identityKey = identity.getPublicKeyById(n.keyId);
+      } else {
+        const validSecurityLevels = ['CRITICAL', 'HIGH', 'MEDIUM'];
+        identityKey = identity.getPublicKeys().find(k =>
+          validSecurityLevels.includes(k.securityLevel)
+        );
+      }
+      if (!identityKey) {
+        throw new Error('No suitable identity key found for signing');
+      }
+
+      // Create signer and add private key
+      const signer = new IdentitySigner();
+      signer.addKeyFromWif(n.privateKeyWif);
+
+      const result = await c.tokens.mint({
+        dataContractId: n.contractId,
+        tokenPosition: Number(n.tokenPosition),
+        amount: BigInt(n.amount),
+        identityId: n.identityId,
+        recipientId: n.recipientId || undefined,
+        publicNote: n.publicNote || undefined,
+        identityKey,
+        signer
+      });
+
+      return {
+        status: 'success',
+        balance: result.balance?.toString(),
+        message: `Minted ${n.amount} tokens`
+      };
+    }
+    case 'tokenBurn': {
+      // Fetch identity for signing
+      const identity = await c.identities.fetch(n.identityId);
+      if (!identity) {
+        throw new Error(`Identity not found: ${n.identityId}`);
+      }
+
+      // Get the identity's public key
+      let identityKey;
+      if (n.keyId !== undefined) {
+        identityKey = identity.getPublicKeyById(n.keyId);
+      } else {
+        const validSecurityLevels = ['CRITICAL', 'HIGH', 'MEDIUM'];
+        identityKey = identity.getPublicKeys().find(k =>
+          validSecurityLevels.includes(k.securityLevel)
+        );
+      }
+      if (!identityKey) {
+        throw new Error('No suitable identity key found for signing');
+      }
+
+      // Create signer and add private key
+      const signer = new IdentitySigner();
+      signer.addKeyFromWif(n.privateKeyWif);
+
+      const result = await c.tokens.burn({
+        dataContractId: n.contractId,
+        tokenPosition: Number(n.tokenPosition),
+        amount: BigInt(n.amount),
+        identityId: n.identityId,
+        publicNote: n.publicNote || undefined,
+        identityKey,
+        signer
+      });
+
+      return {
+        status: 'success',
+        balance: result.balance?.toString(),
+        message: `Burned ${n.amount} tokens`
+      };
+    }
+    case 'tokenTransfer': {
+      // Fetch sender identity for signing
+      const senderId = n.senderId || n.identityId;
+      const identity = await c.identities.fetch(senderId);
+      if (!identity) {
+        throw new Error(`Identity not found: ${senderId}`);
+      }
+
+      // Get the identity's public key
+      let identityKey;
+      if (n.keyId !== undefined) {
+        identityKey = identity.getPublicKeyById(n.keyId);
+      } else {
+        const validSecurityLevels = ['CRITICAL', 'HIGH', 'MEDIUM'];
+        identityKey = identity.getPublicKeys().find(k =>
+          validSecurityLevels.includes(k.securityLevel)
+        );
+      }
+      if (!identityKey) {
+        throw new Error('No suitable identity key found for signing');
+      }
+
+      // Create signer and add private key
+      const signer = new IdentitySigner();
+      signer.addKeyFromWif(n.privateKeyWif);
+
+      const result = await c.tokens.transfer({
+        dataContractId: n.contractId,
+        tokenPosition: Number(n.tokenPosition),
+        amount: BigInt(n.amount),
+        senderId: senderId,
+        recipientId: n.recipientId,
+        publicNote: n.publicNote || undefined,
+        identityKey,
+        signer
+      });
+
+      return {
+        status: 'success',
+        senderBalance: result.senderBalance?.toString(),
+        recipientBalance: result.recipientBalance?.toString(),
+        message: `Transferred ${n.amount} tokens to ${n.recipientId}`
+      };
+    }
+    case 'tokenFreeze': {
+      // Fetch authority identity for signing (uses identityId from UI, or fallback to freezerId)
+      const authorityIdentityId = n.identityId || n.freezerId;
+      const identity = await c.identities.fetch(authorityIdentityId);
+      if (!identity) {
+        throw new Error(`Identity not found: ${authorityIdentityId}`);
+      }
+
+      // Get the identity's public key
+      let identityKey;
+      if (n.keyId !== undefined) {
+        identityKey = identity.getPublicKeyById(n.keyId);
+      } else {
+        const validSecurityLevels = ['CRITICAL', 'HIGH', 'MEDIUM'];
+        identityKey = identity.getPublicKeys().find(k =>
+          validSecurityLevels.includes(k.securityLevel)
+        );
+      }
+      if (!identityKey) {
+        throw new Error('No suitable identity key found for signing');
+      }
+
+      // Create signer and add private key
+      const signer = new IdentitySigner();
+      signer.addKeyFromWif(n.privateKeyWif);
+
+      const result = await c.tokens.freeze({
+        dataContractId: n.contractId,
+        tokenPosition: Number(n.tokenPosition),
+        frozenIdentityId: n.identityToFreeze,
+        authorityId: authorityIdentityId,
+        publicNote: n.publicNote || undefined,
+        identityKey,
+        signer
+      });
+
+      return {
+        status: 'success',
+        message: `Frozen tokens for identity ${n.identityToFreeze}`
+      };
+    }
+    case 'tokenUnfreeze': {
+      // Fetch authority identity for signing (uses identityId from UI, or fallback to unfreezerId)
+      const authorityIdentityId = n.identityId || n.unfreezerId;
+      const identity = await c.identities.fetch(authorityIdentityId);
+      if (!identity) {
+        throw new Error(`Identity not found: ${authorityIdentityId}`);
+      }
+
+      // Get the identity's public key
+      let identityKey;
+      if (n.keyId !== undefined) {
+        identityKey = identity.getPublicKeyById(n.keyId);
+      } else {
+        const validSecurityLevels = ['CRITICAL', 'HIGH', 'MEDIUM'];
+        identityKey = identity.getPublicKeys().find(k =>
+          validSecurityLevels.includes(k.securityLevel)
+        );
+      }
+      if (!identityKey) {
+        throw new Error('No suitable identity key found for signing');
+      }
+
+      // Create signer and add private key
+      const signer = new IdentitySigner();
+      signer.addKeyFromWif(n.privateKeyWif);
+
+      const result = await c.tokens.unfreeze({
+        dataContractId: n.contractId,
+        tokenPosition: Number(n.tokenPosition),
+        frozenIdentityId: n.identityToUnfreeze,
+        authorityId: authorityIdentityId,
+        publicNote: n.publicNote || undefined,
+        identityKey,
+        signer
+      });
+
+      return {
+        status: 'success',
+        message: `Unfrozen tokens for identity ${n.identityToUnfreeze}`
+      };
+    }
+    case 'tokenDestroyFrozen': {
+      // Fetch authority identity for signing (uses identityId from UI, or fallback to destroyerId)
+      const authorityIdentityId = n.identityId || n.destroyerId;
+      const identity = await c.identities.fetch(authorityIdentityId);
+      if (!identity) {
+        throw new Error(`Identity not found: ${authorityIdentityId}`);
+      }
+
+      // Get the identity's public key
+      let identityKey;
+      if (n.keyId !== undefined) {
+        identityKey = identity.getPublicKeyById(n.keyId);
+      } else {
+        const validSecurityLevels = ['CRITICAL', 'HIGH', 'MEDIUM'];
+        identityKey = identity.getPublicKeys().find(k =>
+          validSecurityLevels.includes(k.securityLevel)
+        );
+      }
+      if (!identityKey) {
+        throw new Error('No suitable identity key found for signing');
+      }
+
+      // Create signer and add private key
+      const signer = new IdentitySigner();
+      signer.addKeyFromWif(n.privateKeyWif);
+
+      const result = await c.tokens.destroyFrozen({
+        dataContractId: n.contractId,
+        tokenPosition: Number(n.tokenPosition),
+        frozenIdentityId: n.frozenIdentityId,
+        authorityId: authorityIdentityId,
+        publicNote: n.publicNote || undefined,
+        identityKey,
+        signer
+      });
+
+      return {
+        status: 'success',
+        message: `Destroyed frozen tokens for identity ${n.frozenIdentityId}`
+      };
+    }
+    case 'tokenSetPriceForDirectPurchase': {
+      // Fetch identity for signing
+      const identity = await c.identities.fetch(n.identityId);
+      if (!identity) {
+        throw new Error(`Identity not found: ${n.identityId}`);
+      }
+
+      // Get the identity's public key
+      let identityKey;
+      if (n.keyId !== undefined) {
+        identityKey = identity.getPublicKeyById(n.keyId);
+      } else {
+        const validSecurityLevels = ['CRITICAL', 'HIGH', 'MEDIUM'];
+        identityKey = identity.getPublicKeys().find(k =>
+          validSecurityLevels.includes(k.securityLevel)
+        );
+      }
+      if (!identityKey) {
+        throw new Error('No suitable identity key found for signing');
+      }
+
+      // Create signer and add private key
+      const signer = new IdentitySigner();
+      signer.addKeyFromWif(n.privateKeyWif);
+
+      const result = await c.tokens.setPrice({
+        dataContractId: n.contractId,
+        tokenPosition: Number(n.tokenPosition),
+        authorityId: n.identityId,
+        price: n.priceData ? BigInt(n.priceData) : undefined,
+        publicNote: n.publicNote || undefined,
+        identityKey,
+        signer
+      });
+
+      return {
+        status: 'success',
+        message: `Token price set successfully`
+      };
+    }
+    case 'tokenDirectPurchase': {
+      // Fetch buyer identity for signing
+      const identity = await c.identities.fetch(n.identityId);
+      if (!identity) {
+        throw new Error(`Identity not found: ${n.identityId}`);
+      }
+
+      // Get the identity's public key
+      let identityKey;
+      if (n.keyId !== undefined) {
+        identityKey = identity.getPublicKeyById(n.keyId);
+      } else {
+        const validSecurityLevels = ['CRITICAL', 'HIGH', 'MEDIUM'];
+        identityKey = identity.getPublicKeys().find(k =>
+          validSecurityLevels.includes(k.securityLevel)
+        );
+      }
+      if (!identityKey) {
+        throw new Error('No suitable identity key found for signing');
+      }
+
+      // Create signer and add private key
+      const signer = new IdentitySigner();
+      signer.addKeyFromWif(n.privateKeyWif);
+
+      const result = await c.tokens.directPurchase({
+        dataContractId: n.contractId,
+        tokenPosition: Number(n.tokenPosition),
+        amount: BigInt(n.amount),
+        identityId: n.identityId,
+        totalAgreedPrice: BigInt(n.totalAgreedPrice),
+        identityKey,
+        signer
+      });
+
+      return {
+        status: 'success',
+        balance: result.balance?.toString(),
+        creditsPaid: result.creditsPaid?.toString(),
+        message: `Purchased ${n.amount} tokens`
+      };
+    }
+    case 'tokenClaim': {
+      // Fetch identity for signing
+      const identity = await c.identities.fetch(n.identityId);
+      if (!identity) {
+        throw new Error(`Identity not found: ${n.identityId}`);
+      }
+
+      // Get the identity's public key
+      let identityKey;
+      if (n.keyId !== undefined) {
+        identityKey = identity.getPublicKeyById(n.keyId);
+      } else {
+        const validSecurityLevels = ['CRITICAL', 'HIGH', 'MEDIUM'];
+        identityKey = identity.getPublicKeys().find(k =>
+          validSecurityLevels.includes(k.securityLevel)
+        );
+      }
+      if (!identityKey) {
+        throw new Error('No suitable identity key found for signing');
+      }
+
+      // Create signer and add private key
+      const signer = new IdentitySigner();
+      signer.addKeyFromWif(n.privateKeyWif);
+
+      const result = await c.tokens.claim({
+        dataContractId: n.contractId,
+        tokenPosition: Number(n.tokenPosition),
+        distributionType: n.distributionType,
+        identityId: n.identityId,
+        publicNote: n.publicNote || undefined,
+        identityKey,
+        signer
+      });
+
+      return {
+        status: 'success',
+        claimedAmount: result.claimedAmount?.toString(),
+        message: `Claimed tokens from distribution`
+      };
+    }
+    case 'tokenEmergencyAction': {
+      // Fetch identity for signing
+      const identity = await c.identities.fetch(n.identityId);
+      if (!identity) {
+        throw new Error(`Identity not found: ${n.identityId}`);
+      }
+
+      // Get the identity's public key
+      let identityKey;
+      if (n.keyId !== undefined) {
+        identityKey = identity.getPublicKeyById(n.keyId);
+      } else {
+        const validSecurityLevels = ['CRITICAL', 'HIGH', 'MEDIUM'];
+        identityKey = identity.getPublicKeys().find(k =>
+          validSecurityLevels.includes(k.securityLevel)
+        );
+      }
+      if (!identityKey) {
+        throw new Error('No suitable identity key found for signing');
+      }
+
+      // Create signer and add private key
+      const signer = new IdentitySigner();
+      signer.addKeyFromWif(n.privateKeyWif);
+
+      const result = await c.tokens.emergencyAction({
+        dataContractId: n.contractId,
+        tokenPosition: Number(n.tokenPosition),
+        action: n.actionType,
+        authorityId: n.identityId,
+        publicNote: n.publicNote || undefined,
+        identityKey,
+        signer
+      });
+
+      return {
+        status: 'success',
+        message: `Emergency action ${n.actionType} performed`
+      };
+    }
 
     // Group queries
     case 'getGroupInfo': {

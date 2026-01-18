@@ -1550,7 +1550,7 @@ Parameters (payload fields):
 
 Example:
 ```javascript
-const result = await sdk.tokens.freeze({ contractId, tokenPosition, identityToFreeze, freezerId, privateKeyWif, publicNote });
+const result = await sdk.tokens.freeze({ contractId, tokenPosition, identityToFreeze, identityId, privateKeyWif, publicNote });
 ```
 
 **Token Unfreeze** - `tokens.unfreeze`
@@ -1567,7 +1567,7 @@ Parameters (payload fields):
 
 Example:
 ```javascript
-const result = await sdk.tokens.unfreeze({ contractId, tokenPosition, identityToUnfreeze, unfreezerId, privateKeyWif, publicNote });
+const result = await sdk.tokens.unfreeze({ contractId, tokenPosition, identityToUnfreeze, identityId, privateKeyWif, publicNote });
 ```
 
 **Token Destroy Frozen** - `tokens.destroyFrozen`
@@ -1584,7 +1584,7 @@ Parameters (payload fields):
 
 Example:
 ```javascript
-const result = await sdk.tokens.destroyFrozen({ contractId, tokenPosition, identityId: frozenIdentityId, destroyerId, privateKeyWif, publicNote });
+const result = await sdk.tokens.destroyFrozen({ contractId, tokenPosition, frozenIdentityId, identityId, privateKeyWif, publicNote });
 ```
 
 #### Voting Transitions

@@ -20,8 +20,9 @@ const JSON_ARRAY_PARAMETERS = {
 };
 
 const PARAM_SPECIFIC_FALLBACK_SELECTORS = {
-  contractId: ['input[placeholder*="Contract ID"]'],
-  documentType: ['input[placeholder*="Document Type"]'],
+  contractId: ['input[name="contractId"]', 'input[placeholder*="Contract ID"]'],
+  dataContractId: ['input[name="contractId"]', 'input[placeholder*="Contract ID"]'],  // Maps to contractId input
+  documentType: ['input[name="documentType"]', 'input[placeholder*="Document Type"]'],
   json: ['textarea[placeholder*="JSON"]'],
   schema: ['textarea[placeholder*="Schema"]'],
   indexValues: ['.index-values-group textarea', 'textarea[placeholder*="value1"]'],
@@ -36,8 +37,8 @@ const PARAM_SPECIFIC_FALLBACK_SELECTORS = {
 // Only applied for state transitions - queries use the standard SDK naming
 // Note: Most parameters match directly, only add mappings for mismatches
 const PARAM_NAME_MAPPING_FOR_TRANSITIONS = {
-  documentTypeName: 'documentType'
-  // dataContractId is now the correct name in the UI, no mapping needed
+  documentTypeName: 'documentType',
+  dataContractId: 'contractId'  // UI uses contractId, test data uses dataContractId
 };
 
 /**
