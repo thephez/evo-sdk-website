@@ -36,9 +36,9 @@ const PARAM_SPECIFIC_FALLBACK_SELECTORS = {
 // Mapping from test data parameter names to UI input field names
 // Only applied for state transitions - queries use the standard SDK naming
 // Note: Most parameters match directly, only add mappings for mismatches
+// Note: dataContractUpdate uses 'dataContractId', documentCreate uses 'contractId' - no mapping needed
 const PARAM_NAME_MAPPING_FOR_TRANSITIONS = {
-  documentTypeName: 'documentType',
-  dataContractId: 'contractId'  // UI uses contractId, test data uses dataContractId
+  documentTypeName: 'documentType'
 };
 
 /**
@@ -805,16 +805,28 @@ class EvoSdkPage extends BaseTest {
       throw error;
     }
 
-    // Wait for document fields to be populated by checking if any doc-field-input has a non-empty value
+    // Wait for the status message to indicate success or error
+    // The status will show "Document loaded successfully" or an error message
     await this.page.waitForFunction(
       () => {
-        const fields = document.querySelectorAll('.doc-field-input');
-        return Array.from(fields).some(field => field.value && field.value.trim() !== '');
+        const statusEl = document.getElementById('status');
+        if (!statusEl) return false;
+        const text = statusEl.textContent || '';
+        // Check for success or error status (not "Loading document...")
+        return text.includes('Document loaded successfully') ||
+               text.includes('Error') ||
+               text.includes('not found');
       },
-      { timeout: 10000 }
+      { timeout: 30000 }
     );
 
-    console.log('Document loaded and fields populated');
+    // Check if it was actually successful
+    const statusText = await this.page.locator('#status').textContent();
+    if (!statusText.includes('Document loaded successfully')) {
+      throw new Error(`Failed to load document: ${statusText}`);
+    }
+
+    console.log('Document loaded successfully');
   }
 
   /**
