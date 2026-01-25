@@ -411,8 +411,7 @@ test.describe('Evo SDK State Transition Tests', () => {
       );
     });
 
-    // Skip: Flaky due to platform state - insufficient balance or tx already exists
-    test.skip('should execute identity credit withdrawal transition', async () => {
+    test('should execute identity credit withdrawal transition', async () => {
       // Get test parameters to check withdrawal amount upfront
       const testParams = parameterInjector.testData.stateTransitionParameters.identity.identityCreditWithdrawal.testnet[0];
 
@@ -443,7 +442,7 @@ test.describe('Evo SDK State Transition Tests', () => {
       );
     });
 
-    // Skip: Requires specific key setup
+    // Skip: Requires master key for the identity (key ID 0)
     test.skip('should execute identity update transition', async () => {
       const result = await executeStateTransitionWithCustomParams(
         evoSdkPage,
@@ -458,8 +457,7 @@ test.describe('Evo SDK State Transition Tests', () => {
   });
 
   test.describe('Data Contract State Transitions', () => {
-    // Skip: Requires ~12 Dash credits (identity balance too low)
-    test.skip('should execute data contract create transition', async () => {
+    test('should execute data contract create transition', async () => {
       // Generate unique schema with timestamp to avoid "tx already exists" error
       const timestamp = Date.now();
       const uniqueSchema = JSON.stringify({
@@ -490,8 +488,7 @@ test.describe('Evo SDK State Transition Tests', () => {
       validateDataContractResult(result.result, false);
     });
 
-    // Skip: Requires ~24 Dash credits for create+update (identity balance too low)
-    test.skip('should execute data contract update transition', async () => {
+    test('should execute data contract update transition', async () => {
       // Set extended timeout for combined create+update operation
       test.setTimeout(180000);
 
@@ -594,27 +591,63 @@ test.describe('Evo SDK State Transition Tests', () => {
       });
     });
 
-    // Skip: Requires document to exist and be mutable - depends on testnet state
-    test.skip('should execute document replace transition', async () => {
-      await evoSdkPage.setupStateTransition('document', 'documentReplace');
+    test('should execute document replace transition', async () => {
+      // Set extended timeout for combined create+replace operation
+      test.setTimeout(180000);
 
-      const success = await parameterInjector.injectStateTransitionParameters('document', 'documentReplace', 'testnet');
-      expect(success).toBe(true);
+      let documentId;
+      const timestamp = Date.now();
 
-      await evoSdkPage.loadExistingDocument();
+      // Step 1: Create a document first
+      await test.step('Create document', async () => {
+        await evoSdkPage.setupStateTransition('document', 'documentCreate');
+        const success = await parameterInjector.injectStateTransitionParameters('document', 'documentCreate', 'testnet');
+        expect(success).toBe(true);
 
-      const testParams = parameterInjector.testData.stateTransitionParameters.document.documentReplace.testnet[0];
-      const timestamp = new Date().toISOString();
-      const updatedFields = {
-        message: `${testParams.documentFields.message} - Updated at ${timestamp}`
-      };
+        await evoSdkPage.fetchDocumentSchema();
 
-      await evoSdkPage.fillDocumentFields(updatedFields);
+        const testParams = parameterInjector.testData.stateTransitionParameters.document.documentCreate.testnet[0];
+        const uniqueFields = {
+          ...testParams.documentFields,
+          message: `Replace test - ${timestamp}`
+        };
+        await evoSdkPage.fillDocumentFields(uniqueFields);
 
-      const result = await evoSdkPage.executeStateTransitionAndGetResult();
+        const createResult = await evoSdkPage.executeStateTransitionAndGetResult();
+        validateBasicStateTransitionResult(createResult);
+        const docResponse = validateDocumentCreateResult(createResult.result);
+        documentId = docResponse.documentId;
+        console.log('✅ Document created with ID:', documentId);
+      });
 
-      validateBasicStateTransitionResult(result);
-      validateDocumentReplaceResult(result.result, testParams.documentId);
+      // Step 2: Replace the document
+      await test.step('Replace document', async () => {
+        // Wait for document to propagate through the network
+        console.log('⏳ Waiting 5s for document to propagate...');
+        await evoSdkPage.page.waitForTimeout(5000);
+
+        await evoSdkPage.setupStateTransition('document', 'documentReplace');
+
+        // Get test params and override with our document ID
+        const testParams = parameterInjector.testData.stateTransitionParameters.document.documentReplace.testnet[0];
+        const success = await parameterInjector.injectStateTransitionParameters('document', 'documentReplace', 'testnet', {
+          documentId: documentId
+        });
+        expect(success).toBe(true);
+
+        // Try loading document with retry (newly created documents may take time to sync)
+        await evoSdkPage.loadExistingDocumentWithRetry();
+
+        const updatedFields = {
+          message: `Replaced at ${new Date().toISOString()}`
+        };
+        await evoSdkPage.fillDocumentFields(updatedFields);
+
+        const result = await evoSdkPage.executeStateTransitionAndGetResult();
+
+        validateBasicStateTransitionResult(result);
+        validateDocumentReplaceResult(result.result, documentId);
+      });
     });
 
     // Skip: Requires document to exist and be deletable
@@ -686,8 +719,7 @@ test.describe('Evo SDK State Transition Tests', () => {
       validateTokenMintResult(result.result, testParams.identityId, testParams.amount);
     });
 
-    // Skip: Flaky due to platform state - insufficient token balance
-    test.skip('should execute token burn transition', async () => {
+    test('should execute token burn transition', async () => {
       await evoSdkPage.setupStateTransition('token', 'tokenBurn');
 
       const success = await parameterInjector.injectStateTransitionParameters('token', 'tokenBurn', 'testnet');
@@ -743,7 +775,7 @@ test.describe('Evo SDK State Transition Tests', () => {
       validateTokenUnfreezeResult(result.result, testParams.identityToUnfreeze);
     });
 
-    // Skip: Requires frozen tokens to exist
+    // Skip: Requires frozen tokens to exist (identity is not frozen)
     test.skip('should execute token destroy frozen transition', async () => {
       await evoSdkPage.setupStateTransition('token', 'tokenDestroyFrozen');
 
@@ -758,8 +790,7 @@ test.describe('Evo SDK State Transition Tests', () => {
       validateTokenDestroyFrozenResult(result.result, testParams.frozenIdentityId);
     });
 
-    // Skip: Flaky due to platform connectivity issues
-    test.skip('should execute token set price for direct purchase transition', async () => {
+    test('should execute token set price for direct purchase transition', async () => {
       await evoSdkPage.setupStateTransition('token', 'tokenSetPriceForDirectPurchase');
 
       const success = await parameterInjector.injectStateTransitionParameters('token', 'tokenSetPriceForDirectPurchase', 'testnet');
@@ -773,7 +804,7 @@ test.describe('Evo SDK State Transition Tests', () => {
       validateTokenSetPriceResult(result.result, testParams.priceType, testParams.priceData);
     });
 
-    // Skip: Requires tokens to be available for direct purchase
+    // Skip: Website bug - passes identityId but SDK expects buyerId
     test.skip('should execute token direct purchase transition', async () => {
       await evoSdkPage.setupStateTransition('token', 'tokenDirectPurchase');
 

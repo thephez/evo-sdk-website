@@ -648,6 +648,25 @@ const testData = {
             description: "Withdraw credits to Dash address"
           }
         ]
+      },
+      identityUpdate: {
+        testnet: [
+          {
+            identityId: "7XcruVSsGQVSgTcmPewaE4tXLutnW1F6PXxwMbo8GYQC",
+            // Add a new ECDSA_SECP256K1 authentication key
+            addPublicKeys: JSON.stringify([
+              {
+                type: "ECDSA_SECP256K1",
+                purpose: "AUTHENTICATION",
+                securityLevel: "MEDIUM",
+                readOnly: false,
+                data: "A0/VT8kvYxk9BeXCE8BC7AiidDe5bVJfXNJLvmZzNNxb"
+              }
+            ]),
+            privateKey: process.env.TEST_PRIVATE_KEY_IDENTITY_1 || "PLACEHOLDER_IDENTITY_KEY_1", // Master key required
+            description: "Add a new authentication key to identity"
+          }
+        ]
       }
     },
     dataContract: {

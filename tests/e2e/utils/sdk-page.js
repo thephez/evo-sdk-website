@@ -193,6 +193,16 @@ class EvoSdkPage extends BaseTest {
       }
     }
 
+    // The website uses data-input-name attribute for dynamic inputs, so check that first
+    const dataInputSelector = `[data-input-name="${uiParamName}"]`;
+    const dataInput = this.page.locator(dataInputSelector).first();
+
+    if (await dataInput.count() > 0) {
+      await this.fillInputByType(dataInput, value);
+      console.log(`${uiParamName} filled via data-input-name`);
+      return;
+    }
+
     const inputSelector = `input[name="${uiParamName}"], select[name="${uiParamName}"], textarea[name="${uiParamName}"]`;
     const input = this.page.locator(inputSelector).first();
 
@@ -809,7 +819,7 @@ class EvoSdkPage extends BaseTest {
     // The status will show "Document loaded successfully" or an error message
     await this.page.waitForFunction(
       () => {
-        const statusEl = document.getElementById('status');
+        const statusEl = document.getElementById('statusBanner');
         if (!statusEl) return false;
         const text = statusEl.textContent || '';
         // Check for success or error status (not "Loading document...")
@@ -821,12 +831,66 @@ class EvoSdkPage extends BaseTest {
     );
 
     // Check if it was actually successful
-    const statusText = await this.page.locator('#status').textContent();
+    const statusText = await this.page.locator('#statusBanner').textContent();
     if (!statusText.includes('Document loaded successfully')) {
       throw new Error(`Failed to load document: ${statusText}`);
     }
 
     console.log('Document loaded successfully');
+  }
+
+  /**
+   * Load existing document with retry for newly created documents
+   * Retries loading until revision is available (not N/A)
+   */
+  async loadExistingDocumentWithRetry(maxRetries = 5, retryDelay = 3000) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      console.log(`Loading document attempt ${attempt}/${maxRetries}...`);
+
+      // Click the "Load Document" button
+      try {
+        const loadDocumentButton = this.page.locator('button:has-text("Load Document")');
+        await loadDocumentButton.waitFor({ state: 'visible', timeout: 5000 });
+        await loadDocumentButton.click();
+        console.log('Clicked Load Document button');
+      } catch (error) {
+        console.error('Error clicking Load Document button:', error);
+        throw error;
+      }
+
+      // Wait for the status message
+      await this.page.waitForFunction(
+        () => {
+          const statusEl = document.getElementById('statusBanner');
+          if (!statusEl) return false;
+          const text = statusEl.textContent || '';
+          return text.includes('Document loaded successfully') ||
+                 text.includes('Error') ||
+                 text.includes('not found');
+        },
+        { timeout: 30000 }
+      );
+
+      // Check if it was successful AND has a valid revision
+      const statusText = await this.page.locator('#statusBanner').textContent();
+      if (statusText.includes('Document loaded successfully')) {
+        // Check if revision is valid (not N/A)
+        if (!statusText.includes('N/A')) {
+          console.log('Document loaded successfully with valid revision');
+          return;
+        }
+
+        // Revision is N/A, retry after delay
+        if (attempt < maxRetries) {
+          console.log(`Document revision not yet available (attempt ${attempt}), waiting ${retryDelay}ms before retry...`);
+          await this.page.waitForTimeout(retryDelay);
+        } else {
+          throw new Error(`Failed to load document with valid revision after ${maxRetries} attempts. The revision shows N/A.`);
+        }
+      } else {
+        throw new Error(`Failed to load document: ${statusText}`);
+      }
+    }
   }
 
   /**

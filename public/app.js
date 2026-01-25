@@ -1535,6 +1535,20 @@ function normalizeContract(contract) {
 
 function normalizeDocument(document) {
   if (!document) return null;
+
+  // Extract revision from the original Document object BEFORE calling toJSON/toObject
+  // The WASM SDK Document class has a `revision` getter that returns bigint | undefined
+  // This getter may not be preserved after serialization
+  let originalRevision = null;
+  if (document && typeof document === 'object' && 'revision' in document) {
+    try {
+      const rev = document.revision;
+      if (rev != null) {
+        originalRevision = Number(rev);
+      }
+    } catch (_) { /* ignore */ }
+  }
+
   let value = document;
   if (typeof value.toJSON === 'function') {
     try {
@@ -1572,7 +1586,8 @@ function normalizeDocument(document) {
   if (!value || typeof value !== 'object') return null;
 
   const data = value.data ?? value.value ?? {};
-  const revisionRaw = value.revision ?? null;
+  // Use original revision from Document object getter, fallback to serialized value
+  const revisionRaw = originalRevision ?? value.revision ?? value.$revision ?? null;
   const revision = revisionRaw != null ? Number(revisionRaw) : null;
 
   return { data, revision: Number.isNaN(revision) ? null : revision };
