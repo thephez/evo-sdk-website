@@ -82,7 +82,7 @@ const testData = {
       },
       getIdentityKeys: {
         testnet: [
-          { 
+          {
             identityId: "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk",
             requestType: "all"
           },
@@ -122,7 +122,7 @@ const testData = {
       },
       getIdentityContractNonce: {
         testnet: [
-          { 
+          {
             identityId: "5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk",
             contractId: "GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec"
           }
@@ -208,7 +208,7 @@ const testData = {
       },
       getDataContracts: {
         testnet: [
-          { 
+          {
             ids: [
               "GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec",
               "ALybvzfcCwMs7sinDwmtumw17NneuW7RgFtFHgjKmF3A"
@@ -218,7 +218,7 @@ const testData = {
       },
       getDataContractHistory: {
         testnet: [
-          { 
+          {
             dataContractId: "HLY575cNazmc5824FxqaEMEBuzFeE4a98GDRNKbyJqCM",
             limit: 10,
             startAtMs: 0
@@ -282,7 +282,7 @@ const testData = {
       },
       getProtocolVersionUpgradeVoteStatus: {
         testnet: [
-          { 
+          {
             startProTxHash: "143dcd6a6b7684fde01e88a10e5d65de9a29244c5ecd586d14a342657025f113",
             count: 100
           }
@@ -306,7 +306,7 @@ const testData = {
       getFinalizedEpochInfos: {
         testnet: [
           {
-            startEpoch: 100,
+            startEpoch: 8635,
             count: 5,
             ascending: true
           }
@@ -791,7 +791,7 @@ const testData = {
             description: "Mint new tokens (may fail without permissions)"
           }
         ]
-      },      
+      },
       tokenTransfer: {
         testnet: [
           {
@@ -800,7 +800,7 @@ const testData = {
             amount: "1",
             identityId: "7XcruVSsGQVSgTcmPewaE4tXLutnW1F6PXxwMbo8GYQC",
             privateKey: process.env.TEST_PRIVATE_KEY_CONTRACT || "PLACEHOLDER_CONTRACT_KEY",
-            recipientId: "HJDxtN6FJF3U3T9TMLWCqudfJ5VRkaUrxTsRp36djXAG",            
+            recipientId: "HJDxtN6FJF3U3T9TMLWCqudfJ5VRkaUrxTsRp36djXAG",
             publicNote: "Token transfer test",
             description: "Transfer tokens between identities"
           }
