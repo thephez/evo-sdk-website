@@ -185,7 +185,6 @@ class ParameterInjector {
    */
   async tryFillParameter(paramName, value, fieldMapping) {
     const possibleSelectors = fieldMapping[paramName] || [];
-    2
     // Add generic fallback selectors
     possibleSelectors.push(
       `#${paramName}`,
