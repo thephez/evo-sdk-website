@@ -1306,6 +1306,9 @@ test.describe('Evo SDK Query Execution Tests', () => {
         name: 'getPlatformAddresses',
         hasProofSupport: true,
         needsParameters: true,
+        // Skip: SDK 3.0.0 uses new address type constants (P2PKH=0xB0, P2SH=0x80)
+        // but testnet nodes may be running older version with different constants
+        skip: true,
         validateFn: (result) => {
           // Should return a map/object of addresses
           expect(result).toBeDefined();
@@ -1313,8 +1316,17 @@ test.describe('Evo SDK Query Execution Tests', () => {
       }
     ];
 
-    addressQueries.forEach(({ name, hasProofSupport, needsParameters, skipNonProof, validateFn }) => {
+    addressQueries.forEach(({ name, hasProofSupport, needsParameters, skipNonProof, skip, validateFn }) => {
       test.describe(`${name} query (parameterized)`, () => {
+        if (skip) {
+          test.skip('without proof info', async () => {
+            // Test requires valid platform addresses
+          });
+          test.skip('with proof info', async () => {
+            // Test requires valid platform addresses
+          });
+          return;
+        }
         if (skipNonProof) {
           test.skip('without proof info', async () => {
             // Server doesn't support non-proof query for this operation

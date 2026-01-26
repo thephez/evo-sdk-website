@@ -16,7 +16,8 @@ const JSON_ARRAY_PARAMETERS = {
   'startIndexValues': true,
   'endIndexValues': true,
   'path': true,  // getPathElements path segments
-  'keys': true   // getPathElements keys
+  'keys': true,  // getPathElements keys
+  'addresses': true  // getPlatformAddresses addresses array
 };
 
 const PARAM_SPECIFIC_FALLBACK_SELECTORS = {
