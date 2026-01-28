@@ -301,21 +301,23 @@ class EvoSdkPage extends BaseTest {
    */
   async handleArrayInput(baseElement, arrayValues) {
     try {
-      // Look for existing input fields first (prioritize array container inputs)
+      // Check if there's a dynamic array container associated with this element
       const arrayContainerInputs = this.page.locator('.array-input-container input[type="text"]');
-      // Exclude authentication inputs (identityId, privateKey, assetLockProof) which are hidden for queries
-      // and only select visible inputs within the dynamicInputs or queryInputs sections
-      const allInputs = this.page.locator('#dynamicInputs input[type="text"]:visible, #dynamicInputs textarea:visible, #queryInputs input[type="text"]:visible, #queryInputs textarea:visible').filter({
-        hasNot: this.page.locator('[readonly]')
-      });
+      const hasArrayContainer = await arrayContainerInputs.count() > 0;
 
-      // Use array container inputs if available, otherwise use all inputs
-      const existingInputs = await arrayContainerInputs.count() > 0 ? arrayContainerInputs : allInputs;
-      const existingCount = await existingInputs.count();
+      // If no dynamic array container exists, use the baseElement directly
+      // This handles simple text inputs that accept JSON array strings
+      if (!hasArrayContainer) {
+        await baseElement.fill(JSON.stringify(arrayValues), { timeout: 2000 });
+        return true;
+      }
+
+      // Dynamic array container exists - use the multi-input approach
+      const existingCount = await arrayContainerInputs.count();
 
       // Fill the first existing field if available
       if (existingCount > 0 && arrayValues.length > 0) {
-        const firstInput = existingInputs.first();
+        const firstInput = arrayContainerInputs.first();
         try {
           await firstInput.fill(arrayValues[0].toString(), { timeout: 2000 });
         } catch (error) {
@@ -326,7 +328,7 @@ class EvoSdkPage extends BaseTest {
 
       // Look for "Add Item" button (specific to WASM SDK array inputs)
       const addButton = this.page.locator('button:has-text("+ Add Item"), button.add-array-item, button:has-text("Add Item"), button:has-text("Add"), button:has-text("add")').first();
-      
+
       if (await addButton.count() === 0) {
         if (arrayValues.length <= 1) {
           return true;
@@ -347,9 +349,7 @@ class EvoSdkPage extends BaseTest {
         await this.page.waitForFunction(
           ({ expectedCount }) => {
             const arrayInputs = document.querySelectorAll('.array-input-container input[type="text"]');
-            const allInputs = document.querySelectorAll('input[type="text"]:not([readonly]), textarea:not([readonly])');
-            const inputs = arrayInputs.length > 0 ? arrayInputs : allInputs;
-            return inputs.length >= expectedCount;
+            return arrayInputs.length >= expectedCount;
           },
           { expectedCount },
           { timeout: 2000 }
@@ -357,17 +357,11 @@ class EvoSdkPage extends BaseTest {
 
         // Find all input fields again (should be one more now)
         const currentArrayInputs = this.page.locator('.array-input-container input[type="text"]');
-        const currentAllInputs = this.page.locator('#dynamicInputs input[type="text"]:visible, #dynamicInputs textarea:visible, #queryInputs input[type="text"]:visible, #queryInputs textarea:visible').filter({
-          hasNot: this.page.locator('[readonly]')
-        });
-
-        // Use array container inputs if available
-        const currentInputs = await currentArrayInputs.count() > 0 ? currentArrayInputs : currentAllInputs;
-        const currentCount = await currentInputs.count();
+        const currentCount = await currentArrayInputs.count();
 
         if (currentCount >= expectedCount) {
           // Fill the newest input field
-          const newInput = currentInputs.nth(currentCount - 1);
+          const newInput = currentArrayInputs.nth(currentCount - 1);
           try {
             await newInput.fill(value.toString(), { timeout: 2000 });
           } catch (error) {
