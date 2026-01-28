@@ -973,10 +973,7 @@ test.describe('Evo SDK Query Execution Tests', () => {
           const contractInfo = JSON.parse(result);
           expect(contractInfo).toBeDefined();
           expect(typeof contractInfo === 'object').toBe(true);
-          // Result can be empty if contract has no token info, or contain contractId if it does
-          if (Object.keys(contractInfo).length > 0) {
-            expect(contractInfo).toHaveProperty('contractId');
-          }
+          expect(contractInfo).toHaveProperty('contractId');
         }
       },
       {
