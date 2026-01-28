@@ -999,6 +999,7 @@ test.describe('Evo SDK Query Execution Tests', () => {
           const supplyData = JSON.parse(result);
           expect(supplyData).toBeDefined();
           expect(typeof supplyData === 'object').toBe(true);
+          expect(supplyData).toHaveProperty('totalSupply');
         }
       }
     ];
