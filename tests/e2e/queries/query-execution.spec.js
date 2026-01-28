@@ -1703,6 +1703,7 @@ test.describe('Evo SDK Query Execution Tests', () => {
       { name: 'getIdentityNonce', hasProofSupport: true, validateFn: (result) => validateNumericResult(result, 'nonce') },
       { name: 'getIdentityContractNonce', hasProofSupport: true, validateFn: (result) => validateNumericResult(result, 'nonce') },
       { name: 'getIdentityByPublicKeyHash', hasProofSupport: true, validateFn: validateIdentityResult },
+      // getIdentitiesContractKeys fails due to upstream issue: https://github.com/dashpay/platform/issues/3028
       { name: 'getIdentitiesContractKeys', hasProofSupport: true, validateFn: validateIdentitiesContractKeysResult },
       { name: 'getIdentitiesBalances', hasProofSupport: true, validateFn: validateBalancesResult },
       { name: 'getIdentityBalanceAndRevision', hasProofSupport: true, validateFn: validateBalanceAndRevisionResult },
