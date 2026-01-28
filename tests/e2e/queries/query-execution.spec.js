@@ -717,6 +717,7 @@ test.describe('Evo SDK Query Execution Tests', () => {
       },
       {
         name: 'getPrefundedSpecializedBalance',
+        // getPrefundedSpecializedBalance fails due to upstream issue: https://github.com/dashpay/platform/issues/2986
         hasProofSupport: true,
         needsParameters: true,
         validateFn: (result) => {
