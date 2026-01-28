@@ -293,19 +293,19 @@ function validateKeysResult(resultStr) {
 function validateIdentitiesContractKeysResult(resultStr) {
   const contractKeysData = JSON.parse(resultStr);
   expect(contractKeysData).toBeDefined();
-  // Result can be an array or object
-  if (Array.isArray(contractKeysData)) {
-    // Empty array is valid when no contract keys exist
-    expect(contractKeysData).toBeDefined();
-  } else {
-    expect(typeof contractKeysData).toBe('object');
-    // Check first identity's keys if any exist
-    const keys = Object.keys(contractKeysData);
-    if (keys.length > 0) {
-      const firstIdentityKeys = Object.values(contractKeysData)[0];
-      expect(Array.isArray(firstIdentityKeys)).toBe(true);
-    }
-  }
+  expect(Array.isArray(contractKeysData)).toBe(true);
+  // Must have at least one identity with keys
+  expect(contractKeysData.length).toBeGreaterThan(0);
+
+  // Validate first identity's contract keys structure
+  const firstEntry = contractKeysData[0];
+  expect(firstEntry).toHaveProperty('identityId');
+  expect(firstEntry).toHaveProperty('keys');
+  expect(Array.isArray(firstEntry.keys)).toBe(true);
+  expect(firstEntry.keys.length).toBeGreaterThan(0);
+
+  // Reuse validateKeysResult for the keys array
+  validateKeysResult(JSON.stringify(firstEntry.keys));
 }
 
 function validateIdentitiesResult(resultStr) {
