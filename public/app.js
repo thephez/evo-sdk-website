@@ -3454,6 +3454,8 @@ function formatResult(value) {
     const knownGetters = [
       // TokenContractInfo
       ['contractId', 'tokenContractPosition'],
+      // IdentityTokenInfo
+      ['frozen'],
     ];
     for (const getterSet of knownGetters) {
       if (getterSet.every(prop => prop in val)) {

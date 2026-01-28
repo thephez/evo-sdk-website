@@ -367,11 +367,12 @@ function validateTokenInfoResult(resultStr) {
   const tokenInfoData = JSON.parse(resultStr);
   expect(tokenInfoData).toBeDefined();
   expect(typeof tokenInfoData).toBe('object');
-  // Token info should have token IDs as keys with info objects
-  if (Object.keys(tokenInfoData).length > 0) {
-    const firstTokenInfo = Object.values(tokenInfoData)[0];
-    expect(typeof firstTokenInfo).toBe('object');
-  }
+  // Token info should have identity/token IDs as keys with info objects containing frozen status
+  expect(Object.keys(tokenInfoData).length).toBeGreaterThan(0);
+  Object.values(tokenInfoData).forEach(tokenInfo => {
+    expect(tokenInfo).toHaveProperty('frozen');
+    expect(typeof tokenInfo.frozen).toBe('boolean');
+  });
 }
 
 test.describe('Evo SDK Query Execution Tests', () => {
