@@ -986,6 +986,9 @@ test.describe('Evo SDK Query Execution Tests', () => {
           expect(claimData).toBeDefined();
           expect(typeof claimData === 'object').toBe(true);
         }
+      // Note: getTokenPriceByContract requires a token contract with specific pricing configuration.
+      // As of now, no tokens on testnet have pricing configured, so this test is skipped.
+      // Error: "No pricing schedule found for token at contract ... position 0"
       },
       {
         name: 'getTokenTotalSupply',
@@ -998,9 +1001,6 @@ test.describe('Evo SDK Query Execution Tests', () => {
           expect(typeof supplyData === 'object').toBe(true);
         }
       }
-      // Note: getTokenPriceByContract requires a token contract with specific pricing configuration.
-      // As of now, no tokens on testnet have pricing configured, so this test is skipped.
-      // Error: "No pricing schedule found for token at contract ... position 0"
     ];
 
     tokenQueries.forEach(({ name, hasProofSupport, needsParameters, validateFn }) => {
