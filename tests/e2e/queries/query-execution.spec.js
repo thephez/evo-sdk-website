@@ -120,19 +120,17 @@ function validateProofContent(resultData) {
 /**
  * Helper function to validate result with proof
  * @param {Object} result - The query result object
- * @param {Object} options - Validation options
- * @param {boolean} options.allowNullData - If true, allows data to be null/undefined (for queries that may return no data)
  */
-function validateResultWithProof(result, options = {}) {
-  const { allowNullData = false } = options;
+function validateResultWithProof(result) {
   expect(result.success).toBe(true);
   expect(result.result).toBeDefined();
 
   // Parse the result as JSON to check the format
   const resultData = JSON.parse(result.result);
-  if (!allowNullData) {
-    expect(resultData).toHaveProperty('data');
-  }
+  // All proof responses must have a data property
+  expect(resultData).toHaveProperty('data');
+  expect(resultData.data).not.toBeNull();
+  expect(resultData.data).toBeDefined();
   expect(resultData).toHaveProperty('metadata');
   expect(resultData).toHaveProperty('proof');
 
@@ -703,12 +701,7 @@ test.describe('Evo SDK Query Execution Tests', () => {
         name: 'getPrefundedSpecializedBalance',
         hasProofSupport: true,
         needsParameters: true,
-        allowNullData: true, // Balance may not exist, so data can be null
         validateFn: (result) => {
-          // Result can be null/undefined if no prefunded balance exists
-          if (result === 'null' || result === 'undefined' || result === null || result === undefined) {
-            return; // Valid - no balance exists
-          }
           const parsed = JSON.parse(result);
           // Check structure when balance exists
           expect(parsed).toHaveProperty('identityId');
@@ -733,7 +726,7 @@ test.describe('Evo SDK Query Execution Tests', () => {
       }
     ];
 
-    systemQueries.forEach(({ name, hasProofSupport, needsParameters, allowNullData, validateFn }) => {
+    systemQueries.forEach(({ name, hasProofSupport, needsParameters, validateFn }) => {
       test.describe(`${name} query (parameterized)`, () => {
         test('without proof info', async () => {
           await evoSdkPage.setupQuery('system', name);
@@ -763,7 +756,7 @@ test.describe('Evo SDK Query Execution Tests', () => {
             validateBasicQueryResult(result);
 
             if (proofEnabled) {
-              validateResultWithProof(result, { allowNullData });
+              validateResultWithProof(result);
               // Extract data field for validation when in proof mode
               const resultData = JSON.parse(result.result);
               validateFn(JSON.stringify(resultData.data));
