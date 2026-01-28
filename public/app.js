@@ -3452,20 +3452,6 @@ function formatResult(value) {
     // See: https://github.com/dashpay/platform/issues/3027
     // TODO: Remove this workaround once SDK is updated with proper toJSON() methods
     const knownGetters = [
-      // VotePollsByEndDateEntry
-      ['timestampMs', 'votePolls'],
-      // ContestedResourceVoteState
-      ['contenders', 'lockVoteTally', 'abstainVoteTally', 'winner'],
-      // ContestedResourceContender
-      ['identityId', 'document', 'voteTally'],
-      // ContestedResourceVoteWinner
-      ['winnerInfo', 'finalizedBlock'],
-      // IdentityContractKeys
-      ['identityId', 'keys'],
-      // IdentityGroupInfo
-      ['groupContractPosition', 'groupRequiredPower', 'memberPower'],
-      // RewardDistributionMoment
-      ['timestamp', 'amount'],
       // TokenContractInfo
       ['contractId', 'tokenContractPosition'],
     ];
