@@ -317,6 +317,8 @@ test.describe('State Transitions UI Tests', () => {
       'Token Claim',
       'Token Set Price',
       'Token Direct Purchase',
+      // TODO: re-enable Token Config Update once it is added back into wasm-sdk
+      // 'Token Config Update',
       'Token Emergency Action',
       'Token Transfer',
       'Token Freeze',
