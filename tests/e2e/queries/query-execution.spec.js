@@ -190,8 +190,18 @@ function validateContractResult(resultStr) {
 }
 
 /**
+ * Helper function to validate a single document has required fields
+ * @param {object} doc - The document object to validate
+ */
+function validateSingleDocument(doc) {
+  expect(doc.$id).toBeDefined();
+  expect(doc.$ownerId).toBeDefined();
+  expect(doc.$revision).toBeDefined();
+  expect(doc.$type).toBeDefined();
+}
+
+/**
  * Helper function to validate document result
- * Document now has toJSON() so we just validate it's valid JSON
  * @param {string} resultStr - The raw result string containing document data
  */
 function validateDocumentResult(resultStr) {
@@ -199,12 +209,19 @@ function validateDocumentResult(resultStr) {
   const documentData = JSON.parse(resultStr);
   expect(documentData).toBeDefined();
   // Documents can be arrays, single objects, or Map-like objects (keyed by document ID)
-  // With toJSON() we just need to verify the structure is valid JSON
   if (Array.isArray(documentData)) {
-    expect(documentData.length).toBeGreaterThanOrEqual(0);
+    expect(documentData.length).toBeGreaterThan(0);
+    documentData.forEach(doc => validateSingleDocument(doc));
   } else if (documentData && typeof documentData === 'object') {
-    // Valid document object - toJSON handles serialization
-    expect(typeof documentData).toBe('object');
+    expect(Object.keys(documentData).length).toBeGreaterThan(0);
+    // Could be a single document or Map-like object keyed by ID
+    if (documentData.$id) {
+      // Single document
+      validateSingleDocument(documentData);
+    } else {
+      // Map-like object keyed by document ID (from getDocuments)
+      Object.values(documentData).forEach(doc => validateSingleDocument(doc));
+    }
   }
 }
 
