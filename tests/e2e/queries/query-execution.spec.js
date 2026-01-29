@@ -763,27 +763,33 @@ test.describe('Evo SDK Query Execution Tests', () => {
         });
 
         if (hasProofSupport) {
-          test('with proof info', async () => {
-            const { result, proofEnabled } = await executeQueryWithProof(
-              evoSdkPage,
-              parameterInjector,
-              'system',
-              name,
-              'testnet'
-            );
+          // TODO: Re-enable getPrefundedSpecializedBalance proof test when upstream bug is fixed
+          // https://github.com/dashpay/platform/issues/2986
+          if (name === 'getPrefundedSpecializedBalance') {
+            test.skip('with proof info', async () => {});
+          } else {
+            test('with proof info', async () => {
+              const { result, proofEnabled } = await executeQueryWithProof(
+                evoSdkPage,
+                parameterInjector,
+                'system',
+                name,
+                'testnet'
+              );
 
-            validateBasicQueryResult(result);
+              validateBasicQueryResult(result);
 
-            if (proofEnabled) {
-              validateResultWithProof(result);
-              // Extract data field for validation when in proof mode
-              const resultData = JSON.parse(result.result);
-              validateFn(JSON.stringify(resultData.data));
-            } else {
-              validateResultWithoutProof(result);
-              validateFn(result.result);
-            }
-          });
+              if (proofEnabled) {
+                validateResultWithProof(result);
+                // Extract data field for validation when in proof mode
+                const resultData = JSON.parse(result.result);
+                validateFn(JSON.stringify(resultData.data));
+              } else {
+                validateResultWithoutProof(result);
+                validateFn(result.result);
+              }
+            });
+          }
         }
         // No proof test for queries that will never have proof support
       });
@@ -1735,6 +1741,14 @@ test.describe('Evo SDK Query Execution Tests', () => {
 
     testQueries.forEach(({ name, hasProofSupport, validateFn }) => {
       test.describe(`${name} query (parameterized)`, () => {
+        // TODO: Re-enable getIdentitiesContractKeys tests when upstream bug is fixed
+        // https://github.com/dashpay/platform/issues/3028
+        if (name === 'getIdentitiesContractKeys') {
+          test.skip('without proof info', async () => {});
+          test.skip('with proof info', async () => {});
+          return;
+        }
+
         test('without proof info', async () => {
           await evoSdkPage.setupQuery('identity', name);
           await evoSdkPage.disableProofInfo();
