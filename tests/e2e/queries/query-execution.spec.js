@@ -120,19 +120,17 @@ function validateProofContent(resultData) {
 /**
  * Helper function to validate result with proof
  * @param {Object} result - The query result object
- * @param {Object} options - Validation options
- * @param {boolean} options.allowNullData - If true, allows data to be null/undefined (for queries that may return no data)
  */
-function validateResultWithProof(result, options = {}) {
-  const { allowNullData = false } = options;
+function validateResultWithProof(result) {
   expect(result.success).toBe(true);
   expect(result.result).toBeDefined();
 
   // Parse the result as JSON to check the format
   const resultData = JSON.parse(result.result);
-  if (!allowNullData) {
-    expect(resultData).toHaveProperty('data');
-  }
+  // All proof responses must have a data property
+  expect(resultData).toHaveProperty('data');
+  expect(resultData.data).not.toBeNull();
+  expect(resultData.data).toBeDefined();
   expect(resultData).toHaveProperty('metadata');
   expect(resultData).toHaveProperty('proof');
 
@@ -192,8 +190,18 @@ function validateContractResult(resultStr) {
 }
 
 /**
+ * Helper function to validate a single document has required fields
+ * @param {object} doc - The document object to validate
+ */
+function validateSingleDocument(doc) {
+  expect(doc.$id).toBeDefined();
+  expect(doc.$ownerId).toBeDefined();
+  expect(doc.$revision).toBeDefined();
+  expect(doc.$type).toBeDefined();
+}
+
+/**
  * Helper function to validate document result
- * Document now has toJSON() so we just validate it's valid JSON
  * @param {string} resultStr - The raw result string containing document data
  */
 function validateDocumentResult(resultStr) {
@@ -201,12 +209,19 @@ function validateDocumentResult(resultStr) {
   const documentData = JSON.parse(resultStr);
   expect(documentData).toBeDefined();
   // Documents can be arrays, single objects, or Map-like objects (keyed by document ID)
-  // With toJSON() we just need to verify the structure is valid JSON
   if (Array.isArray(documentData)) {
-    expect(documentData.length).toBeGreaterThanOrEqual(0);
+    expect(documentData.length).toBeGreaterThan(0);
+    documentData.forEach(doc => validateSingleDocument(doc));
   } else if (documentData && typeof documentData === 'object') {
-    // Valid document object - toJSON handles serialization
-    expect(typeof documentData).toBe('object');
+    expect(Object.keys(documentData).length).toBeGreaterThan(0);
+    // Could be a single document or Map-like object keyed by ID
+    if (documentData.$id) {
+      // Single document
+      validateSingleDocument(documentData);
+    } else {
+      // Map-like object keyed by document ID (from getDocuments)
+      Object.values(documentData).forEach(doc => validateSingleDocument(doc));
+    }
   }
 }
 
@@ -293,19 +308,19 @@ function validateKeysResult(resultStr) {
 function validateIdentitiesContractKeysResult(resultStr) {
   const contractKeysData = JSON.parse(resultStr);
   expect(contractKeysData).toBeDefined();
-  // Result can be an array or object
-  if (Array.isArray(contractKeysData)) {
-    // Empty array is valid when no contract keys exist
-    expect(contractKeysData).toBeDefined();
-  } else {
-    expect(typeof contractKeysData).toBe('object');
-    // Check first identity's keys if any exist
-    const keys = Object.keys(contractKeysData);
-    if (keys.length > 0) {
-      const firstIdentityKeys = Object.values(contractKeysData)[0];
-      expect(Array.isArray(firstIdentityKeys)).toBe(true);
-    }
-  }
+  expect(Array.isArray(contractKeysData)).toBe(true);
+  // Must have at least one identity with keys
+  expect(contractKeysData.length).toBeGreaterThan(0);
+
+  // Validate first identity's contract keys structure
+  const firstEntry = contractKeysData[0];
+  expect(firstEntry).toHaveProperty('identityId');
+  expect(firstEntry).toHaveProperty('keys');
+  expect(Array.isArray(firstEntry.keys)).toBe(true);
+  expect(firstEntry.keys.length).toBeGreaterThan(0);
+
+  // Reuse validateKeysResult for the keys array
+  validateKeysResult(JSON.stringify(firstEntry.keys));
 }
 
 function validateIdentitiesResult(resultStr) {
@@ -369,11 +384,12 @@ function validateTokenInfoResult(resultStr) {
   const tokenInfoData = JSON.parse(resultStr);
   expect(tokenInfoData).toBeDefined();
   expect(typeof tokenInfoData).toBe('object');
-  // Token info should have token IDs as keys with info objects
-  if (Object.keys(tokenInfoData).length > 0) {
-    const firstTokenInfo = Object.values(tokenInfoData)[0];
-    expect(typeof firstTokenInfo).toBe('object');
-  }
+  // Token info should have identity/token IDs as keys with info objects containing frozen status
+  expect(Object.keys(tokenInfoData).length).toBeGreaterThan(0);
+  Object.values(tokenInfoData).forEach(tokenInfo => {
+    expect(tokenInfo).toHaveProperty('frozen');
+    expect(typeof tokenInfo.frozen).toBe('boolean');
+  });
 }
 
 test.describe('Evo SDK Query Execution Tests', () => {
@@ -701,14 +717,10 @@ test.describe('Evo SDK Query Execution Tests', () => {
       },
       {
         name: 'getPrefundedSpecializedBalance',
+        // getPrefundedSpecializedBalance fails due to upstream issue: https://github.com/dashpay/platform/issues/2986
         hasProofSupport: true,
         needsParameters: true,
-        allowNullData: true, // Balance may not exist, so data can be null
         validateFn: (result) => {
-          // Result can be null/undefined if no prefunded balance exists
-          if (result === 'null' || result === 'undefined' || result === null || result === undefined) {
-            return; // Valid - no balance exists
-          }
           const parsed = JSON.parse(result);
           // Check structure when balance exists
           expect(parsed).toHaveProperty('identityId');
@@ -733,7 +745,7 @@ test.describe('Evo SDK Query Execution Tests', () => {
       }
     ];
 
-    systemQueries.forEach(({ name, hasProofSupport, needsParameters, allowNullData, validateFn }) => {
+    systemQueries.forEach(({ name, hasProofSupport, needsParameters, validateFn }) => {
       test.describe(`${name} query (parameterized)`, () => {
         test('without proof info', async () => {
           await evoSdkPage.setupQuery('system', name);
@@ -751,27 +763,33 @@ test.describe('Evo SDK Query Execution Tests', () => {
         });
 
         if (hasProofSupport) {
-          test('with proof info', async () => {
-            const { result, proofEnabled } = await executeQueryWithProof(
-              evoSdkPage,
-              parameterInjector,
-              'system',
-              name,
-              'testnet'
-            );
+          // TODO: Re-enable getPrefundedSpecializedBalance proof test when upstream bug is fixed
+          // https://github.com/dashpay/platform/issues/2986
+          if (name === 'getPrefundedSpecializedBalance') {
+            test.skip('with proof info', async () => {});
+          } else {
+            test('with proof info', async () => {
+              const { result, proofEnabled } = await executeQueryWithProof(
+                evoSdkPage,
+                parameterInjector,
+                'system',
+                name,
+                'testnet'
+              );
 
-            validateBasicQueryResult(result);
+              validateBasicQueryResult(result);
 
-            if (proofEnabled) {
-              validateResultWithProof(result, { allowNullData });
-              // Extract data field for validation when in proof mode
-              const resultData = JSON.parse(result.result);
-              validateFn(JSON.stringify(resultData.data));
-            } else {
-              validateResultWithoutProof(result);
-              validateFn(result.result);
-            }
-          });
+              if (proofEnabled) {
+                validateResultWithProof(result);
+                // Extract data field for validation when in proof mode
+                const resultData = JSON.parse(result.result);
+                validateFn(JSON.stringify(resultData.data));
+              } else {
+                validateResultWithoutProof(result);
+                validateFn(result.result);
+              }
+            });
+          }
         }
         // No proof test for queries that will never have proof support
       });
@@ -973,10 +991,7 @@ test.describe('Evo SDK Query Execution Tests', () => {
           const contractInfo = JSON.parse(result);
           expect(contractInfo).toBeDefined();
           expect(typeof contractInfo === 'object').toBe(true);
-          // Result can be empty if contract has no token info, or contain contractId if it does
-          if (Object.keys(contractInfo).length > 0) {
-            expect(contractInfo).toHaveProperty('contractId');
-          }
+          expect(contractInfo).toHaveProperty('contractId');
         }
       },
       {
@@ -989,6 +1004,9 @@ test.describe('Evo SDK Query Execution Tests', () => {
           expect(claimData).toBeDefined();
           expect(typeof claimData === 'object').toBe(true);
         }
+      // Note: getTokenPriceByContract requires a token contract with specific pricing configuration.
+      // As of now, no tokens on testnet have pricing configured, so this test is skipped.
+      // Error: "No pricing schedule found for token at contract ... position 0"
       },
       {
         name: 'getTokenTotalSupply',
@@ -999,11 +1017,9 @@ test.describe('Evo SDK Query Execution Tests', () => {
           const supplyData = JSON.parse(result);
           expect(supplyData).toBeDefined();
           expect(typeof supplyData === 'object').toBe(true);
+          expect(supplyData).toHaveProperty('totalSupply');
         }
       }
-      // Note: getTokenPriceByContract requires a token contract with specific pricing configuration.
-      // As of now, no tokens on testnet have pricing configured, so this test is skipped.
-      // Error: "No pricing schedule found for token at contract ... position 0"
     ];
 
     tokenQueries.forEach(({ name, hasProofSupport, needsParameters, validateFn }) => {
@@ -1712,6 +1728,7 @@ test.describe('Evo SDK Query Execution Tests', () => {
       { name: 'getIdentityNonce', hasProofSupport: true, validateFn: (result) => validateNumericResult(result, 'nonce') },
       { name: 'getIdentityContractNonce', hasProofSupport: true, validateFn: (result) => validateNumericResult(result, 'nonce') },
       { name: 'getIdentityByPublicKeyHash', hasProofSupport: true, validateFn: validateIdentityResult },
+      // getIdentitiesContractKeys fails due to upstream issue: https://github.com/dashpay/platform/issues/3028
       { name: 'getIdentitiesContractKeys', hasProofSupport: true, validateFn: validateIdentitiesContractKeysResult },
       { name: 'getIdentitiesBalances', hasProofSupport: true, validateFn: validateBalancesResult },
       { name: 'getIdentityBalanceAndRevision', hasProofSupport: true, validateFn: validateBalanceAndRevisionResult },
@@ -1724,6 +1741,14 @@ test.describe('Evo SDK Query Execution Tests', () => {
 
     testQueries.forEach(({ name, hasProofSupport, validateFn }) => {
       test.describe(`${name} query (parameterized)`, () => {
+        // TODO: Re-enable getIdentitiesContractKeys tests when upstream bug is fixed
+        // https://github.com/dashpay/platform/issues/3028
+        if (name === 'getIdentitiesContractKeys') {
+          test.skip('without proof info', async () => {});
+          test.skip('with proof info', async () => {});
+          return;
+        }
+
         test('without proof info', async () => {
           await evoSdkPage.setupQuery('identity', name);
           await evoSdkPage.disableProofInfo();

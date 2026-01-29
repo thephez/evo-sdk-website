@@ -3448,6 +3448,24 @@ function formatResult(value) {
     if (typeof val.toObject === 'function') {
       try { return val.toObject(); } catch (_) { }
     }
+    // WORKAROUND: Fallback for WASM objects missing toJSON/toObject
+    // See: https://github.com/dashpay/platform/issues/3027
+    // TODO: Remove this workaround once SDK is updated with proper toJSON() methods
+    const knownGetters = [
+      // TokenContractInfo
+      ['contractId', 'tokenContractPosition'],
+      // IdentityTokenInfo
+      ['frozen'],
+    ];
+    for (const getterSet of knownGetters) {
+      if (getterSet.every(prop => prop in val)) {
+        const obj = {};
+        for (const prop of getterSet) {
+          try { obj[prop] = val[prop]; } catch (_) { }
+        }
+        if (Object.keys(obj).length > 0) return obj;
+      }
+    }
     // Fallback: try toString
     if (typeof val.toString === 'function' && val.toString !== Object.prototype.toString) {
       const str = val.toString();
