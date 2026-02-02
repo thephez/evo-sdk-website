@@ -2269,6 +2269,24 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
         undefined            // js_platform_version
       );
 
+      // Apply config settings if any are specified
+      // The DataContract constructor uses default config, so we need to set it explicitly
+      const hasConfigSettings = n.canBeDeleted || n.readonly || n.keepsHistory ||
+        n.documentsKeepHistoryContractDefault || n.documentsMutableContractDefault === false ||
+        n.documentsCanBeDeletedContractDefault === false;
+
+      if (hasConfigSettings) {
+        const config = {
+          canBeDeleted: n.canBeDeleted || false,
+          readonly: n.readonly || false,
+          keepsHistory: n.keepsHistory || false,
+          documentsKeepHistoryContractDefault: n.documentsKeepHistoryContractDefault || false,
+          documentsMutableContractDefault: n.documentsMutableContractDefault !== false, // Default true
+          documentsCanBeDeletedContractDefault: n.documentsCanBeDeletedContractDefault !== false, // Default true
+        };
+        dataContract.setConfig(config); // SDK method to set contract config
+      }
+
       const publishedContract = await c.contracts.publish({ dataContract, identityKey, signer });
 
       // Return in expected format for UI/tests
@@ -2566,6 +2584,9 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
         throw new Error(`Document not found: ${n.documentId}`);
       }
 
+      // Increment revision for update operation (platform expects current_revision + 1)
+      document.revision = BigInt(document.revision) + 1n;
+
       await c.documents.transfer({
         document,
         recipientId: n.recipientId,
@@ -2616,6 +2637,9 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
       if (!document) {
         throw new Error(`Document not found: ${n.documentId}`);
       }
+
+      // Increment revision for update operation (platform expects current_revision + 1)
+      document.revision = BigInt(document.revision) + 1n;
 
       await c.documents.purchase({
         document,
@@ -2669,6 +2693,9 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
       if (!document) {
         throw new Error(`Document not found: ${n.documentId}`);
       }
+
+      // Increment revision for update operation (platform expects current_revision + 1)
+      document.revision = BigInt(document.revision) + 1n;
 
       await c.documents.setPrice({
         document,
