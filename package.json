@@ -16,6 +16,7 @@
     "test:smoke": "playwright test tests/e2e/smoke",
     "test:queries": "playwright test tests/e2e/queries",
     "test:transitions": "playwright test tests/e2e/transitions",
+    "test:bridge": "playwright test tests/e2e/bridge",
     "test:ui": "playwright test --ui",
     "test:report": "playwright show-report",
     "test:all": "playwright test --reporter=html,json,list",
