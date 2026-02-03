@@ -16,11 +16,14 @@ on:
       test_type:
         description: 'Type of tests to run'
         required: true
-        default: 'all'
+        default: 'fast'
         type: choice
         options:
           - smoke
           - queries
+          - transitions
+          - bridge
+          - fast
           - all
       browser:
         description: 'Browser to use for testing'
@@ -36,7 +39,7 @@ jobs:
   ui-tests:
     name: Run SDK Site UI Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: ${{ (inputs.test_type == 'transitions' || inputs.test_type == 'bridge' || inputs.test_type == 'all') && 30 || 20 }}
 
     env:
       CI: true
@@ -85,15 +88,29 @@ jobs:
           npx playwright install-deps ${{ inputs.browser || 'chromium' }}
 
       - name: Run smoke tests
-        if: github.event_name != 'workflow_dispatch' || inputs.test_type == 'smoke' || inputs.test_type == 'all'
+        if: github.event_name != 'workflow_dispatch' || inputs.test_type == 'smoke' || inputs.test_type == 'fast' || inputs.test_type == 'all'
         continue-on-error: true
         run: |
           yarn test:smoke
 
       - name: Run query execution tests
-        if: github.event_name != 'workflow_dispatch' || inputs.test_type == 'queries' || inputs.test_type == 'all'
+        if: github.event_name != 'workflow_dispatch' || inputs.test_type == 'queries' || inputs.test_type == 'fast' || inputs.test_type == 'all'
         run: |
           yarn test:queries
+
+      - name: Run state transition tests
+        if: inputs.test_type == 'transitions' || inputs.test_type == 'all'
+        env:
+          CI: ''
+        run: |
+          yarn test:transitions
+
+      - name: Run bridge tests
+        if: inputs.test_type == 'bridge' || inputs.test_type == 'all'
+        env:
+          CI: ''
+        run: |
+          yarn test:bridge
 
       - name: Upload Playwright Report
         uses: actions/upload-artifact@v4
