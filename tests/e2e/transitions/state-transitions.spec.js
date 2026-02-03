@@ -1142,8 +1142,7 @@ test.describe('Evo SDK State Transition Tests', () => {
       validateTokenDirectPurchaseResult(result.result, testParams.amount, testParams.totalAgreedPrice);
     });
 
-    // Skip: Requires pre-distributed tokens available for claiming
-    test.skip('should execute token claim transition', async () => {
+    test('should execute token claim transition', async () => {
       await evoSdkPage.setupStateTransition('token', 'tokenClaim');
 
       const success = await parameterInjector.injectStateTransitionParameters('token', 'tokenClaim', 'testnet');
@@ -1151,10 +1150,37 @@ test.describe('Evo SDK State Transition Tests', () => {
 
       const result = await evoSdkPage.executeStateTransitionAndGetResult();
 
-      validateBasicStateTransitionResult(result);
+      // Tokens may not be available if recently claimed
+      if (result.result && result.result.includes('No current rewards available')) {
+        test.skip(true, 'No rewards available - tokens were recently claimed');
+        return;
+      }
 
+      validateBasicStateTransitionResult(result);
       const testParams = parameterInjector.testData.stateTransitionParameters.token.tokenClaim.testnet[0];
       validateTokenClaimResult(result.result, testParams.distributionType);
+    });
+
+    // Skip: tokenConfigUpdate was inadvertently removed in SDK 3.0 but will return in the next release
+    test.skip('should execute token config update transition', async () => {
+      // Set up the token config update transition
+      await evoSdkPage.setupStateTransition('token', 'tokenConfigUpdate');
+
+      // Inject parameters (contractId, tokenPosition, configItemType, configValue, privateKey)
+      const success = await parameterInjector.injectStateTransitionParameters('token', 'tokenConfigUpdate', 'testnet');
+      expect(success).toBe(true);
+
+      // Execute the config update
+      const result = await evoSdkPage.executeStateTransitionAndGetResult();
+
+      // Validate basic result structure
+      validateBasicStateTransitionResult(result);
+
+      // Get test parameters for validation
+      const testParams = parameterInjector.testData.stateTransitionParameters.token.tokenConfigUpdate.testnet[0];
+
+      // Validate token config update specific result
+      validateTokenConfigUpdateResult(result.result, testParams.configItemType, testParams.configValue);
     });
 
     // Skip: tokenEmergencyAction requires special permissions
