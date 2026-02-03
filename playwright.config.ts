@@ -87,6 +87,18 @@ export default defineConfig({
         viewport: { width: 1920, height: 1080 }
       },
     }]),
+    // Bridge tests for identity topup - skip in CI
+    ...(process.env.CI ? [] : [{
+      name: 'bridge-tests',
+      testMatch: ['tests/e2e/bridge/*.spec.js'],
+      fullyParallel: false,
+      workers: 1,
+      use: {
+        ...devices['Desktop Chrome'],
+        headless: true,
+        viewport: { width: 1920, height: 1080 }
+      },
+    }]),
   ],
 
   /* Run local dev server only if testing locally */
