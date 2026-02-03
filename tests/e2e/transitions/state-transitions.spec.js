@@ -451,6 +451,20 @@ function validateTokenDirectPurchaseResult(resultStr, expectedAmount, expectedTo
   return purchaseResponse;
 }
 
+function validateTokenEmergencyActionResult(resultStr, expectedActionType) {
+  expect(() => JSON.parse(resultStr)).not.toThrow();
+  const emergencyActionResponse = JSON.parse(resultStr);
+  expect(emergencyActionResponse).toBeDefined();
+  expect(emergencyActionResponse).toBeInstanceOf(Object);
+
+  expect(emergencyActionResponse.status).toBe('success');
+  expect(emergencyActionResponse.message).toContain(expectedActionType);
+
+  console.log(`✅ Token emergency action ${expectedActionType} executed successfully`);
+
+  return emergencyActionResponse;
+}
+
 /**
  * Execute a state transition with custom parameters
  * @param {EvoSdkPage} evoSdkPage - The page object instance
@@ -1183,17 +1197,40 @@ test.describe('Evo SDK State Transition Tests', () => {
       validateTokenConfigUpdateResult(result.result, testParams.configItemType, testParams.configValue);
     });
 
-    // Skip: tokenEmergencyAction requires special permissions
-    test.skip('should execute token emergency action transition', async () => {
-      const result = await executeStateTransitionWithCustomParams(
-        evoSdkPage,
-        parameterInjector,
-        'token',
-        'tokenEmergencyAction',
-        'testnet'
-      );
+    test('should execute token emergency action transition (pause and resume)', async () => {
+      await test.step('Pause token', async () => {
+        await evoSdkPage.setupStateTransition('token', 'tokenEmergencyAction');
 
-      validateBasicStateTransitionResult(result);
+        const success = await parameterInjector.injectStateTransitionParameters(
+          'token',
+          'tokenEmergencyAction',
+          'testnet',
+          { actionType: 'pause' }
+        );
+        expect(success).toBe(true);
+
+        const result = await evoSdkPage.executeStateTransitionAndGetResult();
+
+        validateBasicStateTransitionResult(result);
+        validateTokenEmergencyActionResult(result.result, 'pause');
+      });
+
+      await test.step('Resume token', async () => {
+        await evoSdkPage.setupStateTransition('token', 'tokenEmergencyAction');
+
+        const success = await parameterInjector.injectStateTransitionParameters(
+          'token',
+          'tokenEmergencyAction',
+          'testnet',
+          { actionType: 'resume' }
+        );
+        expect(success).toBe(true);
+
+        const result = await evoSdkPage.executeStateTransitionAndGetResult();
+
+        validateBasicStateTransitionResult(result);
+        validateTokenEmergencyActionResult(result.result, 'resume');
+      });
     });
   });
 
