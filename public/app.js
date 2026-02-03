@@ -3126,7 +3126,7 @@ async function callEvo(client, groupKey, itemKey, defs, args, useProof, extraArg
         dataContractId: n.contractId,
         tokenPosition: Number(n.tokenPosition),
         amount: BigInt(n.amount),
-        identityId: n.identityId,
+        buyerId: n.identityId,
         totalAgreedPrice: BigInt(n.totalAgreedPrice),
         identityKey,
         signer

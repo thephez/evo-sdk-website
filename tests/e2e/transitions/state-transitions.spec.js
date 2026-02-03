@@ -439,14 +439,17 @@ function validateTokenSetPriceResult(resultStr, expectedPriceType, expectedPrice
   return setPriceResponse;
 }
 
-function validateTokenDirectPurchaseResult(resultStr, expectedAmount, expectedTotalPrice) {
+function validateTokenDirectPurchaseResult(resultStr, expectedAmount) {
   expect(() => JSON.parse(resultStr)).not.toThrow();
   const purchaseResponse = JSON.parse(resultStr);
   expect(purchaseResponse).toBeDefined();
   expect(purchaseResponse).toBeInstanceOf(Object);
 
-  // Token direct purchase returns an empty object {} on success
-  console.log(`✅ Token direct purchase transaction submitted successfully - Amount: ${expectedAmount} tokens, Total price: ${expectedTotalPrice} credits`);
+  expect(purchaseResponse.status).toBe('success');
+  expect(purchaseResponse.message).toContain('Purchased');
+  expect(purchaseResponse.message).toContain(expectedAmount);
+
+  console.log(`✅ Token direct purchase successful: ${purchaseResponse.message}`);
 
   return purchaseResponse;
 }
@@ -1141,8 +1144,7 @@ test.describe('Evo SDK State Transition Tests', () => {
       validateTokenSetPriceResult(result.result, testParams.priceType, testParams.priceData);
     });
 
-    // Skip: Website bug - passes identityId but SDK expects buyerId
-    test.skip('should execute token direct purchase transition', async () => {
+    test('should execute token direct purchase transition', async () => {
       await evoSdkPage.setupStateTransition('token', 'tokenDirectPurchase');
 
       const success = await parameterInjector.injectStateTransitionParameters('token', 'tokenDirectPurchase', 'testnet');
@@ -1153,7 +1155,7 @@ test.describe('Evo SDK State Transition Tests', () => {
       validateBasicStateTransitionResult(result);
 
       const testParams = parameterInjector.testData.stateTransitionParameters.token.tokenDirectPurchase.testnet[0];
-      validateTokenDirectPurchaseResult(result.result, testParams.amount, testParams.totalAgreedPrice);
+      validateTokenDirectPurchaseResult(result.result, testParams.amount);
     });
 
     test('should execute token claim transition', async () => {
