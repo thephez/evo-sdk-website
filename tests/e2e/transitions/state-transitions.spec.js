@@ -1085,6 +1085,20 @@ test.describe('Evo SDK State Transition Tests', () => {
       validateTokenFreezeResult(result.result, testParams.identityToFreeze);
     });
 
+    test('should execute token destroy frozen transition', async () => {
+      await evoSdkPage.setupStateTransition('token', 'tokenDestroyFrozen');
+
+      const success = await parameterInjector.injectStateTransitionParameters('token', 'tokenDestroyFrozen', 'testnet');
+      expect(success).toBe(true);
+
+      const result = await evoSdkPage.executeStateTransitionAndGetResult();
+
+      validateBasicStateTransitionResult(result);
+
+      const testParams = parameterInjector.testData.stateTransitionParameters.token.tokenDestroyFrozen.testnet[0];
+      validateTokenDestroyFrozenResult(result.result, testParams.frozenIdentityId);
+    });
+
     test('should execute token unfreeze transition', async () => {
       await evoSdkPage.setupStateTransition('token', 'tokenUnfreeze');
 
@@ -1097,21 +1111,6 @@ test.describe('Evo SDK State Transition Tests', () => {
 
       const testParams = parameterInjector.testData.stateTransitionParameters.token.tokenUnfreeze.testnet[0];
       validateTokenUnfreezeResult(result.result, testParams.identityToUnfreeze);
-    });
-
-    // Skip: Requires frozen tokens to exist (identity is not frozen)
-    test.skip('should execute token destroy frozen transition', async () => {
-      await evoSdkPage.setupStateTransition('token', 'tokenDestroyFrozen');
-
-      const success = await parameterInjector.injectStateTransitionParameters('token', 'tokenDestroyFrozen', 'testnet');
-      expect(success).toBe(true);
-
-      const result = await evoSdkPage.executeStateTransitionAndGetResult();
-
-      validateBasicStateTransitionResult(result);
-
-      const testParams = parameterInjector.testData.stateTransitionParameters.token.tokenDestroyFrozen.testnet[0];
-      validateTokenDestroyFrozenResult(result.result, testParams.frozenIdentityId);
     });
 
     test('should execute token set price for direct purchase transition', async () => {
