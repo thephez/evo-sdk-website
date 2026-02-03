@@ -454,6 +454,18 @@ function validateTokenDirectPurchaseResult(resultStr, expectedAmount) {
   return purchaseResponse;
 }
 
+function validateTokenConfigUpdateResult(resultStr, expectedConfigType, expectedConfigValue) {
+  expect(() => JSON.parse(resultStr)).not.toThrow();
+  const configUpdateResponse = JSON.parse(resultStr);
+  expect(configUpdateResponse).toBeDefined();
+  expect(configUpdateResponse).toBeInstanceOf(Object);
+
+  // Token config update returns an empty object {} on success
+  console.log(`✅ Token config update transaction submitted successfully - Type: ${expectedConfigType}, Value: ${expectedConfigValue}`);
+
+  return configUpdateResponse;
+}
+
 function validateTokenEmergencyActionResult(resultStr, expectedActionType) {
   expect(() => JSON.parse(resultStr)).not.toThrow();
   const emergencyActionResponse = JSON.parse(resultStr);
