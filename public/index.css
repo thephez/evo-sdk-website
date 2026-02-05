@@ -802,9 +802,15 @@ select option:disabled {
     padding: 10px 15px;
   }
 
+  .header-title {
+    min-width: 0;
+  }
+
   .header h1 {
     font-size: 18px;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .version-info {
@@ -843,6 +849,7 @@ select option:disabled {
   }
 
   .result-actions {
+    display: flex;
     flex-wrap: wrap;
     gap: 5px;
   }
