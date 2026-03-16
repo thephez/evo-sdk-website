@@ -3174,7 +3174,7 @@ function formatResult(value) {
       // TokenContractInfo
       ['contractId', 'tokenContractPosition'],
       // IdentityTokenInfo
-      ['frozen'],
+      ['isFrozen'],
     ];
     for (const getterSet of knownGetters) {
       if (getterSet.every(prop => prop in val)) {

@@ -387,8 +387,8 @@ function validateTokenInfoResult(resultStr) {
   // Token info should have identity/token IDs as keys with info objects containing frozen status
   expect(Object.keys(tokenInfoData).length).toBeGreaterThan(0);
   Object.values(tokenInfoData).forEach(tokenInfo => {
-    expect(tokenInfo).toHaveProperty('frozen');
-    expect(typeof tokenInfo.frozen).toBe('boolean');
+    expect(tokenInfo).toHaveProperty('isFrozen');
+    expect(typeof tokenInfo.isFrozen).toBe('boolean');
   });
 }
 
@@ -662,7 +662,7 @@ test.describe('Evo SDK Query Execution Tests', () => {
           expect(parsed.version.software).toHaveProperty('drive');
           expect(parsed.version.software).toHaveProperty('tenderdash');
           // Check chain structure
-          expect(parsed.chain).toHaveProperty('catchingUp');
+          expect(parsed.chain).toHaveProperty('isCatchingUp');
           expect(parsed.chain).toHaveProperty('latestBlockHash');
           expect(parsed.chain).toHaveProperty('latestBlockHeight');
           // Check time structure
