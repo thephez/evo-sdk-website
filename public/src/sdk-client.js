@@ -1,4 +1,5 @@
 import { EvoSDK, wallet, DataContract, Document, IdentitySigner, Identifier } from '../dist/evo-sdk.module.js';
+import { assembleClientOptions } from './client-options.js';
 import { elements, state } from './state.js';
 import { setStatus } from './ui.js';
 
@@ -12,31 +13,8 @@ export function updateNetworkIndicator() {
 
 export function buildClientOptions() {
   const selectedNetwork = elements.networkRadios.find(r => r.checked)?.value || 'mainnet';
-  const opts = {
-    network: selectedNetwork,
-    trusted: !!(elements.trustedMode && elements.trustedMode.checked),
-    proofs: true,
-  };
-  const { advancedOptions } = state;
-  // TODO: pinned to protocol_version 11 (Platform v3.0.x) because rs-sdk
-  // seeds protocol_version from PlatformVersion::latest() and only ratchets
-  // upward, so an unpinned SDK sends V1-wire GetDocumentsRequest to a v3.0.x
-  // network and fails to decode. Applies to both mainnet and testnet — revisit
-  // (remove or bump) once the target networks are on Platform v3.1+
-  // (protocol_version 12). If mainnet and testnet ever sit on different active
-  // protocol versions, this will need to be gated on selectedNetwork instead.
-  opts.version = advancedOptions.platformVersion ?? 11;
-  const settings = {};
-  if (advancedOptions.connectTimeout) settings.connectTimeoutMs = advancedOptions.connectTimeout;
-  if (advancedOptions.requestTimeout) settings.timeoutMs = advancedOptions.requestTimeout;
-  if (advancedOptions.retries) settings.retries = advancedOptions.retries;
-  if (typeof advancedOptions.banFailedAddress === 'boolean') {
-    settings.banFailedAddress = advancedOptions.banFailedAddress;
-  }
-  if (Object.keys(settings).length) {
-    opts.settings = settings;
-  }
-  return opts;
+  const trusted = !!(elements.trustedMode && elements.trustedMode.checked);
+  return assembleClientOptions(selectedNetwork, trusted, state.advancedOptions);
 }
 
 export async function ensureClient(force = false) {
