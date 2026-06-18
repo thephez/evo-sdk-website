@@ -24,6 +24,7 @@ export default defineConfig({
         'public/src/contracts.js',
         'public/src/input-types.js',
         'public/src/definitions-data.js',
+        'public/src/form/parse-input.js',
       ],
     },
   },
