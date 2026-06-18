@@ -5,15 +5,6 @@ export function setNoProofInfoVisibility(shouldShow) {
   elements.noProofInfoContainer.style.display = shouldShow ? 'block' : 'none';
 }
 
-export function normalizeType(type) {
-  if (!type) return 'text';
-  switch (type) {
-    case 'string': return 'text';
-    case 'textarea': return 'textarea';
-    default: return type;
-  }
-}
-
 export function setStatus(message, variant = 'loading') {
   if (!elements.statusBanner) return;
   elements.statusBanner.textContent = message;

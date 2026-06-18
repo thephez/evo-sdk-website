@@ -1,8 +1,9 @@
 import { computeAuthRequirements, updateAuthInputsVisibility } from '../auth.js';
-import { DPNS_AUTH_REQUIREMENTS, PROOF_CAPABLE, SUPPORTED_INPUT_TYPES, TYPE_CONFIG, getTypeConfig } from '../definitions.js';
+import { DPNS_AUTH_REQUIREMENTS, PROOF_CAPABLE, TYPE_CONFIG, getTypeConfig } from '../definitions-data.js';
+import { SUPPORTED_INPUT_TYPES, normalizeType } from '../input-types.js';
 import { createContestedResourceHandler, createDocumentFieldsHandler, createGenericDynamicHandler, fetchContestedResources, fetchDocumentSchema, generateTestSeed, loadExistingDocument } from './dynamic-handlers.js';
 import { clearDynamicHandlers, elements, registerDynamicHandler, state } from '../state.js';
-import { normalizeType, setNoProofInfoVisibility, setStatus } from '../ui.js';
+import { setNoProofInfoVisibility, setStatus } from '../ui.js';
 
 export function populateCategories() {
   const type = elements.operationType.value;

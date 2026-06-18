@@ -1,6 +1,5 @@
-import { SUPPORTED_INPUT_TYPES } from '../definitions.js';
+import { SUPPORTED_INPUT_TYPES, normalizeType } from '../input-types.js';
 import { elements, getDynamicHandler, state } from '../state.js';
-import { normalizeType } from '../ui.js';
 
 export function collectArgs(definition) {
   const defs = Array.isArray(definition.inputs) ? definition.inputs : [];
