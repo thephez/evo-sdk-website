@@ -1,4 +1,3 @@
-import { populateCategories } from './form/render.js';
 import { EvoSDK } from './sdk-client.js';
 import { elements, state } from './state.js';
 import { hideApiError, normalizeType, setProgress, setStatus } from './ui.js';
@@ -360,6 +359,5 @@ export async function loadDefinitions() {
     elements.latestVersionInfo.textContent = `Latest version: ${latestVersion}`;
   }
   setProgress(65, 'Building interface...');
-  populateCategories();
   hideApiError();
 }

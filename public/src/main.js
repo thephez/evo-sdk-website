@@ -69,6 +69,7 @@ export function attachEventListeners() {
       showPreloader('Retrying...');
       try {
         await loadDefinitions();
+        populateCategories();
         setStatus('Definitions refreshed', 'success');
       } catch (error) {
         showApiError(error.message || 'Failed to reload API definitions');
@@ -109,6 +110,7 @@ export async function init() {
   setNoProofInfoVisibility(false);
   try {
     await loadDefinitions();
+    populateCategories();
     setProgress(90, 'Finalizing UI...');
     setStatus('Ready', 'success');
   } catch (error) {
