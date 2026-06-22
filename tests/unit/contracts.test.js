@@ -71,6 +71,21 @@ describe('normalizeDocument', () => {
     expect(normalizeDocument(doc)).toEqual({ data: { a: 1 }, revision: 7 });
   });
 
+  it('falls back to toObject() when toJSON is absent', () => {
+    const doc = { toObject: () => ({ data: { a: 1 }, revision: 7 }) };
+    expect(normalizeDocument(doc)).toEqual({ data: { a: 1 }, revision: 7 });
+  });
+
+  it('reads the revision getter from the original object even on the toObject() path', () => {
+    // Mirrors the toJSON case: the original `revision` getter is read before
+    // serialization and wins over the value toObject() produces.
+    const doc = {
+      revision: 3n,
+      toObject: () => ({ data: { a: 1 }, revision: 99 }),
+    };
+    expect(normalizeDocument(doc)).toEqual({ data: { a: 1 }, revision: 3 });
+  });
+
   it('uses $revision as a fallback when revision is absent', () => {
     const doc = { toJSON: () => ({ data: { a: 1 }, $revision: 4 }) };
     expect(normalizeDocument(doc)).toEqual({ data: { a: 1 }, revision: 4 });
