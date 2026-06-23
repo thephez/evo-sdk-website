@@ -45,10 +45,11 @@ PLAYWRIGHT_BASE_URL=https://dashpay.github.io/evo-sdk-website/ yarn test:smoke
 
 ### Core Files
 
-- `public/app.js` — Main application logic: SDK client management, query/transition execution, dynamic UI (~3600 lines)
+- `public/app.js` — One-line entrypoint shim (`import './src/main.js'`); the service worker caches this path
+- `public/src/` — Application logic, split into focused ES modules: `operations.js` (the `callEvo()` dispatcher), `sdk-client.js` (SDK client lifecycle), `main.js` (entrypoint/wiring), plus form, auth, and rendering modules
 - `public/api-definitions.json` — Single source of truth for all API operations (~2700 lines)
-- `public/dist/evo-sdk.module.js` — Bundled SDK (built from platform repo, not generated here)
-- `scripts/generate_docs.py` — Generates `docs.html` and `AI_REFERENCE.md` from api-definitions.json
+- `public/dist/evo-sdk.module.js` — Bundled SDK, copied from `node_modules/@dashevo/evo-sdk/dist` by `yarn generate` (not generated here)
+- `scripts/generate_docs.py` — Generates `docs.html` and `AI_REFERENCE.md` from api-definitions.json; also refreshes `public/dist` from the installed SDK package
 
 ### SDK Integration Pattern
 
@@ -96,7 +97,7 @@ Playwright config defines 4 test projects: `site-tests`, `smoke-tests`, `paralle
 ### Adding New Operations
 
 1. Add definition to `public/api-definitions.json`
-2. Implement handler in `callEvo()` switch statement in `public/app.js`
+2. Implement handler in `callEvo()` switch statement in `public/src/operations.js`
 3. Run `yarn generate` to update documentation
 4. Add test parameters to `tests/e2e/fixtures/test-data.js`
 

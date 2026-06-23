@@ -63,6 +63,11 @@ jobs:
           echo "Installing UI test dependencies..."
           yarn install
 
+      - name: Run unit tests
+        run: |
+          echo "Running Vitest unit tests..."
+          yarn test:unit
+
       - name: Cache Playwright browsers
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: playwright-cache
