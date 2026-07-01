@@ -1,0 +1,555 @@
+/* Code playground page. Reuses .header / .header-nav and .result-content from index.css. */
+
+/* Keep the dark header bar full-bleed (site-wide pattern) but align its inner
+   content with the centered playground column below it. The background stays on
+   .header so it spans the viewport; padding pushes the title/nav inward to the
+   same left/right edges as .playground (1340px column + 24px inner padding). */
+.header {
+  padding-left: max(24px, calc((100% - 1340px) / 2 + 24px));
+  padding-right: max(24px, calc((100% - 1340px) / 2 + 24px));
+}
+
+.playground {
+  max-width: 1340px;
+  margin: 0 auto;
+  padding: 24px 24px 60px;
+}
+
+.playground-note {
+  color: #555;
+  line-height: 1.6;
+  margin: 0 0 18px;
+  font-size: 0.95em;
+}
+
+.playground-note code {
+  background-color: #f0f4f8;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.pg-run-icon {
+  font-size: 11px;
+  margin-right: 2px;
+}
+
+/* Two-column workspace; collapses to one column on narrow viewports. */
+.playground-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 20px;
+  align-items: stretch;
+}
+
+/* No overflow:hidden — the "Load example" dropdown in the tab bar must be free
+   to extend below the card. Inner elements round their own outer corners. */
+.playground-editor {
+  display: flex;
+  flex-direction: column;
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.playground-editor .pg-tabbar {
+  border-radius: 8px 8px 0 0;
+}
+
+/* Filename strip above the editor. Matches .pg-panel-header (the Output
+   header) for a consistent style and height across both cards. */
+.pg-tabbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.pg-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.pg-tab-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #1976d2;
+}
+
+.pg-modified {
+  font-size: 11px;
+  font-weight: 500;
+  color: #8a6d00;
+  background-color: #fff6e0;
+  border: 1px solid #f0d999;
+  border-radius: 10px;
+  padding: 1px 8px;
+}
+
+.pg-modified[hidden] {
+  display: none;
+}
+
+.pg-button {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  background-color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.pg-button:hover {
+  background-color: #f0f0f0;
+}
+
+.pg-button-primary {
+  background-color: #1976d2;
+  color: white;
+  border-color: #1976d2;
+  font-weight: 500;
+}
+
+.pg-button-primary:hover {
+  background-color: #1565c0;
+}
+
+.pg-button:disabled {
+  background-color: #ccc;
+  border-color: #ccc;
+  color: #666;
+  cursor: not-allowed;
+}
+
+/* Compact button variant for the card header rows (editor tab bar, output
+   header), where space is tight. */
+.pg-button-sm {
+  padding: 4px 11px;
+  font-size: 13px;
+  border-radius: 6px;
+}
+
+.pg-button-sm .pg-run-icon {
+  font-size: 10px;
+}
+
+/* Editor surface: a positioned box that overlays the highlight <pre> and the
+   textarea. It takes over the min-height the textarea used to own. */
+.pg-editor-surface {
+  position: relative;
+  flex: 1;
+  min-height: 420px;
+  background-color: #fff;
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+}
+
+/* The textarea (input) and the highlight <pre> (display) must share EXACTLY
+   the same text metrics, or the colored glyphs drift out from under the caret.
+   Keep every property that affects glyph position in this one shared rule. */
+#playgroundCode,
+.pg-highlight {
+  margin: 0;
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  padding: 16px;
+  border: none;
+  font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  letter-spacing: normal;
+  tab-size: 2;
+  white-space: pre;
+  word-break: normal;
+  overflow-wrap: normal;
+  border-radius: 0 0 8px 8px;
+}
+
+/* The real editor, on top. Its text is transparent so the highlight layer
+   shows through; only the caret is painted. No resize — a resized textarea
+   would desync from the fixed-height highlight layer. */
+#playgroundCode {
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  resize: none;
+  color: transparent;
+  caret-color: #2c3e50;
+  background: transparent;
+  overflow: auto;
+}
+
+#playgroundCode:focus {
+  outline: none;
+}
+
+/* The textarea text is transparent (the highlight layer shows through), so a
+   solid selection highlight would paint over the colored glyphs and leave the
+   selection unreadable. A translucent blue keeps the highlighted text visible
+   underneath while still marking the selection. */
+#playgroundCode::selection {
+  background-color: rgba(25, 118, 210, 0.25);
+}
+
+/* When highlighting is unavailable the textarea paints its own (opaque) text,
+   so a normal selection highlight is correct there. */
+.pg-editor-surface.no-highlight #playgroundCode::selection {
+  background-color: #b3d4fc;
+}
+
+/* The highlight layer, behind the textarea. Non-interactive; its scroll is
+   mirrored from the textarea in JS (so overflow is hidden here). */
+.pg-highlight {
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  color: #2c3e50;
+  background-color: #fff;
+}
+
+.pg-highlight code {
+  font: inherit;
+  white-space: inherit;
+  tab-size: inherit;
+}
+
+/* Graceful degradation: if Prism failed to load, JS sets .no-highlight, which
+   hides the (empty) highlight layer and restores the textarea's visible text —
+   identical to the plain editor we had before highlighting. */
+.pg-editor-surface.no-highlight .pg-highlight {
+  display: none;
+}
+
+.pg-editor-surface.no-highlight #playgroundCode {
+  color: #2c3e50;
+  caret-color: auto;
+}
+
+/* Inline Prism token theme, tuned to the light editor palette (#2c3e50 base
+   on #fff). Self-hosted — no vendored theme CSS, no CSP change. */
+.pg-highlight .token.comment,
+.pg-highlight .token.prolog,
+.pg-highlight .token.doctype,
+.pg-highlight .token.cdata {
+  color: #8a97a4;
+  font-style: italic;
+}
+
+.pg-highlight .token.punctuation {
+  color: #5b6b7b;
+}
+
+.pg-highlight .token.keyword,
+.pg-highlight .token.boolean,
+.pg-highlight .token.atrule {
+  color: #1565c0;
+}
+
+.pg-highlight .token.string,
+.pg-highlight .token.template-string,
+.pg-highlight .token.char,
+.pg-highlight .token.regex {
+  color: #1a7f5a;
+}
+
+.pg-highlight .token.number,
+.pg-highlight .token.constant,
+.pg-highlight .token.symbol {
+  color: #b5651d;
+}
+
+.pg-highlight .token.function,
+.pg-highlight .token.class-name {
+  color: #8a4fbf;
+}
+
+.pg-highlight .token.operator {
+  color: #c0392b;
+}
+
+.pg-highlight .token.parameter,
+.pg-highlight .token.property {
+  color: #2c3e50;
+}
+
+/* Copy icon button, at the far right of each card header (tab bar / output
+   header). SVG glyph, no text. */
+.pg-copy-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background-color: #fff;
+  color: #6a737d;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.pg-copy-icon:hover {
+  background-color: #f0f4f8;
+  border-color: #c8d2dd;
+  color: #1976d2;
+}
+
+/* Default: show the copy glyph, hide the check. */
+.pg-copy-icon .pg-check-glyph { display: none; }
+
+/* Copied: swap to a green check. */
+.pg-copy-icon.is-copied {
+  border-color: #27ae60;
+  color: #27ae60;
+}
+
+.pg-copy-icon.is-copied .pg-copy-glyph { display: none; }
+.pg-copy-icon.is-copied .pg-check-glyph { display: inline; }
+
+/* Output card mirrors the editor card. */
+.playground-output-card {
+  display: flex;
+  flex-direction: column;
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.pg-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.pg-panel-header-spacer {
+  flex: 1;
+}
+
+/* Run status shown beside the Output title (not in the output body). Matches
+   the title's font-size and line-height so the two read on the same line. */
+.pg-status {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 500;
+  color: #6a737d;
+}
+
+.pg-status[hidden] {
+  display: none;
+}
+
+.pg-status.running {
+  color: #1976d2;
+}
+
+.pg-status.done {
+  color: #27ae60;
+}
+
+.pg-status.error {
+  color: #e74c3c;
+}
+
+.pg-panel-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.pg-panel-title::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #27ae60;
+  transition: background-color 0.15s;
+}
+
+/* Tint the status dot to match the run status shown next to it. The status
+   span (#playgroundStatus) is the title's immediate next sibling. */
+.pg-panel-title:has(+ .pg-status.running)::before {
+  background-color: #1976d2;
+}
+
+.pg-panel-title:has(+ .pg-status.error)::before {
+  background-color: #e74c3c;
+}
+
+
+#playgroundOutput {
+  flex: 1;
+  min-height: 420px;
+  max-height: 600px;
+  border: none;
+  box-shadow: none;
+  border-radius: 0 0 8px 8px;
+}
+
+.pg-line {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.pg-line.error {
+  color: #e74c3c;
+}
+
+.pg-line.warn {
+  color: #b8860b;
+}
+
+.pg-line.result {
+  color: #27ae60;
+}
+
+/* Example pills + overflow dropdown (rendered into #playgroundExamples). */
+/* "Load example" dropdown, anchored in the editor tab bar. */
+.playground-examples {
+  position: relative;
+  display: inline-flex;
+}
+
+.pg-load-example {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #bcd6f3;
+  background-color: #eef4fb;
+  color: #1565c0;
+  border-radius: 6px;
+  padding: 4px 11px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.pg-load-example:hover {
+  background-color: #e2eefb;
+  border-color: #9ec2ec;
+}
+
+.pg-pill-caret {
+  font-size: 9px;
+  opacity: 0.7;
+  display: inline-block;
+  transition: transform 0.15s;
+}
+
+/* Flip the caret (▾ → ▲) while the dropdown is open. */
+.pg-load-example[aria-expanded="true"] .pg-pill-caret {
+  transform: rotate(180deg);
+}
+
+.pg-pill-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  min-width: 260px;
+  max-height: 360px;
+  overflow-y: auto;
+  background-color: #fff;
+  border: 1px solid #dde1e6;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  padding: 6px;
+}
+
+.pg-pill-menu[hidden] {
+  display: none;
+}
+
+.pg-pill-menu-header {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #9aa5b1;
+  padding: 8px 10px 4px;
+}
+
+.pg-pill-menu-header:not(:first-child) {
+  border-top: 1px solid #f0f0f0;
+  margin-top: 4px;
+}
+
+.pg-pill-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #3a4a5a;
+  cursor: pointer;
+}
+
+.pg-pill-menu-item:hover {
+  background-color: #f3f6fa;
+  color: #1565c0;
+}
+
+.pg-pill-menu-item.is-active {
+  background-color: #e8f1fb;
+  color: #1565c0;
+}
+
+.pg-pill-menu-title {
+  display: block;
+  font-weight: 500;
+}
+
+.pg-pill-menu-item .pg-pill-menu-desc {
+  display: block;
+  font-size: 11px;
+  color: #8a97a4;
+  margin-top: 2px;
+}
+
+.playground-examples-intro {
+  margin: 24px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid #e8e8e8;
+  color: #888;
+  font-size: 0.85em;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* Collapse to a single column on narrow viewports. */
+@media (max-width: 900px) {
+  .playground-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  #playgroundOutput {
+    min-height: 220px;
+  }
+}

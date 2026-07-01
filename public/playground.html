@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- blob: is required so user code can be executed as a dynamically-imported
+       ES module (Blob URL). This does NOT permit eval / new Function: there is
+       deliberately no 'unsafe-eval' here. -->
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' blob: 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' https://media.dash.org data:; connect-src 'self' https:">
+  <title>Code Playground — Dash Platform Evo JS SDK</title>
+  <link rel="icon" type="image/svg+xml" href="https://media.dash.org/wp-content/uploads/blue-d.svg">
+  <link rel="alternate icon" type="image/png" href="https://media.dash.org/wp-content/uploads/blue-d-250.png">
+  <link rel="stylesheet" href="index.css">
+  <link rel="stylesheet" href="playground.css">
+</head>
+
+<body>
+  <div class="header">
+    <div class="header-title">
+      <h1>Code Playground</h1>
+    </div>
+    <nav class="header-nav">
+      <a href="index.html">← Back to SDK</a>
+      <a href="docs.html">Documentation</a>
+      <a href="AI_REFERENCE.md">AI Reference</a>
+      <a href="https://github.com/dashpay/evo-sdk-website" target="_blank">GitHub</a>
+    </nav>
+  </div>
+
+  <div class="playground">
+    <p class="playground-note">
+      Experiment with the <strong>Evo SDK</strong> by writing and running JavaScript examples.
+    </p>
+
+    <!-- Two-column workspace: editor on the left, output on the right.
+         Collapses to a single column on narrow viewports (see playground.css). -->
+    <div class="playground-workspace">
+      <div class="playground-editor">
+        <div class="pg-tabbar">
+          <span class="pg-tab">
+            <span class="pg-tab-dot" aria-hidden="true"></span>
+            Editor
+          </span>
+          <span id="playgroundModified" class="pg-modified" hidden>modified</span>
+          <span class="pg-panel-header-spacer"></span>
+          <!-- "Load example" dropdown is rendered into here by playground.js. -->
+          <div id="playgroundExamples" class="playground-examples"></div>
+          <button id="playgroundReset" class="pg-button pg-button-sm"
+            title="Reset the editor to the default example">Reset</button>
+          <button id="playgroundRun" class="pg-button pg-button-sm pg-button-primary"
+            title="Run the code (Ctrl/Cmd+Enter)">
+            <span class="pg-run-icon" aria-hidden="true">▶</span> Run
+          </button>
+          <button id="playgroundTabCopy" class="pg-copy-icon" type="button"
+            aria-label="Copy code" title="Copy code">
+            <svg class="pg-copy-glyph" viewBox="0 0 24 24" width="15" height="15" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              aria-hidden="true">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <svg class="pg-check-glyph" viewBox="0 0 24 24" width="15" height="15" fill="none"
+              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+              aria-hidden="true">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Editor surface: a Prism-highlighted <pre> sits *behind* the real
+             textarea, which is made transparent (the caret stays visible) so
+             the colored layer shows through. The textarea is still the editor,
+             so every behavior (typing, selection, Ctrl/Cmd+Enter, copy) is
+             unchanged. playground.js keeps the <pre> in sync on input/scroll.
+             If Prism fails to load, JS adds .no-highlight here and the textarea
+             reverts to plain visible text (graceful degradation). -->
+        <div class="pg-editor-surface">
+          <pre class="pg-highlight" aria-hidden="true"><code id="playgroundHighlight" class="language-javascript"></code></pre>
+          <textarea id="playgroundCode" spellcheck="false" autocorrect="off" autocomplete="off"
+            autocapitalize="off" wrap="off"></textarea>
+        </div>
+      </div>
+
+      <div class="playground-output-card">
+        <div class="pg-panel-header">
+          <span class="pg-panel-title">Output</span>
+          <span id="playgroundStatus" class="pg-status" hidden></span>
+          <span class="pg-panel-header-spacer"></span>
+          <button id="playgroundClear" class="pg-button pg-button-sm"
+            title="Clear the output below">Clear</button>
+          <button id="playgroundOutputCopy" class="pg-copy-icon" type="button"
+            aria-label="Copy output" title="Copy output">
+            <svg class="pg-copy-glyph" viewBox="0 0 24 24" width="15" height="15" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              aria-hidden="true">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <svg class="pg-check-glyph" viewBox="0 0 24 24" width="15" height="15" fill="none"
+              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+              aria-hidden="true">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </button>
+        </div>
+        <div id="playgroundOutput" class="result-content empty">Click Run to execute the code.</div>
+      </div>
+    </div>
+
+    <p class="playground-examples-intro">
+      Examples are self-contained read-only queries adapted from the
+      <a href="https://github.com/dashpay/platform-tutorials" target="_blank">platform tutorials</a>.
+      Each connects to testnet and only reads data.
+    </p>
+  </div>
+
+  <!-- Vendored Prism (no CDN) for editor syntax highlighting. Classic scripts,
+       loaded in dependency order before the module: core → clike → javascript
+       (the JS grammar extends clike). See src/vendor/prism/README.md.
+       data-manual disables Prism's startup highlightAll() pass: highlighting is
+       driven solely by playground.js's syncHighlight(). Without it, the startup
+       pass would touch the hidden .pg-highlight <pre> and add tabindex="0" to
+       it, making the aria-hidden layer keyboard-focusable. -->
+  <script data-manual src="./src/vendor/prism/prism-core.min.js"></script>
+  <script src="./src/vendor/prism/prism-clike.min.js"></script>
+  <script src="./src/vendor/prism/prism-javascript.min.js"></script>
+  <script type="module" src="./src/playground.js"></script>
+
+</body>
+
+</html>

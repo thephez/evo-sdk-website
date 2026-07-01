@@ -1,5 +1,5 @@
 // Simple cache-first service worker
-const CACHE_NAME = 'evo-sdk-cache-v1';
+const CACHE_NAME = 'evo-sdk-cache-v3';
 
 // Core assets to cache for offline usage
 const urlsToCache = [
@@ -7,7 +7,14 @@ const urlsToCache = [
   '/index.html',
   '/index.css',
   '/app.js',
-  '/dist/evo-sdk.module.js'
+  '/dist/evo-sdk.module.js',
+  '/playground.html',
+  '/playground.css',
+  '/src/playground.js',
+  '/src/result-format.js',
+  '/src/vendor/prism/prism-core.min.js',
+  '/src/vendor/prism/prism-clike.min.js',
+  '/src/vendor/prism/prism-javascript.min.js'
 ];
 
 // Install event - pre-cache resources
