@@ -1,5 +1,7 @@
 # Evo SDK - AI Reference
 
+Return types: generated from `@dashevo/evo-sdk@4.0.0` published declarations under `dist/`. See [named return type declarations](TYPE_REFERENCE.md).
+
 ## Overview
 The Evo SDK is a thin TypeScript wrapper around the Dash Platform WASM runtime. It exposes ergonomic namespaces (identities, documents, contracts, tokens, and more) optimized for automation and AI-assisted workflows.
 
@@ -41,6 +43,11 @@ Parameters:
 - `Identity ID` (text, required)
   - Example: `5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk`
 
+Returns:
+
+- `Promise<wasm.Identity | undefined>`
+  - Type declarations: [`wasm.Identity`](TYPE_REFERENCE.md#type-identity)
+
 Example:
 ```javascript
 const result = await sdk.identities.fetch('5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk');
@@ -52,6 +59,11 @@ const result = await sdk.identities.fetch('5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi
 Parameters:
 - `Identity ID` (text, required)
   - Example: `5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk`
+
+Returns:
+
+- `Promise<wasm.Identity>`
+  - Type declarations: [`wasm.Identity`](TYPE_REFERENCE.md#type-identity)
 
 Example:
 ```javascript
@@ -78,6 +90,11 @@ Parameters:
 
 - `Offset` (number, optional)
 
+Returns:
+
+- `Promise<wasm.IdentityPublicKey[]>`
+  - Type declarations: [`wasm.IdentityPublicKey`](TYPE_REFERENCE.md#type-identitypublickey)
+
 Example:
 ```javascript
 const result = await sdk.identities.getKeys({
@@ -101,6 +118,11 @@ Parameters:
 - `Key Purposes` (multiselect, optional)
   - Options: `0` (Authentication (0)), `1` (Encryption (1)), `2` (Decryption (2)), `3` (Transfer (3)), `5` (Voting (5))
 
+Returns:
+
+- `Promise<wasm.IdentityContractKeys[]>`
+  - Type declarations: [`wasm.IdentityContractKeys`](TYPE_REFERENCE.md#type-identitycontractkeys)
+
 Example:
 ```javascript
 const result = await sdk.identities.contractKeys({
@@ -115,6 +137,10 @@ const result = await sdk.identities.contractKeys({
 Parameters:
 - `Identity ID` (text, required)
   - Example: `5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk`
+
+Returns:
+
+- `Promise<bigint | undefined>`
 
 Example:
 ```javascript
@@ -131,6 +157,10 @@ Parameters:
 - `Contract ID` (text, required)
   - Example: `GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec`
 
+Returns:
+
+- `Promise<bigint | undefined>`
+
 Example:
 ```javascript
 const result = await sdk.identities.contractNonce('5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk', 'GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec');
@@ -142,6 +172,10 @@ const result = await sdk.identities.contractNonce('5DbLwAxGBzUzo81VewMUwn4b5P4bp
 Parameters:
 - `Identity ID` (text, required)
   - Example: `5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk`
+
+Returns:
+
+- `Promise<bigint | undefined>`
 
 Example:
 ```javascript
@@ -155,6 +189,10 @@ Parameters:
 - `Identity IDs` (array, required)
   - Example: `["5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk"]`
 
+Returns:
+
+- `Promise<Map<string, bigint | undefined>>`
+
 Example:
 ```javascript
 const result = await sdk.identities.balances(['5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk']);
@@ -167,6 +205,11 @@ Parameters:
 - `Identity ID` (text, required)
   - Example: `5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk`
 
+Returns:
+
+- `Promise<wasm.IdentityBalanceAndRevision | undefined>`
+  - Type declarations: [`wasm.IdentityBalanceAndRevision`](TYPE_REFERENCE.md#type-identitybalanceandrevision)
+
 Example:
 ```javascript
 const result = await sdk.identities.balanceAndRevision('5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk');
@@ -178,6 +221,11 @@ const result = await sdk.identities.balanceAndRevision('5DbLwAxGBzUzo81VewMUwn4b
 Parameters:
 - `Public Key Hash` (text, required)
   - Example: `b7e904ce25ed97594e72f7af0e66f298031c1754`
+
+Returns:
+
+- `Promise<wasm.Identity | undefined>`
+  - Type declarations: [`wasm.Identity`](TYPE_REFERENCE.md#type-identity)
 
 Example:
 ```javascript
@@ -192,6 +240,11 @@ Parameters:
   - Example: `518038dc858461bcee90478fd994bba8057b7531`
 
 - `Start After (Key ID)` (text, optional)
+
+Returns:
+
+- `Promise<wasm.Identity[]>`
+  - Type declarations: [`wasm.Identity`](TYPE_REFERENCE.md#type-identity)
 
 Example:
 ```javascript
@@ -208,6 +261,10 @@ Parameters:
 - `Token IDs` (array, required)
   - Example: `["Hqyu8WcRwXCTwbNxdga4CN5gsVEGc67wng4TFzceyLUv"]`
 
+Returns:
+
+- `Promise<Map<string, bigint>>`
+
 Example:
 ```javascript
 const result = await sdk.identities.tokenBalances('5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk', ['Hqyu8WcRwXCTwbNxdga4CN5gsVEGc67wng4TFzceyLUv']);
@@ -222,6 +279,10 @@ Parameters:
 
 - `Token ID` (text, required)
   - Example: `Hqyu8WcRwXCTwbNxdga4CN5gsVEGc67wng4TFzceyLUv`
+
+Returns:
+
+- `Promise<Map<string, bigint>>`
 
 Example:
 ```javascript
@@ -238,6 +299,11 @@ Parameters:
 - `Token IDs (optional)` (array, optional)
   - Example: `["Hqyu8WcRwXCTwbNxdga4CN5gsVEGc67wng4TFzceyLUv"]`
 
+Returns:
+
+- `Promise<Map<string, wasm.IdentityTokenInfo>>`
+  - Type declarations: [`wasm.IdentityTokenInfo`](TYPE_REFERENCE.md#type-identitytokeninfo)
+
 Example:
 ```javascript
 const result = await sdk.tokens.identityTokenInfos('5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk', ['Hqyu8WcRwXCTwbNxdga4CN5gsVEGc67wng4TFzceyLUv'], { limit: 10, offset: 0 });
@@ -253,6 +319,11 @@ Parameters:
 - `Token ID` (text, required)
   - Example: `Hqyu8WcRwXCTwbNxdga4CN5gsVEGc67wng4TFzceyLUv`
 
+Returns:
+
+- `Promise<Map<string, wasm.IdentityTokenInfo>>`
+  - Type declarations: [`wasm.IdentityTokenInfo`](TYPE_REFERENCE.md#type-identitytokeninfo)
+
 Example:
 ```javascript
 const result = await sdk.tokens.identitiesTokenInfos(['5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk'], 'Hqyu8WcRwXCTwbNxdga4CN5gsVEGc67wng4TFzceyLUv');
@@ -266,6 +337,11 @@ const result = await sdk.tokens.identitiesTokenInfos(['5DbLwAxGBzUzo81VewMUwn4b5
 Parameters:
 - `Data Contract ID` (text, required)
   - Example: `GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec`
+
+Returns:
+
+- `Promise<wasm.DataContract | undefined>`
+  - Type declarations: [`wasm.DataContract`](TYPE_REFERENCE.md#type-datacontract)
 
 Example:
 ```javascript
@@ -283,6 +359,11 @@ Parameters:
 
 - `Start Timestamp (ms)` (number, optional)
 
+Returns:
+
+- `Promise<Map<bigint, wasm.DataContract>>`
+  - Type declarations: [`wasm.DataContract`](TYPE_REFERENCE.md#type-datacontract)
+
 Example:
 ```javascript
 const result = await sdk.contracts.getHistory({
@@ -298,6 +379,11 @@ const result = await sdk.contracts.getHistory({
 Parameters:
 - `Data Contract IDs` (array, required)
   - Example: `["GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec","ALybvzfcCwMs7sinDwmtumw17NneuW7RgFtFHgjKmF3A"]`
+
+Returns:
+
+- `Promise<Map<string, wasm.DataContract | undefined>>`
+  - Type declarations: [`wasm.DataContract`](TYPE_REFERENCE.md#type-datacontract)
 
 Example:
 ```javascript
@@ -331,6 +417,11 @@ Parameters:
 
 - `Start At` (text, optional)
 
+Returns:
+
+- `Promise<Map<string, wasm.Document | undefined>>`
+  - Type declarations: [`wasm.Document`](TYPE_REFERENCE.md#type-document)
+
 Example:
 ```javascript
 const result = await sdk.documents.query({
@@ -355,6 +446,11 @@ Parameters:
 - `Document ID` (text, required)
   - Example: `7NYmEKQsYtniQRUmxwdPGeVcirMoPh5ZPyAKz8BWFy3r`
 
+Returns:
+
+- `Promise<wasm.Document | undefined>`
+  - Type declarations: [`wasm.Document`](TYPE_REFERENCE.md#type-document)
+
 Example:
 ```javascript
 const result = await sdk.documents.get(
@@ -373,6 +469,10 @@ Parameters:
 - `Identity ID` (text, required)
   - Example: `5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk`
 
+Returns:
+
+- `Promise<string | undefined>`
+
 Example:
 ```javascript
 const result = await sdk.dpns.username('5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk');
@@ -387,6 +487,10 @@ Parameters:
 
 - `Limit` (number, optional)
 
+Returns:
+
+- `Promise<string[]>`
+
 Example:
 ```javascript
 const result = await sdk.dpns.usernames({ identityId: '5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk', limit: 10 });
@@ -398,6 +502,11 @@ const result = await sdk.dpns.usernames({ identityId: '5DbLwAxGBzUzo81VewMUwn4b5
 Parameters:
 - `Username` (text, required)
   - Example: `alice.dash`
+
+Returns:
+
+- `Promise<wasm.DpnsUsernameInfo | undefined>`
+  - Type declarations: [`wasm.DpnsUsernameInfo`](TYPE_REFERENCE.md#type-dpnsusernameinfo)
 
 Example:
 ```javascript
@@ -411,6 +520,10 @@ Parameters:
 - `DPNS Name` (text, required)
   - Example: `alice.dash`
 
+Returns:
+
+- `Promise<string | undefined>`
+
 Example:
 ```javascript
 const result = await sdk.dpns.resolveName('alice.dash');
@@ -422,6 +535,10 @@ const result = await sdk.dpns.resolveName('alice.dash');
 Parameters:
 - `Label (Username)` (text, required)
   - Example: `alice`
+
+Returns:
+
+- `Promise<boolean>`
 
 Example:
 ```javascript
@@ -435,6 +552,10 @@ Parameters:
 - `Label` (text, required)
   - Example: `ąlice`
 
+Returns:
+
+- `Promise<string>`
+
 Example:
 ```javascript
 const result = sdk.dpns.convertToHomographSafe('ąlice');
@@ -447,6 +568,10 @@ Parameters:
 - `Label` (text, required)
   - Example: `alice`
 
+Returns:
+
+- `Promise<boolean>`
+
 Example:
 ```javascript
 const result = sdk.dpns.isValidUsername('alice');
@@ -458,6 +583,10 @@ const result = sdk.dpns.isValidUsername('alice');
 Parameters:
 - `Label` (text, required)
   - Example: `alice`
+
+Returns:
+
+- `Promise<boolean>`
 
 Example:
 ```javascript
@@ -488,6 +617,10 @@ Parameters:
 - `Limit` (number, optional)
 
 - `Order Ascending` (checkbox, optional)
+
+Returns:
+
+- `Promise<any[]>`
 
 Example:
 ```javascript
@@ -529,6 +662,11 @@ Parameters:
 
 - `Order Ascending` (checkbox, optional)
 
+Returns:
+
+- `Promise<wasm.ContestedResourceVoteState>`
+  - Type declarations: [`wasm.ContestedResourceVoteState`](TYPE_REFERENCE.md#type-contestedresourcevotestate)
+
 Example:
 ```javascript
 const result = await sdk.voting.contestedResourceVoteState({
@@ -568,6 +706,11 @@ Parameters:
 
 - `Order Ascending` (checkbox, optional)
 
+Returns:
+
+- `Promise<wasm.Identifier[]>`
+  - Type declarations: [`wasm.Identifier`](TYPE_REFERENCE.md#type-identifier)
+
 Example:
 ```javascript
 const result = await sdk.group.contestedResourceVotersForIdentity({
@@ -596,6 +739,11 @@ Parameters:
 
 - `Order Ascending` (checkbox, optional)
 
+Returns:
+
+- `Promise<Map<string, wasm.ResourceVote>>`
+  - Type declarations: [`wasm.ResourceVote`](TYPE_REFERENCE.md#type-resourcevote)
+
 Example:
 ```javascript
 const result = await sdk.voting.contestedResourceIdentityVotes({
@@ -623,6 +771,11 @@ Parameters:
 
 - `Order Ascending` (checkbox, optional)
 
+Returns:
+
+- `Promise<wasm.VotePollsByEndDateEntry[]>`
+  - Type declarations: [`wasm.VotePollsByEndDateEntry`](TYPE_REFERENCE.md#type-votepollsbyenddateentry)
+
 Example:
 ```javascript
 const result = await sdk.voting.votePollsByEndDate({
@@ -640,6 +793,11 @@ const result = await sdk.voting.votePollsByEndDate({
 
 No parameters required.
 
+Returns:
+
+- `Promise<wasm.ProtocolVersionUpgradeState>`
+  - Type declarations: [`wasm.ProtocolVersionUpgradeState`](TYPE_REFERENCE.md#type-protocolversionupgradestate)
+
 Example:
 ```javascript
 const result = await sdk.protocol.versionUpgradeState();
@@ -653,6 +811,11 @@ Parameters:
   - Example: `143dcd6a6b7684fde01e88a10e5d65de9a29244c5ecd586d14a342657025f113`
 
 - `Count` (number, optional)
+
+Returns:
+
+- `Promise<Map<string, wasm.ProtocolVersionUpgradeVoteStatus>>`
+  - Type declarations: [`wasm.ProtocolVersionUpgradeVoteStatus`](TYPE_REFERENCE.md#type-protocolversionupgradevotestatus)
 
 Example:
 ```javascript
@@ -671,6 +834,11 @@ Parameters:
 
 - `Ascending Order` (checkbox, optional)
 
+Returns:
+
+- `Promise<Map<number, wasm.ExtendedEpochInfo | undefined>>`
+  - Type declarations: [`wasm.ExtendedEpochInfo`](TYPE_REFERENCE.md#type-extendedepochinfo)
+
 Example:
 ```javascript
 const result = await sdk.epoch.epochsInfo({
@@ -684,6 +852,11 @@ const result = await sdk.epoch.epochsInfo({
 *Fetch the current platform epoch.*
 
 No parameters required.
+
+Returns:
+
+- `Promise<wasm.ExtendedEpochInfo>`
+  - Type declarations: [`wasm.ExtendedEpochInfo`](TYPE_REFERENCE.md#type-extendedepochinfo)
 
 Example:
 ```javascript
@@ -699,6 +872,11 @@ Parameters:
 - `Count` (number, optional)
 
 - `Ascending Order` (checkbox, optional)
+
+Returns:
+
+- `Promise<Map<number, wasm.FinalizedEpochInfo | undefined>>`
+  - Type declarations: [`wasm.FinalizedEpochInfo`](TYPE_REFERENCE.md#type-finalizedepochinfo)
 
 Example:
 ```javascript
@@ -717,6 +895,10 @@ Parameters:
 
 - `Evonode ProTx Hashes` (array, required)
   - Example: `["143dcd6a6b7684fde01e88a10e5d65de9a29244c5ecd586d14a342657025f113"]`
+
+Returns:
+
+- `Promise<Map<string, bigint>>`
 
 Example:
 ```javascript
@@ -739,6 +921,10 @@ Parameters:
 
 - `Order Ascending` (checkbox, optional)
 
+Returns:
+
+- `Promise<Map<string, bigint>>`
+
 Example:
 ```javascript
 const result = await sdk.epoch.evonodesProposedBlocksByRange({
@@ -760,6 +946,10 @@ Parameters:
 - `Token Position` (number, required)
   - Example: `0`
 
+Returns:
+
+- `Promise<string>`
+
 Example:
 ```javascript
 const result = await sdk.tokens.calculateId('ALybvzfcCwMs7sinDwmtumw17NneuW7RgFtFHgjKmF3A', 0);
@@ -771,6 +961,11 @@ const result = await sdk.tokens.calculateId('ALybvzfcCwMs7sinDwmtumw17NneuW7RgFt
 Parameters:
 - `Token IDs` (array, required)
   - Example: `["Hqyu8WcRwXCTwbNxdga4CN5gsVEGc67wng4TFzceyLUv"]`
+
+Returns:
+
+- `Promise<Map<string, wasm.TokenStatus>>`
+  - Type declarations: [`wasm.TokenStatus`](TYPE_REFERENCE.md#type-tokenstatus)
 
 Example:
 ```javascript
@@ -787,6 +982,11 @@ Parameters:
 - `Token IDs` (array, required)
   - Example: `["Hqyu8WcRwXCTwbNxdga4CN5gsVEGc67wng4TFzceyLUv"]`
 
+Returns:
+
+- `Promise<Map<string, wasm.TokenPriceInfo>>`
+  - Type declarations: [`wasm.TokenPriceInfo`](TYPE_REFERENCE.md#type-tokenpriceinfo)
+
 Example:
 ```javascript
 const result = await sdk.tokens.directPurchasePrices([
@@ -800,6 +1000,11 @@ const result = await sdk.tokens.directPurchasePrices([
 Parameters:
 - `Token Contract ID` (text, required)
   - Example: `ALybvzfcCwMs7sinDwmtumw17NneuW7RgFtFHgjKmF3A`
+
+Returns:
+
+- `Promise<wasm.TokenContractInfo | undefined>`
+  - Type declarations: [`wasm.TokenContractInfo`](TYPE_REFERENCE.md#type-tokencontractinfo)
 
 Example:
 ```javascript
@@ -816,6 +1021,11 @@ Parameters:
 - `Token ID` (text, required)
   - Example: `Hqyu8WcRwXCTwbNxdga4CN5gsVEGc67wng4TFzceyLUv`
 
+Returns:
+
+- `Promise<wasm.RewardDistributionMoment | undefined>`
+  - Type declarations: [`wasm.RewardDistributionMoment`](TYPE_REFERENCE.md#type-rewarddistributionmoment)
+
 Example:
 ```javascript
 const result = await sdk.tokens.perpetualDistributionLastClaim(
@@ -831,6 +1041,11 @@ Parameters:
 - `Token ID` (text, required)
   - Example: `Hqyu8WcRwXCTwbNxdga4CN5gsVEGc67wng4TFzceyLUv`
 
+Returns:
+
+- `Promise<wasm.TokenTotalSupply | undefined>`
+  - Type declarations: [`wasm.TokenTotalSupply`](TYPE_REFERENCE.md#type-tokentotalsupply)
+
 Example:
 ```javascript
 const result = await sdk.tokens.totalSupply('Hqyu8WcRwXCTwbNxdga4CN5gsVEGc67wng4TFzceyLUv');
@@ -845,6 +1060,11 @@ Parameters:
 
 - `Token Position` (number, required)
   - Example: `0`
+
+Returns:
+
+- `Promise<wasm.TokenPriceInfo>`
+  - Type declarations: [`wasm.TokenPriceInfo`](TYPE_REFERENCE.md#type-tokenpriceinfo)
 
 Example:
 ```javascript
@@ -863,6 +1083,11 @@ Parameters:
 - `Group Position` (number, required)
   - Example: `0`
 
+Returns:
+
+- `Promise<wasm.Group | undefined>`
+  - Type declarations: [`wasm.Group`](TYPE_REFERENCE.md#type-group)
+
 Example:
 ```javascript
 const result = await sdk.group.info('49PJEnNx7ReCitzkLdkDNr4s6RScGsnNexcdSZJ1ph5N', 0);
@@ -878,6 +1103,11 @@ Parameters:
 - `Start At Info` (text, optional)
 
 - `Count` (number, optional)
+
+Returns:
+
+- `Promise<Map<number, wasm.Group | undefined>>`
+  - Type declarations: [`wasm.Group`](TYPE_REFERENCE.md#type-group)
 
 Example:
 ```javascript
@@ -899,6 +1129,10 @@ Parameters:
 - `Start At Member Info` (text, optional)
 
 - `Limit` (number, optional)
+
+Returns:
+
+- `Promise<Map<string, bigint>>`
 
 Example:
 ```javascript
@@ -922,6 +1156,11 @@ Parameters:
 
 - `Count` (number, optional)
 
+Returns:
+
+- `Promise<Map<string, wasm.GroupAction | undefined>>`
+  - Type declarations: [`wasm.GroupAction`](TYPE_REFERENCE.md#type-groupaction)
+
 Example:
 ```javascript
 const result = await sdk.group.actions({ dataContractId: '49PJEnNx7ReCitzkLdkDNr4s6RScGsnNexcdSZJ1ph5N', groupContractPosition: 0, status: 'ACTIVE', limit: 10 });
@@ -942,6 +1181,10 @@ Parameters:
 
 - `Action ID` (text, required)
 
+Returns:
+
+- `Promise<Map<string, bigint>>`
+
 Example:
 ```javascript
 const result = await sdk.group.actionSigners({ dataContractId: '49PJEnNx7ReCitzkLdkDNr4s6RScGsnNexcdSZJ1ph5N', groupContractPosition: 0, status: 'ACTIVE', actionId: '6XJzL6Qb8Zhwxt4HFwh8NAn7q1u4dwdoUf8EmgzDudFZ' });
@@ -960,6 +1203,11 @@ Parameters:
 
 - `Moderator Data Contracts` (array, optional)
 
+Returns:
+
+- `Promise<wasm.IdentityGroupInfo[]>`
+  - Type declarations: [`wasm.IdentityGroupInfo`](TYPE_REFERENCE.md#type-identitygroupinfo)
+
 Example:
 ```javascript
 const result = await sdk.group.identityGroups({ identityId: '5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk' });
@@ -971,6 +1219,11 @@ const result = await sdk.group.identityGroups({ identityId: '5DbLwAxGBzUzo81VewM
 Parameters:
 - `Data Contract IDs` (array, required)
   - Example: `["GWRSAVFMjXx8HpQFaNJMqBV7MBgMK4br5UESsB4S31Ec"]`
+
+Returns:
+
+- `Promise<Map<string, Map<number, wasm.Group | undefined>>>`
+  - Type declarations: [`wasm.Group`](TYPE_REFERENCE.md#type-group)
 
 Example:
 ```javascript
@@ -984,6 +1237,11 @@ const result = await sdk.group.groupsDataContracts(['GWRSAVFMjXx8HpQFaNJMqBV7MBg
 
 No parameters required.
 
+Returns:
+
+- `Promise<wasm.StatusResponse>`
+  - Type declarations: [`wasm.StatusResponse`](TYPE_REFERENCE.md#type-statusresponse)
+
 Example:
 ```javascript
 const result = await sdk.system.status();
@@ -993,6 +1251,11 @@ const result = await sdk.system.status();
 *Fetch details about currently active quorums.*
 
 No parameters required.
+
+Returns:
+
+- `Promise<wasm.CurrentQuorumsInfo>`
+  - Type declarations: [`wasm.CurrentQuorumsInfo`](TYPE_REFERENCE.md#type-currentquorumsinfo)
 
 Example:
 ```javascript
@@ -1006,6 +1269,11 @@ Parameters:
 - `Specialized Balance ID` (text, required)
   - Example: `AzaU7zqCT7X1kxh8yWxkT9PxAgNqWDu4Gz13emwcRyAT`
 
+Returns:
+
+- `Promise<wasm.PrefundedSpecializedBalance>`
+  - Type declarations: [`wasm.PrefundedSpecializedBalance`](TYPE_REFERENCE.md#type-prefundedspecializedbalance)
+
 Example:
 ```javascript
 const result = await sdk.system.prefundedSpecializedBalance('AzaU7zqCT7X1kxh8yWxkT9PxAgNqWDu4Gz13emwcRyAT');
@@ -1015,6 +1283,10 @@ const result = await sdk.system.prefundedSpecializedBalance('AzaU7zqCT7X1kxh8yWx
 *Fetch the total credit balance stored in the platform.*
 
 No parameters required.
+
+Returns:
+
+- `Promise<bigint>`
 
 Example:
 ```javascript
@@ -1031,6 +1303,11 @@ Parameters:
 - `Keys` (array, required)
   - Example: `["5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk"]`
 
+Returns:
+
+- `Promise<wasm.PathElement[]>`
+  - Type declarations: [`wasm.PathElement`](TYPE_REFERENCE.md#type-pathelement)
+
 Example:
 ```javascript
 const result = await sdk.system.pathElements(['96'], ['5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk']);
@@ -1042,6 +1319,11 @@ const result = await sdk.system.pathElements(['96'], ['5DbLwAxGBzUzo81VewMUwn4b5
 Parameters:
 - `State Transition Hash` (text, required)
   - Example: `0000000000000000000000000000000000000000000000000000000000000000`
+
+Returns:
+
+- `Promise<wasm.StateTransitionResult>`
+  - Type declarations: [`wasm.StateTransitionResult`](TYPE_REFERENCE.md#type-statetransitionresult)
 
 Example:
 ```javascript
@@ -1057,6 +1339,11 @@ Parameters:
 - `Platform Address` (text, required)
   - Example: `tdash1krt0z5hrcaphyuraxmk2h2ff8nyv5fmncsgf7evf`
 
+Returns:
+
+- `Promise<wasm.PlatformAddressInfo | undefined>`
+  - Type declarations: [`wasm.PlatformAddressInfo`](TYPE_REFERENCE.md#type-platformaddressinfo)
+
 Example:
 ```javascript
 const result = await sdk.addresses.get('tdash1krt0z5hrcaphyuraxmk2h2ff8nyv5fmncsgf7evf');
@@ -1068,6 +1355,11 @@ const result = await sdk.addresses.get('tdash1krt0z5hrcaphyuraxmk2h2ff8nyv5fmncs
 Parameters:
 - `Platform Addresses` (array, required)
   - Example: `["tdash1krt0z5hrcaphyuraxmk2h2ff8nyv5fmncsgf7evf"]`
+
+Returns:
+
+- `Promise<Map<string, wasm.PlatformAddressInfo | undefined>>`
+  - Type declarations: [`wasm.PlatformAddressInfo`](TYPE_REFERENCE.md#type-platformaddressinfo)
 
 Example:
 ```javascript
@@ -1097,6 +1389,10 @@ Parameters:
 
 - `Public Keys` (string, required)
   - JSON array of public keys. Key requirements: ECDSA_SECP256K1 requires privateKeyHex or privateKeyWif for signing, BLS12_381 requires privateKeyHex for signing, ECDSA_HASH160 requires either the data field (base64-encoded 20-byte public key hash) or privateKeyHex (produces empty signatures).
+
+Returns:
+
+- `Promise<void>`
 
 Example:
 ```javascript
@@ -1138,7 +1434,7 @@ const publicKeys = JSON.stringify([
 const result = await sdk.identities.create({ assetLockProof, assetLockPrivateKeyWif, publicKeys });
 ```
 
-**Identity Top Up** - `identities.topup`
+**Identity Top Up** - `identities.topUp`
 *Add credits to an existing identity*
 
 Parameters:
@@ -1150,6 +1446,10 @@ Parameters:
 
 - `Asset Lock Private Key (WIF)` (string, required)
   - WIF format private key
+
+Returns:
+
+- `Promise<bigint>`
 
 Example:
 ```javascript
@@ -1170,6 +1470,10 @@ Parameters (payload fields):
 - `Key IDs to Disable (comma-separated)` (text, optional)
   - Example: `2,3,5`
 
+Returns:
+
+- `Promise<void>`
+
 Example:
 ```javascript
 const result = await sdk.identities.update({ identityId, addPublicKeys, disablePublicKeyIds, privateKeyWif });
@@ -1182,6 +1486,11 @@ Parameters (payload fields):
 - `Recipient Identity ID` (text, required)
 
 - `Amount (credits)` (number, required)
+
+Returns:
+
+- `Promise<wasm.IdentityCreditTransferResult>`
+  - Type declarations: [`wasm.IdentityCreditTransferResult`](TYPE_REFERENCE.md#type-identitycredittransferresult)
 
 Example:
 ```javascript
@@ -1197,6 +1506,10 @@ Parameters (payload fields):
 - `Amount (credits)` (number, required)
 
 - `Core Fee Per Byte (optional)` (number, optional)
+
+Returns:
+
+- `Promise<bigint>`
 
 Example:
 ```javascript
@@ -1251,6 +1564,11 @@ Parameters (payload fields):
 
 - `Description (optional)` (text, optional)
 
+Returns:
+
+- `Promise<wasm.DataContract>`
+  - Type declarations: [`wasm.DataContract`](TYPE_REFERENCE.md#type-datacontract)
+
 Example:
 ```javascript
 const result = await sdk.contracts.publish({ ownerId, definition, privateKeyWif, keyId });
@@ -1284,6 +1602,10 @@ Parameters (payload fields):
 - `New Tokens to Add (optional)` (json, optional)
   - Example: `{}`
 
+Returns:
+
+- `Promise<void>`
+
 Example:
 ```javascript
 const result = await sdk.contracts.update({ contractId, ownerId, updates, privateKeyWif, keyId });
@@ -1302,6 +1624,10 @@ Parameters (payload fields):
 - `Fetch Schema` (button, optional)
 
 - `Document Fields` (dynamic, optional)
+
+Returns:
+
+- `Promise<void>`
 
 Example:
 ```javascript
@@ -1322,6 +1648,10 @@ Parameters (payload fields):
 
 - `Document Fields` (dynamic, optional)
 
+Returns:
+
+- `Promise<void>`
+
 Example:
 ```javascript
 const result = await sdk.documents.replace({ contractId, type: documentType, documentId, ownerId, data, revision, privateKeyWif });
@@ -1336,6 +1666,10 @@ Parameters (payload fields):
 - `Document Type` (text, required)
 
 - `Document ID` (text, required)
+
+Returns:
+
+- `Promise<void>`
 
 Example:
 ```javascript
@@ -1354,6 +1688,10 @@ Parameters (payload fields):
 
 - `Recipient Identity ID` (text, required)
 
+Returns:
+
+- `Promise<void>`
+
 Example:
 ```javascript
 const result = await sdk.documents.transfer({ contractId, type: documentType, documentId, ownerId, recipientId, privateKeyWif });
@@ -1370,6 +1708,10 @@ Parameters (payload fields):
 - `Document ID` (text, required)
 
 - `Price (credits)` (number, required)
+
+Returns:
+
+- `Promise<void>`
 
 Example:
 ```javascript
@@ -1388,6 +1730,10 @@ Parameters (payload fields):
 
 - `Price (credits, 0 to remove)` (number, required)
 
+Returns:
+
+- `Promise<void>`
+
 Example:
 ```javascript
 const result = await sdk.documents.setPrice({ contractId, type: documentType, documentId, ownerId, price, privateKeyWif });
@@ -1399,6 +1745,11 @@ const result = await sdk.documents.setPrice({ contractId, type: documentType, do
 Parameters (payload fields):
 - `Username` (text, required)
   - Example: `Enter username (e.g., alice)`
+
+Returns:
+
+- `Promise<wasm.RegisterDpnsNameResult>`
+  - Type declarations: [`wasm.RegisterDpnsNameResult`](TYPE_REFERENCE.md#type-registerdpnsnameresult)
 
 Example:
 ```javascript
@@ -1419,6 +1770,11 @@ Parameters (payload fields):
 
 - `Public Note` (text, optional)
 
+Returns:
+
+- `Promise<wasm.TokenBurnResult>`
+  - Type declarations: [`wasm.TokenBurnResult`](TYPE_REFERENCE.md#type-tokenburnresult)
+
 Example:
 ```javascript
 const result = await sdk.tokens.burn({ contractId, tokenPosition, amount, identityId, privateKeyWif, publicNote });
@@ -1438,6 +1794,11 @@ Parameters (payload fields):
 
 - `Public Note` (text, optional)
 
+Returns:
+
+- `Promise<wasm.TokenMintResult>`
+  - Type declarations: [`wasm.TokenMintResult`](TYPE_REFERENCE.md#type-tokenmintresult)
+
 Example:
 ```javascript
 const result = await sdk.tokens.mint({ contractId, tokenPosition, amount, identityId, privateKeyWif, recipientId, publicNote });
@@ -1455,6 +1816,11 @@ Parameters (payload fields):
   - Options: `perpetual` (Perpetual), `preprogrammed` (Pre-programmed)
 
 - `Public Note` (text, optional)
+
+Returns:
+
+- `Promise<wasm.TokenClaimResult>`
+  - Type declarations: [`wasm.TokenClaimResult`](TYPE_REFERENCE.md#type-tokenclaimresult)
 
 Example:
 ```javascript
@@ -1477,6 +1843,11 @@ Parameters (payload fields):
 
 - `Public Note` (text, optional)
 
+Returns:
+
+- `Promise<wasm.TokenSetPriceResult>`
+  - Type declarations: [`wasm.TokenSetPriceResult`](TYPE_REFERENCE.md#type-tokensetpriceresult)
+
 Example:
 ```javascript
 const result = await sdk.tokens.setPrice({ contractId, tokenPosition, identityId, priceType, priceData, privateKeyWif, publicNote });
@@ -1493,6 +1864,11 @@ Parameters (payload fields):
 - `Amount to Purchase` (text, required)
 
 - `Total Agreed Price (in credits) - Optional, fetches from pricing schedule if not provided` (text, optional)
+
+Returns:
+
+- `Promise<wasm.TokenDirectPurchaseResult>`
+  - Type declarations: [`wasm.TokenDirectPurchaseResult`](TYPE_REFERENCE.md#type-tokendirectpurchaseresult)
 
 Example:
 ```javascript
@@ -1511,6 +1887,11 @@ Parameters (payload fields):
   - Options: `pause` (Pause), `resume` (Resume)
 
 - `Public Note` (text, optional)
+
+Returns:
+
+- `Promise<wasm.TokenEmergencyActionResult>`
+  - Type declarations: [`wasm.TokenEmergencyActionResult`](TYPE_REFERENCE.md#type-tokenemergencyactionresult)
 
 Example:
 ```javascript
@@ -1531,6 +1912,11 @@ Parameters (payload fields):
 
 - `Public Note` (text, optional)
 
+Returns:
+
+- `Promise<wasm.TokenTransferResult>`
+  - Type declarations: [`wasm.TokenTransferResult`](TYPE_REFERENCE.md#type-tokentransferresult)
+
 Example:
 ```javascript
 const result = await sdk.tokens.transfer({ contractId, tokenPosition, amount, senderId, recipientId, privateKeyWif, publicNote });
@@ -1547,6 +1933,11 @@ Parameters (payload fields):
 - `Identity ID to Freeze` (text, required)
 
 - `Public Note` (text, optional)
+
+Returns:
+
+- `Promise<wasm.TokenFreezeResult>`
+  - Type declarations: [`wasm.TokenFreezeResult`](TYPE_REFERENCE.md#type-tokenfreezeresult)
 
 Example:
 ```javascript
@@ -1565,6 +1956,11 @@ Parameters (payload fields):
 
 - `Public Note` (text, optional)
 
+Returns:
+
+- `Promise<wasm.TokenUnfreezeResult>`
+  - Type declarations: [`wasm.TokenUnfreezeResult`](TYPE_REFERENCE.md#type-tokenunfreezeresult)
+
 Example:
 ```javascript
 const result = await sdk.tokens.unfreeze({ contractId, tokenPosition, identityToUnfreeze, identityId, privateKeyWif, publicNote });
@@ -1581,6 +1977,11 @@ Parameters (payload fields):
 - `Identity ID whose frozen tokens to destroy` (text, required)
 
 - `Public Note` (text, optional)
+
+Returns:
+
+- `Promise<wasm.TokenDestroyFrozenResult>`
+  - Type declarations: [`wasm.TokenDestroyFrozenResult`](TYPE_REFERENCE.md#type-tokendestroyfrozenresult)
 
 Example:
 ```javascript
@@ -1601,6 +2002,10 @@ Parameters (payload fields):
 
 - `Target Identity ID (if voting for identity)` (text, optional)
   - Example: `Identity ID to vote for`
+
+Returns:
+
+- `Promise<void>`
 
 Example:
 ```javascript
@@ -1624,6 +2029,10 @@ Parameters (payload fields):
 - `Target Identity ID (if voting for identity)` (text, optional)
   - Example: `Identity ID to vote for`
 
+Returns:
+
+- `Promise<void>`
+
 Example:
 ```javascript
 const result = await sdk.voting.masternodeVote({ masternodeProTxHash, contractId, documentTypeName, indexName, indexValues, voteChoice, votingKeyWif });
@@ -1644,6 +2053,11 @@ Parameters:
 - `Signer` (object, required)
   - PlatformAddressSigner instance
 
+Returns:
+
+- `Promise<Map<string, wasm.PlatformAddressInfo>>`
+  - Type declarations: [`wasm.PlatformAddressInfo`](TYPE_REFERENCE.md#type-platformaddressinfo)
+
 Example:
 ```javascript
 const result = await sdk.addresses.transfer({ inputs, outputs, signer });
@@ -1661,6 +2075,11 @@ Parameters:
 
 - `Signer` (object, required)
   - PlatformAddressSigner instance
+
+Returns:
+
+- `Promise<wasm.IdentityTopUpFromAddressesResult>`
+  - Type declarations: [`wasm.IdentityTopUpFromAddressesResult`](TYPE_REFERENCE.md#type-identitytopupfromaddressesresult)
 
 Example:
 ```javascript
@@ -1686,6 +2105,11 @@ Parameters:
 - `Signer` (object, required)
   - PlatformAddressSigner instance
 
+Returns:
+
+- `Promise<Map<string, wasm.PlatformAddressInfo>>`
+  - Type declarations: [`wasm.PlatformAddressInfo`](TYPE_REFERENCE.md#type-platformaddressinfo)
+
 Example:
 ```javascript
 const result = await sdk.addresses.withdraw({ inputs, coreFeePerByte, pooling, outputScript, signer });
@@ -1703,6 +2127,11 @@ Parameters:
 
 - `Signer` (object, required)
   - IdentitySigner instance
+
+Returns:
+
+- `Promise<wasm.IdentityTransferToAddressesResult>`
+  - Type declarations: [`wasm.IdentityTransferToAddressesResult`](TYPE_REFERENCE.md#type-identitytransfertoaddressesresult)
 
 Example:
 ```javascript
@@ -1725,6 +2154,11 @@ Parameters:
 - `Signer` (object, optional)
   - Optional PlatformAddressSigner instance
 
+Returns:
+
+- `Promise<Map<string, wasm.PlatformAddressInfo>>`
+  - Type declarations: [`wasm.PlatformAddressInfo`](TYPE_REFERENCE.md#type-platformaddressinfo)
+
 Example:
 ```javascript
 const result = await sdk.addresses.fundFromAssetLock({ assetLockProof, assetLockPrivateKey, outputs, signer });
@@ -1745,6 +2179,11 @@ Parameters:
 
 - `Address Signer` (object, required)
   - PlatformAddressSigner instance
+
+Returns:
+
+- `Promise<wasm.IdentityCreateFromAddressesResult>`
+  - Type declarations: [`wasm.IdentityCreateFromAddressesResult`](TYPE_REFERENCE.md#type-identitycreatefromaddressesresult)
 
 Example:
 ```javascript

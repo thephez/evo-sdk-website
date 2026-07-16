@@ -7,12 +7,14 @@
     "@playwright/test": "1.56.0",
     "@vitest/coverage-v8": "^4.1.9",
     "dotenv": "17.2.3",
+    "typescript": "5.7.3",
     "vitest": "^4.1.9"
   },
   "scripts": {
     "generate": "python3 scripts/generate_docs.py",
     "postinstall": "yarn generate",
     "check": "python3 scripts/check_documentation.py",
+    "test:types": "node --test tests/type-extraction.test.mjs",
     "serve": "cd public && python3 -m http.server 8081",
     "test": "vitest run && playwright test",
     "test:unit": "vitest run",

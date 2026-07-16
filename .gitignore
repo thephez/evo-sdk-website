@@ -23,5 +23,6 @@ coverage/
 # Generated files by scripts/generate_docs.py
 public/dist
 public/docs.html
+public/TYPE_REFERENCE.html
 public/docs_manifest.json
 public/version-info.json

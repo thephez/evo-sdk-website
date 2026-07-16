@@ -21,7 +21,7 @@ open http://localhost:8081/index.html
 ```bash
 yarn generate
 ```
-This regenerates `public/docs.html`, `public/AI_REFERENCE.md`, and copies the latest SDK bundle from `platform/packages/js-evo-sdk/dist` to `public/dist`.
+This regenerates `public/docs.html`, the human-facing `public/TYPE_REFERENCE.html`, `public/AI_REFERENCE.md`, `public/TYPE_REFERENCE.md`, and copies the latest installed SDK bundle to `public/dist`. Return types are extracted from the declarations shipped by `@dashevo/evo-sdk`.
 
 ### Check documentation status
 ```bash
@@ -33,6 +33,7 @@ yarn check
 - `public/index.html` — Main interactive SDK testing interface
 - `public/docs.html` — Human-friendly documentation with examples
 - `public/AI_REFERENCE.md` — Compact reference for AI assistants
+- `public/TYPE_REFERENCE.md` — Generated declarations for named return types
 - `public/api-definitions.json` — API definitions used by the generator
 - `scripts/generate_docs.py` — Documentation generator script
 
