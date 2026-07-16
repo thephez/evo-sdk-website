@@ -6,13 +6,19 @@ const aiReference = fs.readFileSync(new URL('../../public/AI_REFERENCE.md', impo
 const typeReference = fs.readFileSync(new URL('../../public/TYPE_REFERENCE.md', import.meta.url), 'utf8');
 const typeReferenceHtml = fs.readFileSync(new URL('../../public/TYPE_REFERENCE.html', import.meta.url), 'utf8');
 const manifest = JSON.parse(fs.readFileSync(new URL('../../public/docs_manifest.json', import.meta.url), 'utf8'));
+const apiDefinitions = JSON.parse(fs.readFileSync(new URL('../../public/api-definitions.json', import.meta.url), 'utf8'));
+const documentedMethods = ['queries', 'transitions'].flatMap((group) =>
+  Object.values(apiDefinitions[group]).flatMap((category) =>
+    Object.values(category[group]).map((operation) => operation.sdk_method),
+  ),
+);
 
 describe('generated return type documentation', () => {
-  it('documents all 94 existing operations without adding calls', () => {
-    expect(docs.match(/<div class="returns">/g)).toHaveLength(94);
-    expect(aiReference.match(/\nReturns:\n/g)).toHaveLength(94);
-    expect(manifest.documented_operations).toBe(94);
-    expect(manifest.resolved_sdk_methods).toBe(93);
+  it('documents every existing operation without fixed count assumptions', () => {
+    expect(docs.match(/<div class="returns">/g)).toHaveLength(documentedMethods.length);
+    expect(aiReference.match(/\nReturns:\n/g)).toHaveLength(documentedMethods.length);
+    expect(manifest.documented_operations).toBe(documentedMethods.length);
+    expect(manifest.resolved_sdk_methods).toBe(new Set(documentedMethods).size);
   });
 
   it('renders representative query and transition return types', () => {

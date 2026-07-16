@@ -2,9 +2,11 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+const SCRIPT_FILE = fileURLToPath(import.meta.url);
+const ROOT = path.resolve(path.dirname(SCRIPT_FILE), '..');
 const BUILT_INS = new Set(['Promise', 'Map', 'Set', 'Array', 'ReadonlyArray', 'Record', 'Partial', 'Required']);
 const NAMESPACE_DIRS = { stateTransitions: 'state-transitions' };
 
@@ -19,10 +21,10 @@ function readJson(file) {
 export function documentedMethods(api) {
   const result = [];
   for (const groupName of ['queries', 'transitions']) {
-    for (const category of Object.values(api[groupName] || {})) {
+    for (const [categoryName, category] of Object.entries(api[groupName] || {})) {
       for (const [key, item] of Object.entries(category[groupName] || {})) {
         if (!item.sdk_method) fail(`${groupName}.${key} has no sdk_method`);
-        result.push({ key, group: groupName, sdkMethod: item.sdk_method });
+        result.push({ key, group: groupName, category: categoryName, sdkMethod: item.sdk_method });
       }
     }
   }
@@ -96,6 +98,7 @@ export function extractTypes({ apiFile, packageRoot }) {
   const wasmRoot = path.dirname(fs.realpathSync(path.join(packageRoot, '..', 'wasm-sdk', 'package.json')));
   const declarationIndex = collectDeclarationIndex([...walkDts(dist), ...walkDts(path.join(wasmRoot, 'dist'))]);
   const methods = {};
+  const operations = [];
   const usedTypes = new Set();
 
   for (const entry of documentedMethods(api)) {
@@ -112,6 +115,7 @@ export function extractTypes({ apiFile, packageRoot }) {
     const references = referencedNames(declaration.type, source);
     references.forEach((name) => usedTypes.add(name.replace(/^wasm\./, '')));
     methods[entry.sdkMethod] = { returnType, references };
+    operations.push({ ...entry, returnType, references });
   }
 
   const types = {};
@@ -124,7 +128,7 @@ export function extractTypes({ apiFile, packageRoot }) {
       source: path.relative(path.dirname(packageRoot), found.file),
     };
   }
-  return { sdk: { name: packageJson.name, version: packageJson.version, declarationRoot: 'dist' }, methods, types };
+  return { sdk: { name: packageJson.name, version: packageJson.version, declarationRoot: 'dist' }, operations, methods, types };
 }
 
 function parseArgs(argv) {
@@ -137,7 +141,7 @@ function parseArgs(argv) {
   return result;
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === SCRIPT_FILE) {
   try {
     const options = parseArgs(process.argv.slice(2));
     const extracted = extractTypes(options);

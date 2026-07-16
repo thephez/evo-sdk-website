@@ -105,8 +105,12 @@ def attach_return_types(query_defs: dict, transition_defs: dict, type_metadata: 
                     raise ValueError(f'Missing extracted return type for {sdk_method}')
                 item['_return_type'] = metadata['returnType']
                 item['_return_references'] = metadata.get('references', [])
-    if operation_count != 94:
-        raise ValueError(f'Expected 94 documented operations, found {operation_count}')
+    extracted_operation_count = len(type_metadata.get('operations', []))
+    if operation_count != extracted_operation_count:
+        raise ValueError(
+            f'Documented operation count ({operation_count}) does not match extracted metadata '
+            f'({extracted_operation_count})'
+        )
 
 
 def type_anchor(reference: str) -> str:
@@ -1636,7 +1640,7 @@ def main() -> None:
         'generated_at': datetime.now(timezone.utc).isoformat(),
         'source_api': 'api-definitions.json',
         'sdk_types': type_metadata['sdk'],
-        'documented_operations': 94,
+        'documented_operations': len(type_metadata['operations']),
         'resolved_sdk_methods': len(type_metadata['methods']),
         'files': ['docs.html', 'AI_REFERENCE.md', 'TYPE_REFERENCE.md', 'TYPE_REFERENCE.html', 'version-info.json']
     }

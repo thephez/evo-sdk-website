@@ -52,18 +52,37 @@ def main():
                         f"installed SDK is {sdk_package.get('version')}"
                     )
 
-            if manifest.get('documented_operations') != 94:
-                errors.append('ERROR: Documentation manifest does not report 94 documented operations')
+            extractor = REPO_ROOT / 'scripts' / 'extract_sdk_types.mjs'
+            extracted = subprocess.run(
+                ['node', str(extractor), '--api', str(api_file)],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+            )
+            if extracted.returncode != 0:
+                errors.append(f'ERROR: SDK return type extraction failed: {extracted.stderr.strip()}')
+                metadata = None
+            else:
+                metadata = json.loads(extracted.stdout)
 
-            if api_file.exists() and docs_file.exists() and api_file.stat().st_mtime > docs_file.stat().st_mtime:
-                warnings.append('WARNING: api-definitions.json modified after docs.html was generated')
-            if api_file.exists() and ai_file.exists() and api_file.stat().st_mtime > ai_file.stat().st_mtime:
-                warnings.append('WARNING: api-definitions.json modified after AI_REFERENCE.md was generated')
+            if metadata is not None:
+                expected_operations = len(metadata.get('operations', []))
+                expected_methods = len(metadata.get('methods', {}))
+                if manifest.get('documented_operations') != expected_operations:
+                    errors.append('ERROR: Documentation manifest operation count does not match extracted metadata')
+                if manifest.get('resolved_sdk_methods') != expected_methods:
+                    errors.append('ERROR: Documentation manifest method count does not match extracted metadata')
 
-            if docs_file.exists() and docs_file.read_text(encoding='utf-8').count('<div class="returns">') != 94:
-                errors.append('ERROR: docs.html must contain return blocks for all 94 operations')
-            if ai_file.exists() and ai_file.read_text(encoding='utf-8').count('\nReturns:\n') != 94:
-                errors.append('ERROR: AI_REFERENCE.md must contain return blocks for all 94 operations')
+                docs_text = docs_file.read_text(encoding='utf-8')
+                ai_text = ai_file.read_text(encoding='utf-8')
+                if docs_text.count('<div class="returns">') != expected_operations:
+                    errors.append(
+                        f'ERROR: docs.html must contain return blocks for all {expected_operations} operations'
+                    )
+                if ai_text.count('\nReturns:\n') != expected_operations:
+                    errors.append(
+                        f'ERROR: AI_REFERENCE.md must contain return blocks for all {expected_operations} operations'
+                    )
 
             if ai_file.exists() and type_reference_file.exists():
                 ai_text = ai_file.read_text(encoding='utf-8')
@@ -82,20 +101,6 @@ def main():
                 missing_anchors = sorted(linked_anchors - declared_anchors)
                 if missing_anchors:
                     errors.append(f"ERROR: Missing HTML return type anchors: {', '.join(missing_anchors)}")
-
-            extractor = REPO_ROOT / 'scripts' / 'extract_sdk_types.mjs'
-            extracted = subprocess.run(
-                ['node', str(extractor), '--api', str(api_file)],
-                cwd=REPO_ROOT,
-                capture_output=True,
-                text=True,
-            )
-            if extracted.returncode != 0:
-                errors.append(f'ERROR: SDK return type extraction failed: {extracted.stderr.strip()}')
-            else:
-                metadata = json.loads(extracted.stdout)
-                if len(metadata.get('methods', {})) != 93:
-                    errors.append('ERROR: Expected 93 unique SDK methods for 94 documented operations')
 
     # Compose report
     lines = [

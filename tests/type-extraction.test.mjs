@@ -30,6 +30,14 @@ test('preserves exact primitive, union, array, nested generic, inline object, an
     'Promise<Map<string, wasm.ResultType | undefined> | Array<{ count: bigint; values: string[]; }>>',
   );
   assert.deepEqual(extracted.methods['example.sample'].references, ['wasm.ResultType']);
+  assert.deepEqual(extracted.operations, [{
+    key: 'operation',
+    group: 'queries',
+    category: 'example',
+    sdkMethod: 'example.sample',
+    returnType: 'Promise<Map<string, wasm.ResultType | undefined> | Array<{ count: bigint; values: string[]; }>>',
+    references: ['wasm.ResultType'],
+  }]);
   assert.match(extracted.types.ResultType.declaration, /interface ResultType/);
 });
 
