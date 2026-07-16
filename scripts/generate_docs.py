@@ -79,6 +79,134 @@ def load_api_definitions(api_definitions_file: Path) -> tuple[dict, dict]:
     return api_data.get('queries', {}), api_data.get('transitions', {})
 
 
+def load_sdk_type_metadata(api_definitions_file: Path) -> dict:
+    """Extract return types from the declarations shipped by the installed Evo SDK."""
+    extractor = REPO_ROOT / 'scripts' / 'extract_sdk_types.mjs'
+    completed = subprocess.run(
+        ['node', str(extractor), '--api', str(api_definitions_file)],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return json.loads(completed.stdout)
+
+
+def attach_return_types(query_defs: dict, transition_defs: dict, type_metadata: dict) -> None:
+    methods = type_metadata.get('methods', {})
+    operation_count = 0
+    for definitions, entries_key in ((query_defs, 'queries'), (transition_defs, 'transitions')):
+        for category in definitions.values():
+            for item in (category.get(entries_key) or {}).values():
+                operation_count += 1
+                sdk_method = item.get('sdk_method')
+                metadata = methods.get(sdk_method)
+                if not metadata or not metadata.get('returnType'):
+                    raise ValueError(f'Missing extracted return type for {sdk_method}')
+                item['_return_type'] = metadata['returnType']
+                item['_return_references'] = metadata.get('references', [])
+    extracted_operation_count = len(type_metadata.get('operations', []))
+    if operation_count != extracted_operation_count:
+        raise ValueError(
+            f'Documented operation count ({operation_count}) does not match extracted metadata '
+            f'({extracted_operation_count})'
+        )
+
+
+def type_anchor(reference: str) -> str:
+    return 'type-' + re.sub(r'[^a-z0-9]+', '-', reference.replace('wasm.', '').lower()).strip('-')
+
+
+def render_type_links_html(references: List[str]) -> str:
+    if not references:
+        return ''
+    links = ', '.join(
+        f'<a href="TYPE_REFERENCE.html#{type_anchor(reference)}"><code>{safe_value(reference)}</code></a>'
+        for reference in references
+    )
+    return f'<div class="return-type-links"><small>Type declarations: {links}</small></div>'
+
+
+def render_type_links_markdown(references: List[str]) -> str:
+    if not references:
+        return ''
+    links = ', '.join(
+        f'[`{reference}`](TYPE_REFERENCE.md#{type_anchor(reference)})'
+        for reference in references
+    )
+    return f'  - Type declarations: {links}'
+
+
+def generate_type_reference_md(type_metadata: dict) -> str:
+    sdk = type_metadata['sdk']
+    lines = [
+        '# Evo SDK Return Type Reference',
+        '',
+        f"Generated from `{sdk['name']}@{sdk['version']}` published TypeScript declarations under `{sdk['declarationRoot']}/`.",
+        '',
+        'Only named types referenced by currently documented method return values are included. Declarations are not recursively expanded.',
+        '',
+    ]
+    for name, metadata in type_metadata.get('types', {}).items():
+        lines.extend([
+            f'<a id="{type_anchor(name)}"></a>',
+            f'## `{name}`',
+            '',
+            f"Source declaration: `{metadata['source']}`",
+            '',
+            '```typescript',
+            metadata['declaration'].strip(),
+            '```',
+            '',
+        ])
+    return '\n'.join(lines)
+
+
+def generate_type_reference_html(type_metadata: dict) -> str:
+    sdk = type_metadata['sdk']
+    sidebar = '\n'.join(
+        f'            <li><a href="#{type_anchor(name)}">{safe_value(name)}</a></li>'
+        for name in type_metadata.get('types', {})
+    )
+    declarations = '\n'.join(
+        f'''        <section class="category type-declaration" id="{type_anchor(name)}">
+            <h2><code>{safe_value(name)}</code></h2>
+            <p class="description">Source declaration: <code>{safe_value(metadata['source'])}</code></p>
+            <pre class="code-example"><code>{safe_value(metadata['declaration'].strip())}</code></pre>
+        </section>'''
+        for name, metadata in type_metadata.get('types', {}).items()
+    )
+    return f'''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evo SDK Return Type Reference</title>
+    <link rel="stylesheet" href="docs.css">
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Return Types</h2>
+        <ul>
+{sidebar}
+        </ul>
+    </div>
+    <main class="main-content">
+        <nav class="nav"><ul>
+            <li><a href="docs.html">← Documentation</a></li>
+            <li><a href="AI_REFERENCE.md">AI Reference</a></li>
+            <li><a href="TYPE_REFERENCE.md">Markdown Type Reference</a></li>
+        </ul></nav>
+        <h1>Evo SDK Return Type Reference</h1>
+        <p>Generated from <code>{safe_value(sdk['name'])}@{safe_value(sdk['version'])}</code> published TypeScript declarations under <code>{safe_value(sdk['declarationRoot'])}/</code>.</p>
+        <p class="description">Only named types referenced by currently documented method return values are included. Declarations are not recursively expanded.</p>
+{declarations}
+    </main>
+</body>
+</html>
+'''
+
+
 def evo_example_for_query(key: str, inputs: List[dict]):
     data = TESTNET_TEST_DATA
     examples = {
@@ -484,6 +612,8 @@ def render_operation(
     params = item.get('sdk_params') or item.get('inputs', [])
     params_html = render_parameters(params)
     example_html = safe_value(format_example(example_code, header))
+    return_type = safe_value(item.get('_return_type'))
+    return_links = render_type_links_html(item.get('_return_references', []))
 
     if include_run_button:
         run_section = (
@@ -501,6 +631,12 @@ def render_operation(
             <div class="parameters">
                 <h5>Parameters:</h5>
 {params_html}
+            </div>
+
+            <div class="returns">
+                <h5>Returns:</h5>
+                <code>{return_type}</code>
+                {return_links}
             </div>
             
             <div class="example-container">
@@ -982,7 +1118,7 @@ def generate_docs_script() -> str:
     return textwrap.dedent(script).strip()
 
 
-def generate_docs_html(query_defs: dict, transition_defs: dict) -> str:
+def generate_docs_html(query_defs: dict, transition_defs: dict, type_metadata: dict) -> str:
     query_sections = collect_sections(
         query_defs,
         'queries',
@@ -1081,6 +1217,7 @@ def generate_docs_html(query_defs: dict, transition_defs: dict) -> str:
         </nav>
 
         <h1>Dash Platform Evo JS SDK Documentation</h1>
+        <p class="description">Return types generated from <code>{safe_value(type_metadata['sdk']['name'])}@{safe_value(type_metadata['sdk']['version'])}</code> published declarations. <a href="TYPE_REFERENCE.html">Return type declarations</a>.</p>
 
 {overview_block}
 
@@ -1138,12 +1275,14 @@ def format_ai_example_block(code: str | None, item_key: str) -> str:
     return joined
 
 
-def generate_ai_reference_md(query_defs: dict, transition_defs: dict) -> str:
+def generate_ai_reference_md(query_defs: dict, transition_defs: dict, type_metadata: dict) -> str:
     identity_sample = TESTNET_TEST_DATA['identity_id']
     contract_sample = TESTNET_TEST_DATA['data_contract_id']
 
     lines: List[str] = [
         '# Evo SDK - AI Reference',
+        '',
+        f"Return types: generated from `{type_metadata['sdk']['name']}@{type_metadata['sdk']['version']}` published declarations under `{type_metadata['sdk']['declarationRoot']}/`. See [named return type declarations](TYPE_REFERENCE.md).",
         '',
         '## Overview',
         'The Evo SDK is a thin TypeScript wrapper around the Dash Platform WASM runtime. '
@@ -1243,6 +1382,14 @@ def generate_ai_reference_md(query_defs: dict, transition_defs: dict) -> str:
 
                 append_param_section(lines, query.get('inputs', []))
 
+                lines.append('Returns:')
+                lines.append('')
+                lines.append(f"- `{query['_return_type']}`")
+                type_links = render_type_links_markdown(query.get('_return_references', []))
+                if type_links:
+                    lines.append(type_links)
+                lines.append('')
+
                 lines.append('Example:')
                 lines.append('```javascript')
                 lines.append(format_ai_example_block(example_code, query_key))
@@ -1340,6 +1487,14 @@ def generate_ai_reference_md(query_defs: dict, transition_defs: dict) -> str:
                 append_transition_params(transition_key, lines, sdk_params, True)
             elif inputs:
                 append_transition_params(transition_key, lines, inputs, False)
+
+            lines.append('Returns:')
+            lines.append('')
+            lines.append(f"- `{transition['_return_type']}`")
+            type_links = render_type_links_markdown(transition.get('_return_references', []))
+            if type_links:
+                lines.append(type_links)
+            lines.append('')
 
             lines.append('Example:')
             lines.append('```javascript')
@@ -1454,12 +1609,20 @@ def main() -> None:
         raise SystemExit(f'api-definitions.json not found at {api_file}')
 
     queries, transitions = load_api_definitions(api_file)
+    type_metadata = load_sdk_type_metadata(api_file)
+    attach_return_types(queries, transitions, type_metadata)
 
-    docs_html = generate_docs_html(queries, transitions)
+    docs_html = generate_docs_html(queries, transitions, type_metadata)
     (PUBLIC_DIR / 'docs.html').write_text(docs_html, encoding='utf-8')
 
-    ai_md = generate_ai_reference_md(queries, transitions)
+    ai_md = generate_ai_reference_md(queries, transitions, type_metadata)
     (PUBLIC_DIR / 'AI_REFERENCE.md').write_text(ai_md, encoding='utf-8')
+
+    type_reference_md = generate_type_reference_md(type_metadata)
+    (PUBLIC_DIR / 'TYPE_REFERENCE.md').write_text(type_reference_md, encoding='utf-8')
+
+    type_reference_html = generate_type_reference_html(type_metadata)
+    (PUBLIC_DIR / 'TYPE_REFERENCE.html').write_text(type_reference_html, encoding='utf-8')
 
     public_dist = PUBLIC_DIR / 'dist'
     if copy_node_modules_dist('@dashevo/evo-sdk', public_dist):
@@ -1476,10 +1639,13 @@ def main() -> None:
     manifest = {
         'generated_at': datetime.now(timezone.utc).isoformat(),
         'source_api': 'api-definitions.json',
-        'files': ['docs.html', 'AI_REFERENCE.md', 'version-info.json']
+        'sdk_types': type_metadata['sdk'],
+        'documented_operations': len(type_metadata['operations']),
+        'resolved_sdk_methods': len(type_metadata['methods']),
+        'files': ['docs.html', 'AI_REFERENCE.md', 'TYPE_REFERENCE.md', 'TYPE_REFERENCE.html', 'version-info.json']
     }
     (PUBLIC_DIR / 'docs_manifest.json').write_text(json.dumps(manifest, indent=2), encoding='utf-8')
-    print('Generated: docs.html, AI_REFERENCE.md, docs_manifest.json, version-info.json')
+    print('Generated: docs.html, AI_REFERENCE.md, TYPE_REFERENCE.md, TYPE_REFERENCE.html, docs_manifest.json, version-info.json')
 
 
 if __name__ == '__main__':
