@@ -10,6 +10,7 @@ version while sourcing content from the Evo SDK definitions.
 from __future__ import annotations
 
 import json
+import hashlib
 import re
 import shutil
 import subprocess
@@ -80,7 +81,7 @@ def load_api_definitions(api_definitions_file: Path) -> tuple[dict, dict]:
 
 
 def load_sdk_type_metadata(api_definitions_file: Path) -> dict:
-    """Extract return types from the declarations shipped by the installed Evo SDK."""
+    """Extract the operation catalog from declarations shipped by the installed Evo SDK."""
     extractor = REPO_ROOT / 'scripts' / 'extract_sdk_types.mjs'
     completed = subprocess.run(
         ['node', str(extractor), '--api', str(api_definitions_file)],
@@ -92,7 +93,7 @@ def load_sdk_type_metadata(api_definitions_file: Path) -> dict:
     return json.loads(completed.stdout)
 
 
-def attach_return_types(query_defs: dict, transition_defs: dict, type_metadata: dict) -> None:
+def attach_sdk_metadata(query_defs: dict, transition_defs: dict, type_metadata: dict) -> None:
     methods = type_metadata.get('methods', {})
     operation_count = 0
     for definitions, entries_key in ((query_defs, 'queries'), (transition_defs, 'transitions')):
@@ -104,7 +105,9 @@ def attach_return_types(query_defs: dict, transition_defs: dict, type_metadata: 
                 if not metadata or not metadata.get('returnType'):
                     raise ValueError(f'Missing extracted return type for {sdk_method}')
                 item['_return_type'] = metadata['returnType']
-                item['_return_references'] = metadata.get('references', [])
+                item['_return_references'] = metadata.get('returnReferences', [])
+                item['_sdk_parameters'] = metadata.get('parameters', [])
+                item['_sdk_signature'] = metadata.get('signature', '')
     extracted_operation_count = len(type_metadata.get('operations', []))
     if operation_count != extracted_operation_count:
         raise ValueError(
@@ -140,11 +143,11 @@ def render_type_links_markdown(references: List[str]) -> str:
 def generate_type_reference_md(type_metadata: dict) -> str:
     sdk = type_metadata['sdk']
     lines = [
-        '# Evo SDK Return Type Reference',
+        '# Evo SDK Type Reference',
         '',
         f"Generated from `{sdk['name']}@{sdk['version']}` published TypeScript declarations under `{sdk['declarationRoot']}/`.",
         '',
-        'Only named types referenced by currently documented method return values are included. Declarations are not recursively expanded.',
+        'Named types reachable from documented method inputs and outputs are included recursively.',
         '',
     ]
     for name, metadata in type_metadata.get('types', {}).items():
@@ -181,12 +184,12 @@ def generate_type_reference_html(type_metadata: dict) -> str:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evo SDK Return Type Reference</title>
+    <title>Evo SDK Type Reference</title>
     <link rel="stylesheet" href="docs.css">
 </head>
 <body>
     <div class="sidebar">
-        <h2>Return Types</h2>
+        <h2>Types</h2>
         <ul>
 {sidebar}
         </ul>
@@ -197,9 +200,9 @@ def generate_type_reference_html(type_metadata: dict) -> str:
             <li><a href="AI_REFERENCE.md">AI Reference</a></li>
             <li><a href="TYPE_REFERENCE.md">Markdown Type Reference</a></li>
         </ul></nav>
-        <h1>Evo SDK Return Type Reference</h1>
+        <h1>Evo SDK Type Reference</h1>
         <p>Generated from <code>{safe_value(sdk['name'])}@{safe_value(sdk['version'])}</code> published TypeScript declarations under <code>{safe_value(sdk['declarationRoot'])}/</code>.</p>
-        <p class="description">Only named types referenced by currently documented method return values are included. Declarations are not recursively expanded.</p>
+        <p class="description">Named types reachable from documented method inputs and outputs are included recursively.</p>
 {declarations}
     </main>
 </body>
@@ -531,9 +534,9 @@ def safe_value(text) -> str:
 
 
 def render_parameter(param: dict) -> str:
-    name = safe_value(param.get('label') or param.get('name') or 'Parameter')
+    name = safe_value(param.get('name') or 'Parameter')
     param_type = safe_value(param.get('type', 'text'))
-    required = bool(param.get('required'))
+    required = not bool(param.get('optional'))
     requirement_class = 'param-required' if required else 'param-optional'
     requirement_text = '(required)' if required else '(optional)'
 
@@ -548,26 +551,24 @@ def render_parameter(param: dict) -> str:
     if description:
         lines.append(f'                    <br><small>{safe_value(description)}</small>')
 
-    default = param.get('default')
-    if default not in (None, ''):
-        lines.append(f'                    <br><small>Default: {safe_value(default)}</small>')
+    references = param.get('references') or []
+    if references:
+        lines.append(f'                    {render_type_links_html(references)}')
 
-    placeholder = param.get('placeholder')
-    if placeholder not in (None, ''):
-        lines.append(f'                    <br><small>Example: {safe_value(placeholder)}</small>')
-
-    options = param.get('options') or []
-    if options:
-        option_labels: List[str] = []
-        for opt in options:
-            label = opt.get('label')
-            value = opt.get('value')
-            if label and label != value:
-                option_labels.append(str(label))
-            elif value is not None:
-                option_labels.append(str(value))
-        if option_labels:
-            lines.append(f'                    <br><small>Options: {safe_value(", ".join(option_labels))}</small>')
+    properties = param.get('properties') or []
+    if properties:
+        lines.append('                    <div class="parameter-properties"><small>Properties:</small>')
+        for prop in properties:
+            prop_requirement = 'optional' if prop.get('optional') else 'required'
+            lines.append(
+                f'                        <div><code>{safe_value(prop.get("name"))}</code>: '
+                f'<code>{safe_value(prop.get("type"))}</code> ({prop_requirement})</div>'
+            )
+            if prop.get('references'):
+                lines.append(f'                        {render_type_links_html(prop["references"])}')
+            if prop.get('description'):
+                lines.append(f'                        <small>{safe_value(prop["description"])}</small>')
+        lines.append('                    </div>')
 
     lines.append('                </div>')
     return '\n'.join(lines)
@@ -609,11 +610,14 @@ def render_operation(
 ) -> str:
     label = safe_value(item.get('label', item_key))
     description = safe_value(item.get('description', 'No description available'))
-    params = item.get('sdk_params') or item.get('inputs', [])
+    params = item.get('_sdk_parameters', [])
     params_html = render_parameters(params)
     example_html = safe_value(format_example(example_code, header, include_run_button))
     return_type = safe_value(item.get('_return_type'))
     return_links = render_type_links_html(item.get('_return_references', []))
+    status_html = ''
+    if item.get('disabled'):
+        status_html = f'            <p class="description"><strong>Disabled:</strong> {safe_value(item["disabled"])}</p>\n'
 
     if include_run_button:
         run_section = (
@@ -627,6 +631,8 @@ def render_operation(
     return f'''        <div class="operation">
             <h4 id="{prefix}-{item_key}">{label}</h4>
             <p class="description">{description}</p>
+{status_html}
+            <pre class="code-example"><code>{safe_value(item.get('_sdk_signature'))}</code></pre>
             
             <div class="parameters">
                 <h5>Parameters:</h5>
@@ -1339,32 +1345,22 @@ def generate_ai_reference_md(query_defs: dict, transition_defs: dict, type_metad
         target.append('Parameters:')
         for param in params:
             name = param.get('name', 'unknown')
-            label = param.get('label')
-            display_name = label if label and label != name else name
-            param_type = param.get('type', 'text')
-            required = 'required' if param.get('required') else 'optional'
-            target.append(f"- `{display_name}` ({param_type}, {required})")
-
-            placeholder = param.get('placeholder')
-            if placeholder:
-                target.append(f"  - Example: `{placeholder}`")
-
-            options = param.get('options') or []
-            if options:
-                rendered_options: List[str] = []
-                for option in options:
-                    value = option.get('value')
-                    option_label = option.get('label')
-                    if value is None:
-                        if option_label:
-                            rendered_options.append(option_label)
-                        continue
-                    if option_label and option_label != value:
-                        rendered_options.append(f"`{value}` ({option_label})")
-                    else:
-                        rendered_options.append(f"`{value}`")
-                if rendered_options:
-                    target.append(f"  - Options: {', '.join(rendered_options)}")
+            param_type = param.get('type', 'unknown')
+            required = 'optional' if param.get('optional') else 'required'
+            target.append(f"- `{name}`: `{param_type}` ({required})")
+            if param.get('description'):
+                target.append(f"  - {param['description']}")
+            references = render_type_links_markdown(param.get('references', []))
+            if references:
+                target.append(references)
+            for prop in param.get('properties') or []:
+                prop_required = 'optional' if prop.get('optional') else 'required'
+                target.append(f"  - `{prop['name']}`: `{prop['type']}` ({prop_required})")
+                if prop.get('description'):
+                    target.append(f"    - {prop['description']}")
+                prop_links = render_type_links_markdown(prop.get('references', []))
+                if prop_links:
+                    target.append(f"  {prop_links.strip()}")
 
             target.append('')
 
@@ -1388,8 +1384,13 @@ def generate_ai_reference_md(query_defs: dict, transition_defs: dict, type_metad
                 lines.append(f"**{label}** - `{sdk_method}`")
                 lines.append(f"*{description}*")
                 lines.append('')
+                if query.get('disabled'):
+                    lines.append(f"**Disabled:** {query['disabled']}")
+                    lines.append('')
+                lines.append(f"Signature: `{query['_sdk_signature']}`")
+                lines.append('')
 
-                append_param_section(lines, query.get('inputs', []))
+                append_param_section(lines, query.get('_sdk_parameters', []))
 
                 lines.append('Returns:')
                 lines.append('')
@@ -1411,58 +1412,14 @@ def generate_ai_reference_md(query_defs: dict, transition_defs: dict, type_metad
         '## State Transition Operations',
         '',
         '### Pattern',
-        'State transitions take their v4 payload plus the appropriate public key and signer. '
-        'Identity credit operations take the fetched `identity` and may call the key `signingKey`:',
+        'State transition signatures and option objects below are generated from the installed SDK declarations. '
+        'Example variables such as identities, keys, signers, and contracts are prerequisites prepared by the caller:',
         '```javascript',
-        'const result = await sdk.<namespace>.<transition>({ payload, identityKey, signer });',
+        'const result = await sdk.<namespace>.<transition>(options);',
         '```',
         '',
         '### Available State Transitions',
     ])
-
-    def append_transition_params(
-        item_key: str,
-        target: List[str],
-        params: List[dict],
-        uses_sdk_params: bool,
-    ) -> None:
-        if not params:
-            return
-
-        heading = 'Parameters:' if uses_sdk_params else 'Parameters (payload fields):'
-        target.append(heading)
-        for param in params:
-            name = param.get('name', 'unknown')
-            label = param.get('label')
-            display_name = label if label and label != name else name
-            param_type = param.get('type', 'text')
-            required = 'required' if param.get('required') else 'optional'
-            target.append(f"- `{display_name}` ({param_type}, {required})")
-
-            description = param.get('description')
-            if description:
-                target.append(f"  - {description}")
-            elif param.get('placeholder'):
-                target.append(f"  - Example: `{param['placeholder']}`")
-
-            options = param.get('options') or []
-            if options:
-                rendered_options: List[str] = []
-                for option in options:
-                    value = option.get('value')
-                    option_label = option.get('label')
-                    if value is None:
-                        if option_label:
-                            rendered_options.append(option_label)
-                        continue
-                    if option_label and option_label != value:
-                        rendered_options.append(f"`{value}` ({option_label})")
-                    else:
-                        rendered_options.append(f"`{value}`")
-                if rendered_options:
-                    target.append(f"  - Options: {', '.join(rendered_options)}")
-
-            target.append('')
 
     for cat_key, category in transition_defs.items():
         transitions = category.get('transitions') or {}
@@ -1476,20 +1433,19 @@ def generate_ai_reference_md(query_defs: dict, transition_defs: dict, type_metad
             label = transition.get('label', transition_key)
             description = transition.get('description', 'No description available')
             example_code = transition.get('sdk_example') or evo_example_for_transition(transition_key)
-            sdk_params = transition.get('sdk_params') or []
-            inputs = transition.get('inputs') or []
-
             # Use sdk_method field from api-definitions.json if available, otherwise fall back to transition_key
             sdk_method = transition.get('sdk_method', transition_key)
 
             lines.append(f"**{label}** - `{sdk_method}`")
             lines.append(f"*{description}*")
             lines.append('')
+            if transition.get('disabled'):
+                lines.append(f"**Disabled:** {transition['disabled']}")
+                lines.append('')
+            lines.append(f"Signature: `{transition['_sdk_signature']}`")
+            lines.append('')
 
-            if sdk_params:
-                append_transition_params(transition_key, lines, sdk_params, True)
-            elif inputs:
-                append_transition_params(transition_key, lines, inputs, False)
+            append_param_section(lines, transition.get('_sdk_parameters', []))
 
             lines.append('Returns:')
             lines.append('')
@@ -1613,7 +1569,11 @@ def main() -> None:
 
     queries, transitions = load_api_definitions(api_file)
     type_metadata = load_sdk_type_metadata(api_file)
-    attach_return_types(queries, transitions, type_metadata)
+    attach_sdk_metadata(queries, transitions, type_metadata)
+
+    (PUBLIC_DIR / 'sdk-operation-catalog.json').write_text(
+        json.dumps(type_metadata, indent=2) + '\n', encoding='utf-8'
+    )
 
     docs_html = generate_docs_html(queries, transitions, type_metadata)
     (PUBLIC_DIR / 'docs.html').write_text(docs_html, encoding='utf-8')
@@ -1639,16 +1599,22 @@ def main() -> None:
     (PUBLIC_DIR / 'version-info.json').write_text(json.dumps(version_info, indent=2), encoding='utf-8')
     print(f'Generated version info: SDK {version_info["sdkVersion"]}, commit {version_info["commitHash"]}')
 
+    generated_files = ['docs.html', 'AI_REFERENCE.md', 'TYPE_REFERENCE.md', 'TYPE_REFERENCE.html', 'sdk-operation-catalog.json']
     manifest = {
         'generated_at': datetime.now(timezone.utc).isoformat(),
         'source_api': 'api-definitions.json',
+        'operation_catalog': {'file': 'sdk-operation-catalog.json', 'schema_version': type_metadata['schemaVersion']},
         'sdk_types': type_metadata['sdk'],
         'documented_operations': len(type_metadata['operations']),
         'resolved_sdk_methods': len(type_metadata['methods']),
-        'files': ['docs.html', 'AI_REFERENCE.md', 'TYPE_REFERENCE.md', 'TYPE_REFERENCE.html', 'version-info.json']
+        'files': generated_files + ['version-info.json'],
+        'content_sha256': {
+            name: hashlib.sha256((PUBLIC_DIR / name).read_bytes()).hexdigest()
+            for name in generated_files
+        },
     }
     (PUBLIC_DIR / 'docs_manifest.json').write_text(json.dumps(manifest, indent=2), encoding='utf-8')
-    print('Generated: docs.html, AI_REFERENCE.md, TYPE_REFERENCE.md, TYPE_REFERENCE.html, docs_manifest.json, version-info.json')
+    print('Generated: docs.html, AI_REFERENCE.md, TYPE_REFERENCE.md, TYPE_REFERENCE.html, sdk-operation-catalog.json, docs_manifest.json, version-info.json')
 
 
 if __name__ == '__main__':
