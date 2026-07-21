@@ -130,9 +130,9 @@ def render_type_expression_html(type_expression: str, references: List[str]) -> 
     if not reference_by_name:
         return safe_value(type_expression)
 
-    pattern = re.compile('|'.join(
+    pattern = re.compile(r'\b(?:' + '|'.join(
         re.escape(name) for name in sorted(reference_by_name, key=len, reverse=True)
-    ))
+    ) + r')\b')
     parts = []
     cursor = 0
     for match in pattern.finditer(type_expression):
