@@ -1122,10 +1122,37 @@ def generate_docs_script() -> str:
 
         window.addEventListener('DOMContentLoaded', () => {
             const searchInput = document.getElementById('sidebar-search');
+            const sidebar = document.getElementById('docs-sidebar');
+            const mobileNavToggle = document.getElementById('mobile-nav-toggle');
+            const mobileSidebarBackdrop = document.getElementById('mobile-sidebar-backdrop');
             const sidebarItems = Array.from(document.querySelectorAll('.sidebar li'));
             const categories = Array.from(document.querySelectorAll('.sidebar .category'));
             const sectionHeaders = Array.from(document.querySelectorAll('.sidebar .section-header'));
             const noResults = document.getElementById('no-results');
+
+            const closeMobileSidebar = () => {
+                sidebar?.classList.remove('mobile-open');
+                mobileSidebarBackdrop?.classList.remove('mobile-open');
+                document.body.classList.remove('mobile-sidebar-open');
+                mobileNavToggle?.setAttribute('aria-expanded', 'false');
+                if (mobileNavToggle) mobileNavToggle.textContent = '☰ Docs';
+            };
+
+            mobileNavToggle?.addEventListener('click', () => {
+                const willOpen = !sidebar?.classList.contains('mobile-open');
+                sidebar?.classList.toggle('mobile-open', willOpen);
+                mobileSidebarBackdrop?.classList.toggle('mobile-open', willOpen);
+                document.body.classList.toggle('mobile-sidebar-open', willOpen);
+                mobileNavToggle.setAttribute('aria-expanded', String(willOpen));
+                mobileNavToggle.textContent = willOpen ? 'Close' : '☰ Docs';
+            });
+            mobileSidebarBackdrop?.addEventListener('click', closeMobileSidebar);
+            sidebar?.querySelectorAll('a').forEach((link) => {
+                link.addEventListener('click', closeMobileSidebar);
+            });
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') closeMobileSidebar();
+            });
 
             if (searchInput) {
                 searchInput.addEventListener('input', (event) => {
@@ -1254,7 +1281,10 @@ def generate_docs_html(query_defs: dict, transition_defs: dict, type_metadata: d
         </div>
     </div>
 
-    <div class=\"sidebar\">
+    <button id=\"mobile-nav-toggle\" class=\"mobile-nav-toggle\" type=\"button\" aria-controls=\"docs-sidebar\" aria-expanded=\"false\">☰ Docs</button>
+    <div id=\"mobile-sidebar-backdrop\" class=\"mobile-sidebar-backdrop\"></div>
+
+    <div id=\"docs-sidebar\" class=\"sidebar\">
         <h2>Table of Contents</h2>
         <div class=\"search-container\">
             <input type=\"text\" id=\"sidebar-search\" class=\"search-input\" placeholder=\"Search queries and transitions...\">
