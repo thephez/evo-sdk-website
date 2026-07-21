@@ -1548,36 +1548,6 @@
               "help": "These keys will be added to your new identity"
             }
           ],
-          "sdk_params": [
-            {
-              "name": "identity",
-              "type": "object",
-              "label": "Identity",
-              "required": true,
-              "description": "Identity instance with public keys configured"
-            },
-            {
-              "name": "assetLockProof",
-              "type": "object",
-              "label": "Asset Lock Proof",
-              "required": true,
-              "description": "AssetLockProof instance"
-            },
-            {
-              "name": "assetLockPrivateKey",
-              "type": "object",
-              "label": "Asset Lock Private Key",
-              "required": true,
-              "description": "PrivateKey instance controlling the asset lock output"
-            },
-            {
-              "name": "signer",
-              "type": "object",
-              "label": "Identity Signer",
-              "required": true,
-              "description": "IdentitySigner containing the private keys for the identity's public keys"
-            }
-          ],
           "sdk_example": "import { AssetLockProof, IdentitySigner, PrivateKey } from '@dashevo/evo-sdk';\n\n// Build `identity` with its public keys before submitting the transition.\nconst assetLockProof = AssetLockProof.fromHex(assetLockProofHex);\nconst assetLockPrivateKey = PrivateKey.fromWIF(assetLockPrivateKeyWif);\nconst signer = new IdentitySigner();\nidentityPrivateKeyWifs.forEach((wif) => signer.addKeyFromWif(wif));\n\nconst result = await sdk.identities.create({ identity, assetLockProof, assetLockPrivateKey, signer });",
           "sdk_method": "identities.create"
         },
@@ -1592,29 +1562,6 @@
               "required": true,
               "placeholder": "Enter the identity ID to top up (base58)",
               "help": "The identity ID that will receive the credits from the asset lock proof"
-            }
-          ],
-          "sdk_params": [
-            {
-              "name": "identity",
-              "type": "object",
-              "label": "Identity",
-              "required": true,
-              "description": "Fetched Identity instance to top up"
-            },
-            {
-              "name": "assetLockProof",
-              "type": "object",
-              "label": "Asset Lock Proof",
-              "required": true,
-              "description": "AssetLockProof instance"
-            },
-            {
-              "name": "assetLockPrivateKey",
-              "type": "object",
-              "label": "Asset Lock Private Key",
-              "required": true,
-              "description": "PrivateKey instance controlling the asset lock output"
             }
           ],
           "sdk_example": "import { AssetLockProof, PrivateKey } from '@dashevo/evo-sdk';\n\nconst identity = await sdk.identities.fetch(identityId);\nif (!identity) throw new Error('Identity not found');\nconst assetLockProof = AssetLockProof.fromHex(assetLockProofHex);\nconst assetLockPrivateKey = PrivateKey.fromWIF(assetLockPrivateKeyWif);\n\nconst result = await sdk.identities.topUp({ identity, assetLockProof, assetLockPrivateKey });",
@@ -2526,11 +2473,6 @@
               "placeholder": "tdash1krt0z5hrcaphyuraxmk2h2ff8nyv5fmncsgf7evf"
             }
           ],
-          "sdk_params": [
-            {"name": "inputs", "type": "array", "label": "Inputs", "required": true, "description": "Array of {address, nonce, amount (credits)} objects for sender addresses"},
-            {"name": "outputs", "type": "array", "label": "Outputs", "required": true, "description": "Array of {address, amount (credits)} objects for recipient addresses"},
-            {"name": "signer", "type": "object", "label": "Signer", "required": true, "description": "PlatformAddressSigner instance"}
-          ],
           "sdk_method": "addresses.transfer"
         },
         "addressTopUpIdentity": {
@@ -2565,11 +2507,6 @@
               "label": "Amount (credits)",
               "required": true
             }
-          ],
-          "sdk_params": [
-            {"name": "identity", "type": "object", "label": "Identity", "required": true, "description": "Identity object to top up"},
-            {"name": "inputs", "type": "array", "label": "Inputs", "required": true, "description": "Array of {address, nonce, amount (credits)} objects"},
-            {"name": "signer", "type": "object", "label": "Signer", "required": true, "description": "PlatformAddressSigner instance"}
           ],
           "sdk_method": "addresses.topUpIdentity"
         },
@@ -2613,13 +2550,6 @@
               "placeholder": "1"
             }
           ],
-          "sdk_params": [
-            {"name": "inputs", "type": "array", "label": "Inputs", "required": true, "description": "Array of {address, nonce, amount (credits)} objects"},
-            {"name": "coreFeePerByte", "type": "number", "label": "Core Fee Per Byte", "required": false, "description": "Fee per byte for Core transaction"},
-            {"name": "pooling", "type": "string", "label": "Pooling", "required": false, "description": "Pooling strategy"},
-            {"name": "outputScript", "type": "string", "label": "Output Script", "required": true, "description": "Dash Core output script"},
-            {"name": "signer", "type": "object", "label": "Signer", "required": true, "description": "PlatformAddressSigner instance"}
-          ],
           "sdk_method": "addresses.withdraw"
         },
         "addressTransferFromIdentity": {
@@ -2641,11 +2571,6 @@
               "required": true
             }
           ],
-          "sdk_params": [
-            {"name": "identity", "type": "object", "label": "Identity", "required": true, "description": "Identity object to transfer from"},
-            {"name": "outputs", "type": "array", "label": "Outputs", "required": true, "description": "Array of {address, amount (credits)} objects for recipient addresses"},
-            {"name": "signer", "type": "object", "label": "Signer", "required": true, "description": "IdentitySigner instance"}
-          ],
           "sdk_method": "addresses.transferFromIdentity"
         },
         "addressFundFromAssetLock": {
@@ -2666,12 +2591,6 @@
               "label": "Amount (credits)",
               "required": true
             }
-          ],
-          "sdk_params": [
-            {"name": "assetLockProof", "type": "string", "label": "Asset Lock Proof", "required": true, "description": "Hex-encoded asset lock proof"},
-            {"name": "assetLockPrivateKey", "type": "string", "label": "Asset Lock Private Key", "required": true, "description": "WIF private key for asset lock"},
-            {"name": "outputs", "type": "array", "label": "Outputs", "required": true, "description": "Array of {address, amount (credits)} objects"},
-            {"name": "signer", "type": "object", "label": "Signer", "required": false, "description": "Optional PlatformAddressSigner instance"}
           ],
           "sdk_method": "addresses.fundFromAssetLock"
         },
@@ -2707,12 +2626,6 @@
               "required": true,
               "placeholder": "[{\"id\":0,\"type\":0,\"purpose\":0,\"securityLevel\":0,\"data\":\"...\"}]"
             }
-          ],
-          "sdk_params": [
-            {"name": "identity", "type": "object", "label": "Identity", "required": true, "description": "Identity object with public keys"},
-            {"name": "inputs", "type": "array", "label": "Inputs", "required": true, "description": "Array of {address, nonce, amount (credits)} objects"},
-            {"name": "identitySigner", "type": "object", "label": "Identity Signer", "required": true, "description": "IdentitySigner for signing identity keys"},
-            {"name": "addressSigner", "type": "object", "label": "Address Signer", "required": true, "description": "PlatformAddressSigner instance"}
           ],
           "sdk_method": "addresses.createIdentity"
         }
