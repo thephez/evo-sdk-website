@@ -120,14 +120,31 @@ def type_anchor(reference: str) -> str:
     return 'type-' + re.sub(r'[^a-z0-9]+', '-', reference.replace('wasm.', '').lower()).strip('-')
 
 
-def render_type_links_html(references: List[str]) -> str:
-    if not references:
-        return ''
-    links = ', '.join(
-        f'<a href="TYPE_REFERENCE.html#{type_anchor(reference)}"><code>{safe_value(reference)}</code></a>'
-        for reference in references
-    )
-    return f'<div class="return-type-links"><small>Type declarations: {links}</small></div>'
+def render_type_expression_html(type_expression: str, references: List[str]) -> str:
+    """Render a type expression, linking referenced identifiers in place."""
+    reference_by_name = {}
+    for reference in references:
+        reference_by_name[reference] = reference
+        reference_by_name[reference.removeprefix('wasm.')] = reference
+
+    if not reference_by_name:
+        return safe_value(type_expression)
+
+    pattern = re.compile(r'\b(?:' + '|'.join(
+        re.escape(name) for name in sorted(reference_by_name, key=len, reverse=True)
+    ) + r')\b')
+    parts = []
+    cursor = 0
+    for match in pattern.finditer(type_expression):
+        parts.append(safe_value(type_expression[cursor:match.start()]))
+        reference = reference_by_name[match.group(0)]
+        parts.append(
+            f'<a class="param-type-link" href="TYPE_REFERENCE.html#{type_anchor(reference)}">'
+            f'{safe_value(match.group(0))}</a>'
+        )
+        cursor = match.end()
+    parts.append(safe_value(type_expression[cursor:]))
+    return ''.join(parts)
 
 
 def render_type_links_markdown(references: List[str]) -> str:
@@ -534,39 +551,48 @@ def safe_value(text) -> str:
 
 def render_parameter(param: dict) -> str:
     name = safe_value(param.get('name') or 'Parameter')
-    param_type = safe_value(param.get('type', 'text'))
+    param_type = str(param.get('type', 'text'))
+    references = param.get('references') or []
+    param_type_html = render_type_expression_html(param_type, references)
     required = not bool(param.get('optional'))
     requirement_class = 'param-required' if required else 'param-optional'
-    requirement_text = '(required)' if required else '(optional)'
+    requirement_text = 'Required' if required else 'Optional'
 
     lines = [
         '                <div class="parameter">',
-        f'                    <span class="param-name">{name}</span>',
-        f'                    <span class="param-type">{param_type}</span>',
-        f'                    <span class="{requirement_class}">{requirement_text}</span>',
+        '                    <div class="parameter-heading">',
+        f'                        <span class="param-name">{name}</span>',
+        f'                        <code class="param-type">{param_type_html}</code>',
+        f'                        <span class="param-requirement {requirement_class}">{requirement_text}</span>',
+        '                    </div>',
     ]
 
     description = param.get('description')
     if description:
-        lines.append(f'                    <br><small>{safe_value(description)}</small>')
-
-    references = param.get('references') or []
-    if references:
-        lines.append(f'                    {render_type_links_html(references)}')
+        lines.append(f'                    <p class="parameter-description">{safe_value(description)}</p>')
 
     properties = param.get('properties') or []
     if properties:
-        lines.append('                    <div class="parameter-properties"><small>Properties:</small>')
+        lines.append('                    <div class="parameter-properties">')
         for prop in properties:
-            prop_requirement = 'optional' if prop.get('optional') else 'required'
-            lines.append(
-                f'                        <div><code>{safe_value(prop.get("name"))}</code>: '
-                f'<code>{safe_value(prop.get("type"))}</code> ({prop_requirement})</div>'
+            prop_optional = bool(prop.get('optional'))
+            prop_requirement = 'Optional' if prop_optional else 'Required'
+            prop_class = 'param-optional' if prop_optional else 'param-required'
+            prop_type_html = render_type_expression_html(
+                str(prop.get('type', 'text')),
+                prop.get('references') or [],
             )
-            if prop.get('references'):
-                lines.append(f'                        {render_type_links_html(prop["references"])}')
+            lines.extend([
+                '                        <div class="parameter-property">',
+                '                            <div class="parameter-heading">',
+                f'                                <span class="param-name">{safe_value(prop.get("name"))}</span>',
+                f'                                <code class="param-type">{prop_type_html}</code>',
+                f'                                <span class="param-requirement {prop_class}">{prop_requirement}</span>',
+                '                            </div>',
+            ])
             if prop.get('description'):
-                lines.append(f'                        <small>{safe_value(prop["description"])}</small>')
+                lines.append(f'                            <p class="parameter-description">{safe_value(prop["description"])}</p>')
+            lines.append('                        </div>')
         lines.append('                    </div>')
 
     lines.append('                </div>')
@@ -577,6 +603,24 @@ def render_parameters(params: List[dict]) -> str:
     if not params:
         return '                <p class="param-optional">No parameters required</p>'
     return '\n'.join(render_parameter(param) for param in params)
+
+
+def render_method_signature_html(signature: str, params: List[dict], return_type: str) -> str:
+    """Render the simple SDK method signature with lightweight token coloring."""
+    method_name = signature.split('(', 1)[0] if '(' in signature else signature
+    rendered_params = []
+    for param in params:
+        prefix = '...' if param.get('rest') else ''
+        suffix = '?' if param.get('optional') else ''
+        rendered_params.append(
+            f'<span class="signature-param">{prefix}{safe_value(param.get("name"))}{suffix}</span>: '
+            f'<span class="signature-param-type">{safe_value(param.get("type"))}</span>'
+        )
+    return (
+        f'<span class="signature-method">{safe_value(method_name)}</span>'
+        f'({", ".join(rendered_params)}): '
+        f'<span class="signature-return">{safe_value(return_type)}</span>'
+    )
 
 
 def format_example(code: str, header: str, add_return: bool) -> str:
@@ -611,9 +655,17 @@ def render_operation(
     description = safe_value(item.get('description', 'No description available'))
     params = item.get('_sdk_parameters', [])
     params_html = render_parameters(params)
+    raw_return_type = str(item.get('_return_type') or '')
+    signature_html = render_method_signature_html(
+        str(item.get('_sdk_signature') or ''),
+        params,
+        raw_return_type,
+    )
     example_html = safe_value(format_example(example_code, header, include_run_button))
-    return_type = safe_value(item.get('_return_type'))
-    return_links = render_type_links_html(item.get('_return_references', []))
+    return_type = render_type_expression_html(
+        raw_return_type,
+        item.get('_return_references', []),
+    )
     status_html = ''
     if item.get('disabled'):
         status_html = f'            <p class="description"><strong>Disabled:</strong> {safe_value(item["disabled"])}</p>\n'
@@ -627,21 +679,32 @@ def render_operation(
     else:
         run_section = f"                <div class=\"example-code\">{example_html}</div>"
 
-    return f'''        <div class="operation">
-            <h4 id="{prefix}-{item_key}">{label}</h4>
+    sdk_method = str(item.get('sdk_method') or '')
+    sdk_namespace, separator, sdk_method_name = sdk_method.rpartition('.')
+    if separator:
+        sdk_path_html = (
+            f'<span>sdk.{safe_value(sdk_namespace)}.</span>'
+            f'<strong>{safe_value(sdk_method_name)}</strong>'
+        )
+    else:
+        sdk_path_html = f'<strong>sdk.{safe_value(sdk_method)}</strong>'
+
+    operation_id = f'{prefix}-{item_key}'
+    return f'''        <div class="operation" id="{operation_id}">
+            <div class="operation-kicker">{sdk_path_html}</div>
+            <h4><a class="operation-anchor" href="#{operation_id}">{label}</a></h4>
             <p class="description">{description}</p>
 {status_html}
-            <pre class="code-example"><code>{safe_value(item.get('_sdk_signature'))}</code></pre>
+            <pre class="method-signature" aria-label="{safe_value(item.get('_sdk_signature'))}"><code>{signature_html}</code></pre>
             
             <div class="parameters">
-                <h5>Parameters:</h5>
+                <h5>Parameters</h5>
 {params_html}
             </div>
 
             <div class="returns">
-                <h5>Returns:</h5>
-                <code>{return_type}</code>
-                {return_links}
+                <h5>Returns</h5>
+                <code class="return-type">{return_type}</code>
             </div>
             
             <div class="example-container">
@@ -684,12 +747,13 @@ def render_categories(
     blocks: List[str] = []
     for cat_key, category, items in sections:
         label = safe_value(category.get('label', cat_key))
+        category_id = f'{prefix}-category-{cat_key}'
         operations = '\n'.join(
             render_operation(prefix, item_key, item, example, header, include_run_button)
             for item_key, item, example in items
         )
-        blocks.append(f'''    <div class="category">
-        <h3>{label}</h3>
+        blocks.append(f'''    <div class="category operation-category">
+        <h3 id="{category_id}"><a class="category-anchor" href="#{category_id}">{label}</a></h3>
 {operations}
     </div>''')
     return '\n'.join(blocks)
@@ -1058,10 +1122,37 @@ def generate_docs_script() -> str:
 
         window.addEventListener('DOMContentLoaded', () => {
             const searchInput = document.getElementById('sidebar-search');
+            const sidebar = document.getElementById('docs-sidebar');
+            const mobileNavToggle = document.getElementById('mobile-nav-toggle');
+            const mobileSidebarBackdrop = document.getElementById('mobile-sidebar-backdrop');
             const sidebarItems = Array.from(document.querySelectorAll('.sidebar li'));
             const categories = Array.from(document.querySelectorAll('.sidebar .category'));
             const sectionHeaders = Array.from(document.querySelectorAll('.sidebar .section-header'));
             const noResults = document.getElementById('no-results');
+
+            const closeMobileSidebar = () => {
+                sidebar?.classList.remove('mobile-open');
+                mobileSidebarBackdrop?.classList.remove('mobile-open');
+                document.body.classList.remove('mobile-sidebar-open');
+                mobileNavToggle?.setAttribute('aria-expanded', 'false');
+                if (mobileNavToggle) mobileNavToggle.textContent = '☰ Docs';
+            };
+
+            mobileNavToggle?.addEventListener('click', () => {
+                const willOpen = !sidebar?.classList.contains('mobile-open');
+                sidebar?.classList.toggle('mobile-open', willOpen);
+                mobileSidebarBackdrop?.classList.toggle('mobile-open', willOpen);
+                document.body.classList.toggle('mobile-sidebar-open', willOpen);
+                mobileNavToggle.setAttribute('aria-expanded', String(willOpen));
+                mobileNavToggle.textContent = willOpen ? 'Close' : '☰ Docs';
+            });
+            mobileSidebarBackdrop?.addEventListener('click', closeMobileSidebar);
+            sidebar?.querySelectorAll('a').forEach((link) => {
+                link.addEventListener('click', closeMobileSidebar);
+            });
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') closeMobileSidebar();
+            });
 
             if (searchInput) {
                 searchInput.addEventListener('input', (event) => {
@@ -1190,7 +1281,10 @@ def generate_docs_html(query_defs: dict, transition_defs: dict, type_metadata: d
         </div>
     </div>
 
-    <div class=\"sidebar\">
+    <button id=\"mobile-nav-toggle\" class=\"mobile-nav-toggle\" type=\"button\" aria-controls=\"docs-sidebar\" aria-expanded=\"false\">☰ Docs</button>
+    <div id=\"mobile-sidebar-backdrop\" class=\"mobile-sidebar-backdrop\"></div>
+
+    <div id=\"docs-sidebar\" class=\"sidebar\">
         <h2>Table of Contents</h2>
         <div class=\"search-container\">
             <input type=\"text\" id=\"sidebar-search\" class=\"search-input\" placeholder=\"Search queries and transitions...\">
@@ -1226,10 +1320,10 @@ def generate_docs_html(query_defs: dict, transition_defs: dict, type_metadata: d
 
 {overview_block}
 
-        <h2 id=\"queries\">Queries</h2>
+        <h2 id=\"queries\"><a class=\"section-anchor\" href=\"#queries\">Queries</a></h2>
 {query_content}
 
-        <h2 id=\"state-transitions\">State Transitions</h2>
+        <h2 id=\"state-transitions\"><a class=\"section-anchor\" href=\"#state-transitions\">State Transitions</a></h2>
         <p class=\"description\">Evo SDK v4 state transitions accept constructed payload objects plus the appropriate public key and signer object. Build an <code>IdentitySigner</code> with <code>addKeyFromWif</code>; do not pass a WIF string directly in a transition call. Identity creation and asset-lock top ups instead take typed <code>AssetLockProof</code> and <code>PrivateKey</code> objects.</p>
 {transition_content}
     </div>
