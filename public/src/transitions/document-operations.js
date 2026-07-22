@@ -44,11 +44,11 @@ async function fetchMutableDocument(values, sdk) {
   return document;
 }
 
-function renderCommon(values, identityField = 'ownerId') {
+function renderCommon(values, identityField = 'ownerId', includeIdentifier = false) {
   const identityName = identityField === 'buyerId' ? 'buyer' : 'identity';
   const identityValue = values[identityField] || `<${identityField}>`;
   return [
-    "import { IdentitySigner } from '@dashevo/evo-sdk';",
+    `import { ${includeIdentifier ? 'Identifier, ' : ''}IdentitySigner } from '@dashevo/evo-sdk';`,
     '',
     `const ${identityName} = await sdk.identities.fetch(${JSON.stringify(identityValue)});`,
     `if (!${identityName}) throw new Error('Identity not found');`,
@@ -138,9 +138,9 @@ for (const [key, method, identityField] of [
       return { status: 'success', documentId: id, price: prepared.context.price, message: `Document price set to ${prepared.context.price} credits` };
     },
     renderCode(values) {
-      const lines = [...renderCommon(values, identityField), '', ...renderFetchedDocument(values), ''];
-      if (key === 'documentTransfer') lines.push('const recipientId = Identifier.fromBase58(recipientIdentityId);', 'await sdk.documents.transfer({ document, recipientId, identityKey, signer });');
-      if (key === 'documentPurchase') lines.push('const buyerId = Identifier.fromBase58(buyerIdentityId);', 'await sdk.documents.purchase({ document, buyerId, price: BigInt(price), identityKey, signer });');
+      const lines = [...renderCommon(values, identityField, key !== 'documentSetPrice'), '', ...renderFetchedDocument(values), ''];
+      if (key === 'documentTransfer') lines.push('const recipientIdentifier = Identifier.fromBase58(recipientId);', 'await sdk.documents.transfer({ document, recipientId: recipientIdentifier, identityKey, signer });');
+      if (key === 'documentPurchase') lines.push('const buyerIdentifier = Identifier.fromBase58(buyerId);', 'await sdk.documents.purchase({ document, buyerId: buyerIdentifier, price: BigInt(price), identityKey, signer });');
       if (key === 'documentSetPrice') lines.push('await sdk.documents.setPrice({ document, price: BigInt(price), identityKey, signer });');
       return lines.join('\n');
     },

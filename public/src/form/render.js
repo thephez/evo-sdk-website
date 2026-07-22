@@ -248,7 +248,7 @@ export function updateGeneratedCodePreview() {
   const extras = {};
   const identityId = elements.identityIdInput?.value.trim();
   auth?.identity?.targets?.forEach(target => { extras[target] = identityId || `<${target}>`; });
-  if (auth?.privateKey?.targets?.length) extras.privateKeyWif = '<privateKeyWif>';
+  auth?.privateKey?.targets?.forEach(target => { extras[target] = `<${target}>`; });
   const code = renderTransitionCode(operationKey, defs, args, extras);
   elements.generatedCode.textContent = code;
   elements.generatedCodePanel.style.display = code ? 'block' : 'none';

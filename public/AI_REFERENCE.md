@@ -2083,7 +2083,7 @@ Returns:
 
 Example:
 ```javascript
-import { IdentitySigner } from '@dashevo/evo-sdk';
+import { Identifier, IdentitySigner } from '@dashevo/evo-sdk';
 
 const identity = await sdk.identities.fetch("<ownerId>");
 if (!identity) throw new Error('Identity not found');
@@ -2096,8 +2096,8 @@ const document = await sdk.documents.get("<contractId>", "<documentType>", "<doc
 if (!document) throw new Error('Document not found');
 document.revision = BigInt(document.revision) + 1n;
 
-const recipientId = Identifier.fromBase58(recipientIdentityId);
-await sdk.documents.transfer({ document, recipientId, identityKey, signer });
+const recipientIdentifier = Identifier.fromBase58(recipientId);
+await sdk.documents.transfer({ document, recipientId: recipientIdentifier, identityKey, signer });
 ```
 
 **Document Purchase** - `documents.purchase`
@@ -2140,7 +2140,7 @@ Returns:
 
 Example:
 ```javascript
-import { IdentitySigner } from '@dashevo/evo-sdk';
+import { Identifier, IdentitySigner } from '@dashevo/evo-sdk';
 
 const buyer = await sdk.identities.fetch("<buyerId>");
 if (!buyer) throw new Error('Identity not found');
@@ -2153,8 +2153,8 @@ const document = await sdk.documents.get("<contractId>", "<documentType>", "<doc
 if (!document) throw new Error('Document not found');
 document.revision = BigInt(document.revision) + 1n;
 
-const buyerId = Identifier.fromBase58(buyerIdentityId);
-await sdk.documents.purchase({ document, buyerId, price: BigInt(price), identityKey, signer });
+const buyerIdentifier = Identifier.fromBase58(buyerId);
+await sdk.documents.purchase({ document, buyerId: buyerIdentifier, price: BigInt(price), identityKey, signer });
 ```
 
 **Document Set Price** - `documents.setPrice`
