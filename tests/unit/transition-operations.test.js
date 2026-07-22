@@ -60,6 +60,9 @@ describe('document transition operation registry', () => {
     expect(tokenTransitionOperations.tokenTransfer.renderCode({})).toContain('Identifier.fromBase58');
     expect(tokenTransitionOperations.tokenTransfer.renderCode({})).toContain('BigInt(amount)');
     expect(transitionOperations.addressTransfer.renderCode({})).toContain('new PlatformAddressInput');
+    const addressCreateCode = transitionOperations.addressCreateIdentity.renderCode({});
+    expect(addressCreateCode).toContain('const identity = new Identity(Identifier.random())');
+    expect(addressCreateCode.indexOf('const identity =')).toBeLessThan(addressCreateCode.indexOf('sdk.addresses.createIdentity'));
   });
   it('registers every document write against its declared SDK method', () => {
     for (const [key, operation] of Object.entries(documentTransitionOperations)) {

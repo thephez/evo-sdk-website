@@ -3261,10 +3261,16 @@ Returns:
 
 Example:
 ```javascript
-import { IdentitySigner, PlatformAddressInput, PlatformAddressSigner } from '@dashevo/evo-sdk';
+import { Identifier, Identity, IdentityPublicKeyInCreation, IdentitySigner, KeyType, PlatformAddressInput, PlatformAddressSigner, PrivateKey, Purpose, SecurityLevel } from '@dashevo/evo-sdk';
+const identityPrivateKey = PrivateKey.fromWIF(identityPrivateKeyWif);
+const identity = new Identity(Identifier.random());
+const identityPublicKey = new IdentityPublicKeyInCreation({ keyId: 0, purpose: Purpose.AUTHENTICATION, securityLevel: SecurityLevel.MASTER, keyType: KeyType.ECDSA_SECP256K1, data: identityPrivateKey.getPublicKey().toBytes() }).toIdentityPublicKey();
+identity.addPublicKey(identityPublicKey);
 const inputs = [new PlatformAddressInput({ address: senderAddress, amount })];
 const identitySigner = new IdentitySigner();
+identitySigner.addKey(identityPrivateKey);
 const addressSigner = new PlatformAddressSigner();
+addressSigner.addKey(addressPrivateKey);
 await sdk.addresses.createIdentity({ identity, inputs, identitySigner, addressSigner });
 ```
 
