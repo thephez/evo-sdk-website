@@ -75,6 +75,19 @@ test.describe('Evo SDK Basic Smoke Tests', () => {
     await expect(networkIndicator).toContainText('TESTNET');
   });
 
+  test('generated transition code is typed, method-aligned, and redacts entered keys', async ({ page }) => {
+    await evoSdkPage.setupStateTransition('document', 'documentDelete');
+
+    const secret = 'L1-DO-NOT-RENDER-THIS-PRIVATE-KEY';
+    await page.locator('#privateKey').fill(secret);
+
+    const generatedCode = page.locator('#generatedCode');
+    await expect(generatedCode).toBeVisible();
+    await expect(generatedCode).toContainText('sdk.documents.delete');
+    await expect(generatedCode).toContainText('IdentitySigner');
+    await expect(generatedCode).not.toContainText(secret);
+  });
+
   test('should load query categories', async () => {
     await evoSdkPage.setOperationType('queries');
     
@@ -463,7 +476,6 @@ test.describe('Query Categories and Types UI Tests', () => {
     const expected = [
       'Lookup & Resolve',
       'Validation & Safety',
-      'Registration',
     ];
 
     ensureExactOptions(categories, expected, 'DPNS categories');
@@ -503,19 +515,6 @@ test.describe('Query Categories and Types UI Tests', () => {
     ];
 
     ensureExactOptions(operations, expected, 'DPNS validation operations');
-  });
-
-  test('should populate DPNS registration operations correctly', async () => {
-    await evoSdkPage.setOperationType('dpns');
-    await evoSdkPage.setQueryCategory('registration');
-
-    const operations = filterPlaceholderOptions(
-      await evoSdkPage.getAvailableQueryTypes()
-    );
-
-    const expected = ['Register DPNS Name'];
-
-    ensureExactOptions(operations, expected, 'DPNS registration operations');
   });
 
   test('should populate system query types correctly', async () => {
