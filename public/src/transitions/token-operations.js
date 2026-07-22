@@ -16,7 +16,7 @@ const CONFIG = {
   tokenFreeze: { method: 'freeze', ids: { authorityId: 'identityId', frozenIdentityId: 'identityToFreeze' } },
   tokenUnfreeze: { method: 'unfreeze', ids: { authorityId: 'identityId', frozenIdentityId: 'identityToUnfreeze' } },
   tokenDestroyFrozen: { method: 'destroyFrozen', ids: { authorityId: 'identityId', frozenIdentityId: 'frozenIdentityId' } },
-  tokenSetPriceForDirectPurchase: { method: 'setPrice', ids: { authorityId: 'identityId' }, bigints: { price: 'priceData' } },
+  tokenSetPriceForDirectPurchase: { method: 'setPrice', ids: { authorityId: 'identityId' }, nullableBigints: { price: 'priceData' } },
   tokenDirectPurchase: { method: 'directPurchase', ids: { buyerId: 'identityId' }, bigints: { amount: 'amount', maxTotalCost: 'totalAgreedPrice' } },
   tokenClaim: { method: 'claim', ids: { identityId: 'identityId' }, values: { distributionType: 'distributionType' } },
   tokenEmergencyAction: { method: 'emergencyAction', ids: { authorityId: 'identityId' }, values: { action: 'actionType' } },
@@ -27,6 +27,10 @@ function required(value, label) {
   return value;
 }
 
+function hasValue(value) {
+  return value !== undefined && value !== null && value !== '';
+}
+
 function renderCode(config) {
   const optionLines = [
     '  dataContractId: Identifier.fromBase58(contractId),',
@@ -34,6 +38,7 @@ function renderCode(config) {
     ...Object.entries(config.ids || {}).map(([target, source]) => `  ${target}: Identifier.fromBase58(${source}),`),
     ...Object.entries(config.optionalIds || {}).map(([target, source]) => `  ${target}: ${source} ? Identifier.fromBase58(${source}) : undefined,`),
     ...Object.entries(config.bigints || {}).map(([target, source]) => `  ${target}: BigInt(${source}),`),
+    ...Object.entries(config.nullableBigints || {}).map(([target, source]) => `  ${target}: ${source} == null || ${source} === '' ? null : BigInt(${source}),`),
     ...Object.entries(config.values || {}).map(([target, source]) => `  ${target}: ${source},`),
     '  publicNote: publicNote || undefined,',
     '  identityKey,',
@@ -71,6 +76,7 @@ export const tokenTransitionOperations = Object.fromEntries(Object.entries(CONFI
       if (values[source]) options[target] = Identifier.fromBase58(values[source]);
     }
     for (const [target, source] of Object.entries(config.bigints || {})) options[target] = BigInt(required(values[source], target));
+    for (const [target, source] of Object.entries(config.nullableBigints || {})) options[target] = hasValue(values[source]) ? BigInt(values[source]) : null;
     for (const [target, source] of Object.entries(config.values || {})) options[target] = required(values[source], target);
     if (values.publicNote) options.publicNote = values.publicNote;
     return { options, context: { values } };

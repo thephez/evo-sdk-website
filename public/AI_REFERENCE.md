@@ -2499,7 +2499,7 @@ await sdk.tokens.setPrice({
   dataContractId: Identifier.fromBase58(contractId),
   tokenPosition: Number(tokenPosition),
   authorityId: Identifier.fromBase58(identityId),
-  price: BigInt(priceData),
+  price: priceData == null || priceData === '' ? null : BigInt(priceData),
   publicNote: publicNote || undefined,
   identityKey,
   signer,

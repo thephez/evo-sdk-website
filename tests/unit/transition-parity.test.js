@@ -112,4 +112,43 @@ describe('prepared transition and rendered-code parity', () => {
     expect(code).toContain('amount: BigInt(amount)');
     expectPreparedCodeParity('tokenTransfer', operation, prepared, code);
   });
+
+  it('preserves canonical token claims and nullable set prices', async () => {
+    const claim = await tokenTransitionOperations.tokenClaim.prepare({
+      contractId: 'contract-id', tokenPosition: '0', identityId: 'identity-id',
+      distributionType: 'preProgrammed', keyId: 3, privateKeyWif: 'test-wif',
+    }, sdk());
+    expect(claim.options.distributionType).toBe('preProgrammed');
+    expect(tokenTransitionOperations.tokenClaim.renderCode({}))
+      .toContain('distributionType: distributionType');
+
+    const setPrice = await tokenTransitionOperations.tokenSetPriceForDirectPurchase.prepare({
+      contractId: 'contract-id', tokenPosition: '0', identityId: 'identity-id',
+      priceData: '', keyId: 3, privateKeyWif: 'test-wif',
+    }, sdk());
+    expect(setPrice.options.price).toBeNull();
+
+    const zeroPrice = await tokenTransitionOperations.tokenSetPriceForDirectPurchase.prepare({
+      contractId: 'contract-id', tokenPosition: '0', identityId: 'identity-id',
+      priceData: '0', keyId: 3, privateKeyWif: 'test-wif',
+    }, sdk());
+    expect(zeroPrice.options.price).toBe(0n);
+    expect(tokenTransitionOperations.tokenSetPriceForDirectPurchase.renderCode({}))
+      .toContain("priceData == null || priceData === '' ? null : BigInt(priceData)");
+  });
+
+  it('requires and converts the direct-purchase maximum cost', async () => {
+    const operation = tokenTransitionOperations.tokenDirectPurchase;
+    await expect(operation.prepare({
+      contractId: 'contract-id', tokenPosition: '0', identityId: 'identity-id', amount: '2',
+      totalAgreedPrice: '', keyId: 3, privateKeyWif: 'test-wif',
+    }, sdk())).rejects.toThrow('maxTotalCost is required');
+
+    const prepared = await operation.prepare({
+      contractId: 'contract-id', tokenPosition: '0', identityId: 'identity-id', amount: '2',
+      totalAgreedPrice: '0', keyId: 3, privateKeyWif: 'test-wif',
+    }, sdk());
+    expect(prepared.options.maxTotalCost).toBe(0n);
+    expect(operation.renderCode({})).toContain('maxTotalCost: BigInt(totalAgreedPrice)');
+  });
 });

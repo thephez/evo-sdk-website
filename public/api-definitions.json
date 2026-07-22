@@ -2005,7 +2005,7 @@
                   "label": "Perpetual"
                 },
                 {
-                  "value": "preprogrammed",
+                  "value": "preProgrammed",
                   "label": "Pre-programmed"
                 }
               ]
@@ -2092,8 +2092,8 @@
             {
               "name": "totalAgreedPrice",
               "type": "text",
-              "label": "Total Agreed Price (in credits) - Optional, fetches from pricing schedule if not provided",
-              "required": false
+              "label": "Maximum Total Cost (in credits)",
+              "required": true
             }
           ],
           "sdk_method": "tokens.directPurchase"
