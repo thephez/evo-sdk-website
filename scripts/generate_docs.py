@@ -25,6 +25,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 PUBLIC_DIR = REPO_ROOT / 'public'
 NODE_MODULES_DIR = REPO_ROOT / 'node_modules'
 DEFAULT_TEST_IDENTITY = '5DbLwAxGBzUzo81VewMUwn4b5P4bpv9FNFybi25XB5Bk'
+TRANSITION_OPERATION_EXAMPLES: dict[str, str] = {}
 
 def copy_node_modules_dist(package: str, destination: Path) -> bool:
     """Copy the /dist directory from node_modules if it exists."""
@@ -89,6 +90,15 @@ def load_sdk_type_metadata(api_definitions_file: Path) -> dict:
         check=True,
         capture_output=True,
         text=True,
+    )
+    return json.loads(completed.stdout)
+
+
+def load_transition_operation_examples() -> dict[str, str]:
+    """Render examples from the browser transition-operation registry."""
+    renderer = REPO_ROOT / 'scripts' / 'render_transition_examples.mjs'
+    completed = subprocess.run(
+        ['node', str(renderer)], cwd=REPO_ROOT, check=True, capture_output=True, text=True
     )
     return json.loads(completed.stdout)
 
@@ -501,6 +511,8 @@ def evo_example_for_query(key: str, inputs: List[dict]):
 
 
 def evo_example_for_transition(key: str):
+    if key in TRANSITION_OPERATION_EXAMPLES:
+        return TRANSITION_OPERATION_EXAMPLES[key]
     m = {
         # Identities
         # 'identityCreate' - example in api-definitions.json
@@ -1355,8 +1367,11 @@ def format_ai_example_block(code: str | None, item_key: str) -> str:
     stripped = first_line.lstrip()
     indent = first_line[: len(first_line) - len(stripped)]
 
-    # Check if the example already contains variable declarations or const result
+    # Multi-statement operation examples begin with imports/declarations and already
+    # contain their final SDK call. Only expression-style examples need a result binding.
     already_has_declaration = (
+        stripped.startswith('import ') or
+        stripped.startswith('export ') or
         stripped.startswith('const ') or
         stripped.startswith('let ') or
         stripped.startswith('var ') or
@@ -1656,11 +1671,13 @@ def generate_version_info() -> dict:
 
 
 def main() -> None:
+    global TRANSITION_OPERATION_EXAMPLES
     api_file = PUBLIC_DIR / 'api-definitions.json'
     if not api_file.exists():
         raise SystemExit(f'api-definitions.json not found at {api_file}')
 
     queries, transitions = load_api_definitions(api_file)
+    TRANSITION_OPERATION_EXAMPLES = load_transition_operation_examples()
     type_metadata = load_sdk_type_metadata(api_file)
     attach_sdk_metadata(queries, transitions, type_metadata)
 
