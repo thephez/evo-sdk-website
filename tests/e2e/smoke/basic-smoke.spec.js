@@ -75,17 +75,24 @@ test.describe('Evo SDK Basic Smoke Tests', () => {
     await expect(networkIndicator).toContainText('TESTNET');
   });
 
-  test('generated transition code is typed, method-aligned, and redacts entered keys', async ({ page }) => {
-    await evoSdkPage.setupStateTransition('document', 'documentDelete');
-
+  test('generated transition code covers each tested family and redacts entered keys', async ({ page }) => {
     const secret = 'L1-DO-NOT-RENDER-THIS-PRIVATE-KEY';
-    await page.locator('#privateKey').fill(secret);
+    const families = [
+      ['identity', 'identityCreditTransfer', 'sdk.identities.creditTransfer', 'IdentitySigner'],
+      ['dataContract', 'dataContractCreate', 'sdk.contracts.publish', 'new DataContract'],
+      ['document', 'documentDelete', 'sdk.documents.delete', 'IdentitySigner'],
+      ['token', 'tokenTransfer', 'sdk.tokens.transfer', 'Identifier.fromBase58'],
+    ];
 
-    const generatedCode = page.locator('#generatedCode');
-    await expect(generatedCode).toBeVisible();
-    await expect(generatedCode).toContainText('sdk.documents.delete');
-    await expect(generatedCode).toContainText('IdentitySigner');
-    await expect(generatedCode).not.toContainText(secret);
+    for (const [category, operation, method, typedConstruction] of families) {
+      await evoSdkPage.setupStateTransition(category, operation);
+      await page.locator('#privateKey').fill(secret);
+      const generatedCode = page.locator('#generatedCode');
+      await expect(generatedCode).toBeVisible();
+      await expect(generatedCode).toContainText(method);
+      await expect(generatedCode).toContainText(typedConstruction);
+      await expect(generatedCode).not.toContainText(secret);
+    }
   });
 
   test('should load query categories', async () => {
