@@ -1,4 +1,5 @@
 import { computeAuthRequirements, updateAuthInputsVisibility } from '../auth.js';
+import { getPreviewKeyId } from '../auth-preview.js';
 import { DPNS_AUTH_REQUIREMENTS, PROOF_CAPABLE, TYPE_CONFIG, getTypeConfig } from '../definitions-data.js';
 import { SUPPORTED_INPUT_TYPES, normalizeType } from '../input-types.js';
 import { createContestedResourceHandler, createDocumentFieldsHandler, createGenericDynamicHandler, fetchContestedResources, fetchDocumentSchema, generateTestSeed, loadExistingDocument } from './dynamic-handlers.js';
@@ -248,7 +249,12 @@ export function updateGeneratedCodePreview() {
   const extras = {};
   const identityId = elements.identityIdInput?.value.trim();
   auth?.identity?.targets?.forEach(target => { extras[target] = identityId || `<${target}>`; });
+  const rawPrivateKey = elements.privateKeyInput?.value.trim();
   auth?.privateKey?.targets?.forEach(target => { extras[target] = `<${target}>`; });
+  const keyId = getPreviewKeyId(rawPrivateKey, auth?.privateKey?.allowKeyId);
+  if (keyId !== undefined) {
+    extras[auth.privateKey.keyIdTarget || 'keyId'] = keyId;
+  }
   const code = renderTransitionCode(operationKey, defs, args, extras);
   elements.generatedCode.textContent = code;
   elements.generatedCodePanel.style.display = code ? 'block' : 'none';

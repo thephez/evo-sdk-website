@@ -14,6 +14,22 @@ function required(value, label) {
   return value;
 }
 
+export function parseDisablePublicKeyIds(value) {
+  if (value === undefined || value === null || value === '') return undefined;
+  const entries = Array.isArray(value) ? value : String(value).split(',');
+  return entries.map(entry => {
+    const text = String(entry).trim();
+    if (!/^\d+$/.test(text)) {
+      throw new Error('Public key IDs to disable must be comma-separated non-negative integers');
+    }
+    const keyId = Number(text);
+    if (!Number.isSafeInteger(keyId)) {
+      throw new Error('Public key IDs to disable must be comma-separated non-negative integers');
+    }
+    return keyId;
+  });
+}
+
 async function identityContext(values, sdk) {
   const identityId = required(values.identityId, 'Identity ID');
   const identity = await sdk.identities.fetch(identityId);
@@ -55,10 +71,10 @@ export const identityTransitionOperations = {
     sdkMethod: 'identities.update', fields: IDENTITY_FIELDS,
     async prepare(values, sdk) {
       const { identity, signer, identityId } = await identityContext(values, sdk);
-      const disablePublicKeys = values.disablePublicKeys?.length ? values.disablePublicKeys.map(Number) : undefined;
+      const disablePublicKeys = parseDisablePublicKeyIds(values.disablePublicKeys);
       return { options: { identity, addPublicKeys: values.addPublicKeys || undefined, disablePublicKeys, signer }, context: { identityId } };
     },
     async execute(prepared, sdk) { await sdk.identities.update(prepared.options); return { status: 'success', identityId: prepared.context.identityId, message: 'Identity updated successfully' }; },
-    renderCode(values) { return [...renderContext(values), '', 'await sdk.identities.update({ identity, addPublicKeys, disablePublicKeys, signer });'].join('\n'); },
+    renderCode(values) { return [...renderContext(values), '', "const disabledKeyIds = disablePublicKeys?.split(',').map(value => Number(value.trim()));", 'await sdk.identities.update({ identity, addPublicKeys, disablePublicKeys: disabledKeyIds, signer });'].join('\n'); },
   },
 };

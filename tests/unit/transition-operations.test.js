@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { documentTransitionOperations } from '../../public/src/transitions/document-operations.js';
-import { identityTransitionOperations } from '../../public/src/transitions/identity-operations.js';
+import { identityTransitionOperations, parseDisablePublicKeyIds } from '../../public/src/transitions/identity-operations.js';
 import { getTransitionOperation, renderTransitionCode, transitionOperations } from '../../public/src/transitions/registry.js';
 import { tokenTransitionOperations } from '../../public/src/transitions/token-operations.js';
 import { assetLockTransitionOperations } from '../../public/src/transitions/asset-lock-operations.js';
@@ -113,6 +113,21 @@ describe('legacy document transition regression', () => {
 });
 
 describe('tested identity transition operations', () => {
+  it('parses comma-separated public key IDs for identity updates', () => {
+    expect(parseDisablePublicKeyIds('2, 3,5')).toEqual([2, 3, 5]);
+    expect(parseDisablePublicKeyIds([2, '3'])).toEqual([2, 3]);
+    expect(parseDisablePublicKeyIds('')).toBeUndefined();
+  });
+
+  it.each(['-1', '2,nope', '2,,3', '9007199254740992'])(
+    'rejects invalid public key IDs for identity updates: %s',
+    value => {
+      expect(() => parseDisablePublicKeyIds(value)).toThrow(
+        'Public key IDs to disable must be comma-separated non-negative integers',
+      );
+    },
+  );
+
   it('uses the catalog methods and redacts credentials', () => {
     for (const [key, operation] of Object.entries(identityTransitionOperations)) {
       const record = catalog.operations.find(item => item.key === key);
