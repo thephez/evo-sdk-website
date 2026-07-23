@@ -1212,35 +1212,38 @@ test.describe('Evo SDK State Transition Tests', () => {
     });
 
     test('should execute token emergency action transition (pause and resume)', async () => {
-      await test.step('Pause token', async () => {
+      const performEmergencyAction = async (actionType) => {
         await evoSdkPage.setupStateTransition('token', 'tokenEmergencyAction');
 
         const success = await parameterInjector.injectStateTransitionParameters(
           'token',
           'tokenEmergencyAction',
           'testnet',
-          { actionType: 'pause' }
+          { actionType }
         );
         expect(success).toBe(true);
 
-        const result = await evoSdkPage.executeStateTransitionAndGetResult();
+        return evoSdkPage.executeStateTransitionAndGetResult();
+      };
+
+      await test.step('Pause token', async () => {
+        let result = await performEmergencyAction('pause');
+
+        // A previous interrupted run may have paused the shared fixture without
+        // reaching its cleanup step. Restore the baseline, then exercise Pause.
+        if (!result.success && /already paused/i.test(result.result || '')) {
+          const recovery = await performEmergencyAction('resume');
+          validateBasicStateTransitionResult(recovery);
+          validateTokenEmergencyActionResult(recovery.result, 'resume');
+          result = await performEmergencyAction('pause');
+        }
 
         validateBasicStateTransitionResult(result);
         validateTokenEmergencyActionResult(result.result, 'pause');
       });
 
       await test.step('Resume token', async () => {
-        await evoSdkPage.setupStateTransition('token', 'tokenEmergencyAction');
-
-        const success = await parameterInjector.injectStateTransitionParameters(
-          'token',
-          'tokenEmergencyAction',
-          'testnet',
-          { actionType: 'resume' }
-        );
-        expect(success).toBe(true);
-
-        const result = await evoSdkPage.executeStateTransitionAndGetResult();
+        const result = await performEmergencyAction('resume');
 
         validateBasicStateTransitionResult(result);
         validateTokenEmergencyActionResult(result.result, 'resume');
