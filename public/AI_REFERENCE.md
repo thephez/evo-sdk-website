@@ -2977,8 +2977,6 @@ const result = await sdk.voting.masternodeVote({ masternodeProTxHash, votePoll, 
 **Address Transfer** - `addresses.transfer`
 *Transfer credits between Platform addresses*
 
-**Disabled:** Platform addresses not fully implemented in SDK
-
 Signature: `transfer(options: wasm.AddressFundsTransferOptions): Promise<Map<string, wasm.PlatformAddressInfo>>`
 
 Parameters:
@@ -3013,18 +3011,18 @@ Returns:
 
 Example:
 ```javascript
-import { PlatformAddressInput, PlatformAddressOutput, PlatformAddressSigner } from '@dashevo/evo-sdk';
-const inputs = [new PlatformAddressInput({ address: senderAddress, amount })];
-const outputs = [new PlatformAddressOutput({ address: recipientAddress, amount })];
+import { PlatformAddressSigner, PrivateKey } from '@dashevo/evo-sdk';
 const signer = new PlatformAddressSigner();
-signer.addKey(privateKey);
-await sdk.addresses.transfer({ inputs, outputs, signer });
+const senderAddress = signer.addKey(PrivateKey.fromWIF(addressPrivateKeyWif));
+const addressInfo = await sdk.addresses.get(senderAddress);
+if (!addressInfo) throw new Error('Platform Address is not funded');
+const input = { address: senderAddress.toBech32m(network), amount: BigInt(amount) };
+const output = { address: recipientAddress, amount: BigInt(amount) };
+await sdk.addresses.transfer({ inputs: [input], outputs: [output], signer });
 ```
 
 **Top Up Identity from Address** - `addresses.topUpIdentity`
 *Top up an identity using Platform address credits*
-
-**Disabled:** Platform addresses not fully implemented in SDK
 
 Signature: `topUpIdentity(options: wasm.IdentityTopUpFromAddressesOptions): Promise<wasm.IdentityTopUpFromAddressesResult>`
 
@@ -3055,18 +3053,19 @@ Returns:
 
 Example:
 ```javascript
-import { PlatformAddressInput, PlatformAddressSigner } from '@dashevo/evo-sdk';
 const identity = await sdk.identities.fetch(identityId);
-const inputs = [new PlatformAddressInput({ address: senderAddress, amount })];
+if (!identity) throw new Error('Identity not found');
+import { PlatformAddressSigner, PrivateKey } from '@dashevo/evo-sdk';
 const signer = new PlatformAddressSigner();
-signer.addKey(privateKey);
-await sdk.addresses.topUpIdentity({ identity, inputs, signer });
+const senderAddress = signer.addKey(PrivateKey.fromWIF(addressPrivateKeyWif));
+const addressInfo = await sdk.addresses.get(senderAddress);
+if (!addressInfo) throw new Error('Platform Address is not funded');
+const input = { address: senderAddress.toBech32m(network), amount: BigInt(amount) };
+await sdk.addresses.topUpIdentity({ identity, inputs: [input], signer });
 ```
 
 **Withdraw to Core** - `addresses.withdraw`
 *Withdraw Platform address credits to Dash Core*
-
-**Disabled:** Platform addresses not fully implemented in SDK
 
 Signature: `withdraw(options: wasm.AddressFundsWithdrawOptions): Promise<Map<string, wasm.PlatformAddressInfo>>`
 
@@ -3115,18 +3114,37 @@ Returns:
 
 Example:
 ```javascript
-import { CoreScript, PlatformAddressInput, PlatformAddressSigner } from '@dashevo/evo-sdk';
-const inputs = [new PlatformAddressInput({ address: senderAddress, amount })];
-const outputScript = CoreScript.newP2PKH(coreAddress);
+import { PlatformAddressSigner, PrivateKey } from '@dashevo/evo-sdk';
 const signer = new PlatformAddressSigner();
-signer.addKey(privateKey);
-await sdk.addresses.withdraw({ inputs, coreFeePerByte, pooling, outputScript, signer });
+const senderAddress = signer.addKey(PrivateKey.fromWIF(addressPrivateKeyWif));
+const addressInfo = await sdk.addresses.get(senderAddress);
+if (!addressInfo) throw new Error('Platform Address is not funded');
+const input = { address: senderAddress.toBech32m(network), amount: BigInt(amount) };
+import { CoreScript, PoolingWasm, wallet } from '@dashevo/evo-sdk';
+const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+async function coreScriptFromAddress(address) {
+  if (!await wallet.validateAddress(address, network)) throw new Error('Dash Core address is invalid for the selected network');
+  let value = 0n;
+  for (const character of address) {
+    value = value * 58n + BigInt(BASE58_ALPHABET.indexOf(character));
+  }
+  const decoded = [];
+  while (value > 0n) { decoded.unshift(Number(value & 255n)); value >>= 8n; }
+  for (const character of address) { if (character !== '1') break; decoded.unshift(0); }
+  const payload = Uint8Array.from(decoded.slice(0, 21));
+  const hash = payload.slice(1);
+  if ([0x4c, 0x8c].includes(payload[0])) return CoreScript.fromP2PKH(hash);
+  if ([0x10, 0x13].includes(payload[0])) return CoreScript.fromP2SH(hash);
+  throw new Error('Unsupported Dash Core address version');
+}
+const outputScript = await coreScriptFromAddress(toAddress);
+const parsedCoreFeePerByte = coreFeePerByte == null || coreFeePerByte === '' ? 1 : Number(coreFeePerByte);
+if (!Number.isSafeInteger(parsedCoreFeePerByte) || parsedCoreFeePerByte < 0 || parsedCoreFeePerByte > 0xffffffff) throw new Error('Core fee per byte must be an unsigned 32-bit integer');
+await sdk.addresses.withdraw({ inputs: [input], coreFeePerByte: parsedCoreFeePerByte, pooling: PoolingWasm.Never, outputScript, signer });
 ```
 
 **Transfer from Identity to Address** - `addresses.transferFromIdentity`
 *Transfer credits from an identity to Platform addresses*
-
-**Disabled:** Platform addresses not fully implemented in SDK
 
 Signature: `transferFromIdentity(options: wasm.IdentityTransferToAddressesOptions): Promise<wasm.IdentityTransferToAddressesResult>`
 
@@ -3160,9 +3178,10 @@ Returns:
 
 Example:
 ```javascript
-import { IdentitySigner, PlatformAddressOutput } from '@dashevo/evo-sdk';
+import { IdentitySigner } from '@dashevo/evo-sdk';
 const identity = await sdk.identities.fetch(identityId);
-const outputs = [new PlatformAddressOutput({ address: recipientAddress, amount })];
+if (!identity) throw new Error('Identity not found');
+const outputs = [{ address: recipientAddress, amount: BigInt(amount) }];
 const signer = new IdentitySigner();
 signer.addKeyFromWif(privateKeyWif);
 await sdk.addresses.transferFromIdentity({ identity, outputs, signer });
@@ -3170,8 +3189,6 @@ await sdk.addresses.transferFromIdentity({ identity, outputs, signer });
 
 **Fund Address from Asset Lock** - `addresses.fundFromAssetLock`
 *Fund Platform addresses from an asset lock*
-
-**Disabled:** Platform addresses not fully implemented in SDK
 
 Signature: `fundFromAssetLock(options: wasm.AddressFundingFromAssetLockOptions): Promise<Map<string, wasm.PlatformAddressInfo>>`
 
@@ -3211,18 +3228,18 @@ Returns:
 
 Example:
 ```javascript
-import { AssetLockProof, PlatformAddressOutput, PlatformAddressSigner, PrivateKey } from '@dashevo/evo-sdk';
+import { AssetLockProof, FeeStrategyStep, PlatformAddressSigner, PrivateKey } from '@dashevo/evo-sdk';
 const assetLockProof = AssetLockProof.fromHex(assetLockProofHex);
 const assetLockPrivateKey = PrivateKey.fromWIF(assetLockPrivateKeyWif);
-const outputs = [new PlatformAddressOutput({ address: recipientAddress, amount })];
 const signer = new PlatformAddressSigner();
-await sdk.addresses.fundFromAssetLock({ assetLockProof, assetLockPrivateKey, outputs, signer });
+signer.addKey(PrivateKey.fromWIF(addressPrivateKeyWif));
+const outputs = [{ address: recipientAddress }];
+const feeStrategy = [FeeStrategyStep.reduceOutput(0)];
+await sdk.addresses.fundFromAssetLock({ assetLockProof, assetLockPrivateKey, outputs, feeStrategy, signer });
 ```
 
 **Create Identity from Address** - `addresses.createIdentity`
 *Create a new identity funded from Platform addresses*
-
-**Disabled:** Platform addresses not fully implemented in SDK
 
 Signature: `createIdentity(options: wasm.IdentityCreateFromAddressesOptions): Promise<wasm.IdentityCreateFromAddressesResult>`
 
@@ -3262,16 +3279,16 @@ Returns:
 
 Example:
 ```javascript
-import { Identifier, Identity, IdentityPublicKeyInCreation, IdentitySigner, KeyType, PlatformAddressInput, PlatformAddressSigner, PrivateKey, Purpose, SecurityLevel } from '@dashevo/evo-sdk';
+import { Identifier, Identity, IdentityPublicKeyInCreation, IdentitySigner, KeyType, PlatformAddressSigner, PrivateKey, Purpose, SecurityLevel } from '@dashevo/evo-sdk';
 const identityPrivateKey = PrivateKey.fromWIF(identityPrivateKeyWif);
-const identity = new Identity(Identifier.random());
+const identity = new Identity(Identifier.fromBytes(crypto.getRandomValues(new Uint8Array(32))));
 const identityPublicKey = new IdentityPublicKeyInCreation({ keyId: 0, purpose: Purpose.AUTHENTICATION, securityLevel: SecurityLevel.MASTER, keyType: KeyType.ECDSA_SECP256K1, data: identityPrivateKey.getPublicKey().toBytes() }).toIdentityPublicKey();
 identity.addPublicKey(identityPublicKey);
-const inputs = [new PlatformAddressInput({ address: senderAddress, amount })];
+const addressSigner = new PlatformAddressSigner();
+const derivedAddress = addressSigner.addKey(PrivateKey.fromWIF(addressPrivateKeyWif));
+const inputs = [{ address: derivedAddress.toBech32m(network), amount: BigInt(amount) }];
 const identitySigner = new IdentitySigner();
 identitySigner.addKey(identityPrivateKey);
-const addressSigner = new PlatformAddressSigner();
-addressSigner.addKey(addressPrivateKey);
 await sdk.addresses.createIdentity({ identity, inputs, identitySigner, addressSigner });
 ```
 
