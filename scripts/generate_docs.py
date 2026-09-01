@@ -65,6 +65,12 @@ TESTNET_TEST_DATA = {
     'token_id': 'Hqyu8WcRwXCTwbNxdga4CN5gsVEGc67wng4TFzceyLUv',
     'document_type': 'domain',
     'document_id': '7NYmEKQsYtniQRUmxwdPGeVcirMoPh5ZPyAKz8BWFy3r',
+    # DashRate demo contract: review type has countable indices on
+    # [resourceId] and [resourceId, rating] plus documentsKeepHistory.
+    'aggregate_contract_id': 'BdgTqaTAPYMyhp1WdeWdcvYSgoD7AuJ7tVCaCSXyQgyP',
+    'aggregate_document_type': 'review',
+    'aggregate_resource_id': 'identities-names',
+    'history_document_id': '2kWsepFc3PoHEee97xpJQTfbXtaDU9RHB4KdH52wk8f4',
     'username': 'alice',
     'epoch': 8635,
     'platform_address': 'tdash1krt0z5hrcaphyuraxmk2h2ff8nyv5fmncsgf7evf',
@@ -296,6 +302,48 @@ def evo_example_for_query(key: str, inputs: List[dict]):
                 '{data['document_id']}'
             )
         """),
+        'getDocumentCount': example(f"""
+            // Requires an index declaring countable on the queried properties.
+            return await sdk.documents.count({{
+                dataContractId: '{data['aggregate_contract_id']}',
+                documentTypeName: '{data['aggregate_document_type']}',
+                where: [["resourceId", "==", "{data['aggregate_resource_id']}"]],
+                orderBy: [["resourceId", "asc"]]
+            }})
+        """),
+        'getDocumentSum': example(f"""
+            // The second argument names the numeric document property to sum.
+            // Requires an index declaring summable for that property; no known
+            // testnet contract has one yet, so this call shape is illustrative
+            // and the server will reject it against this contract.
+            return await sdk.documents.sum({{
+                dataContractId: '{data['aggregate_contract_id']}',
+                documentTypeName: '{data['aggregate_document_type']}',
+                where: [["resourceId", "==", "{data['aggregate_resource_id']}"]],
+                orderBy: [["resourceId", "asc"]]
+            }}, 'rating')
+        """),
+        'getDocumentAverage': example(f"""
+            // Returns {{ count, sum }} per entry - divide sum by count for the average.
+            // Requires an index declaring summable for the aggregated property; no
+            // known testnet contract has one yet, so this call shape is illustrative
+            // and the server will reject it against this contract.
+            return await sdk.documents.average({{
+                dataContractId: '{data['aggregate_contract_id']}',
+                documentTypeName: '{data['aggregate_document_type']}',
+                where: [["resourceId", "==", "{data['aggregate_resource_id']}"]],
+                orderBy: [["resourceId", "asc"]]
+            }}, 'rating')
+        """),
+        'getDocumentHistory': example(f"""
+            // Requires a document type with history retention (documentsKeepHistory).
+            return await sdk.documents.history({{
+                dataContractId: '{data['aggregate_contract_id']}',
+                documentTypeName: '{data['aggregate_document_type']}',
+                documentId: '{data['history_document_id']}',
+                limit: 10
+            }})
+        """),
         'getDpnsUsername': example(f"""
             return await sdk.dpns.username('{data['identity_id']}')
         """),
@@ -431,6 +479,10 @@ def evo_example_for_query(key: str, inputs: List[dict]):
         'getTokenTotalSupply': example(f"""
             return await sdk.tokens.totalSupply('{data['token_id']}')
         """),
+        'getTokenBalancesForIdentity': example(f"""
+            // The result map is keyed by token ID.
+            return await sdk.tokens.identityBalances('{data['identity_id']}', ['{data['token_id']}'])
+        """),
         'getGroupInfo': example(f"""
             return await sdk.group.info('{data['group_contract_id']}', 0)
         """),
@@ -510,6 +562,27 @@ def evo_example_for_query(key: str, inputs: List[dict]):
         'getIdentityByNonUniquePublicKeyHash': example(f"""
             return await sdk.identities.byNonUniquePublicKeyHash('{data['public_key_hash_non_unique']}')
         """),
+        # Shielded pool
+        'getShieldedPoolState': example("""
+            // Total shielded pool balance in credits (undefined if the pool is empty).
+            return await sdk.shielded.poolState()
+        """),
+        'getShieldedEncryptedNotes': example("""
+            return await sdk.shielded.encryptedNotes(0n, 10)
+        """),
+        'getShieldedAnchors': example("""
+            // Each anchor is a 32-byte Uint8Array.
+            return await sdk.shielded.anchors()
+        """),
+        'getShieldedMostRecentAnchor': example("""
+            // 32-byte Uint8Array, or undefined if no anchor exists yet.
+            return await sdk.shielded.mostRecentAnchor()
+        """),
+        'getShieldedNullifiers': example("""
+            // Each nullifier must be exactly 32 bytes.
+            const nullifier = new Uint8Array(32);
+            return await sdk.shielded.nullifiers([nullifier])
+        """),
     }
     return examples.get(key)
 
@@ -565,6 +638,51 @@ def safe_value(text) -> str:
     return escape(str(text), quote=False)
 
 
+def render_description_html(text, css_class: str = 'parameter-description') -> str:
+    """Render the small Markdown subset used by declaration JSDoc."""
+    if not text:
+        return ''
+
+    def render_inline(value: str) -> str:
+        escaped = safe_value(value)
+        return re.sub(r'`([^`]+)`', r'<code>\1</code>', escaped)
+
+    blocks: List[str] = []
+    paragraph: List[str] = []
+    list_items: List[List[str]] = []
+
+    def flush_paragraph() -> None:
+        if paragraph:
+            blocks.append(f'<p class="{css_class}">{render_inline(" ".join(paragraph))}</p>')
+            paragraph.clear()
+
+    def flush_list() -> None:
+        if list_items:
+            items = ''.join(
+                f'<li>{render_inline(" ".join(item))}</li>'
+                for item in list_items
+            )
+            blocks.append(f'<ul class="{css_class}-list">{items}</ul>')
+            list_items.clear()
+
+    for raw_line in str(text).splitlines():
+        line = raw_line.strip()
+        if not line:
+            flush_paragraph()
+            flush_list()
+        elif line.startswith('- '):
+            flush_paragraph()
+            list_items.append([line[2:].strip()])
+        elif list_items:
+            list_items[-1].append(line)
+        else:
+            paragraph.append(line)
+
+    flush_paragraph()
+    flush_list()
+    return '\n'.join(blocks)
+
+
 def render_parameter(param: dict) -> str:
     name = safe_value(param.get('name') or 'Parameter')
     param_type = str(param.get('type', 'text'))
@@ -585,7 +703,7 @@ def render_parameter(param: dict) -> str:
 
     description = param.get('description')
     if description:
-        lines.append(f'                    <p class="parameter-description">{safe_value(description)}</p>')
+        lines.append(textwrap.indent(render_description_html(description), '                    '))
 
     properties = param.get('properties') or []
     if properties:
@@ -607,7 +725,7 @@ def render_parameter(param: dict) -> str:
                 '                            </div>',
             ])
             if prop.get('description'):
-                lines.append(f'                            <p class="parameter-description">{safe_value(prop["description"])}</p>')
+                lines.append(textwrap.indent(render_description_html(prop['description']), '                            '))
             lines.append('                        </div>')
         lines.append('                    </div>')
 
@@ -646,9 +764,16 @@ def format_example(code: str, header: str, add_return: bool) -> str:
 
     body_lines = formatted.split('\n')
     if add_return and body_lines:
-        first_line = body_lines[0].lstrip()
-        if first_line and not first_line.startswith('return'):
-            body_lines[0] = f'return {first_line}'
+        # Skip leading comment lines so the return lands on the expression.
+        first_index = 0
+        while first_index < len(body_lines) and (
+            not body_lines[first_index].strip() or body_lines[first_index].lstrip().startswith('//')
+        ):
+            first_index += 1
+        if first_index < len(body_lines):
+            first_line = body_lines[first_index].lstrip()
+            if first_line and not first_line.startswith(('return', 'const ', 'let ', 'var ', 'import ')):
+                body_lines[first_index] = f'return {first_line}'
 
     def replace_client(line: str) -> str:
         return line.replace('client', 'sdk')
