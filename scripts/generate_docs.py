@@ -1417,18 +1417,26 @@ def generate_docs_script() -> str:
     return textwrap.dedent(script).strip()
 
 
+def split_package_level_defs(query_defs: dict) -> tuple[dict, dict]:
+    """Split package-level namespace categories (wallet) out of the query
+    definitions so they can be rendered as their own top-level docs section
+    instead of trailing the platform queries."""
+    platform = {key: value for key, value in query_defs.items() if key not in PACKAGE_LEVEL_NAMESPACES}
+    package_level = {key: value for key, value in query_defs.items() if key in PACKAGE_LEVEL_NAMESPACES}
+    return platform, package_level
+
+
 def generate_docs_html(query_defs: dict, transition_defs: dict, type_metadata: dict) -> str:
+    platform_query_defs, wallet_defs = split_package_level_defs(query_defs)
     # Deliberately NOT `item.get('sdk_example') or …` (unlike the AI
     # reference): docs.html examples are runnable function bodies executed via
     # `new Function(...)` by the page's Run button, so they must not contain
     # import statements — sdk_example snippets are standalone modules that do.
     # Runnable variants live in evo_example_for_query; keep the two in sync
     # when editing either.
-    query_sections = collect_sections(
-        query_defs,
-        'queries',
-        lambda key, item: evo_example_for_query(key, item.get('inputs', []))
-    )
+    runnable_example = lambda key, item: evo_example_for_query(key, item.get('inputs', []))
+    query_sections = collect_sections(platform_query_defs, 'queries', runnable_example)
+    wallet_sections = collect_sections(wallet_defs, 'queries', runnable_example)
     transition_sections = collect_sections(
         transition_defs,
         'transitions',
@@ -1436,10 +1444,28 @@ def generate_docs_html(query_defs: dict, transition_defs: dict, type_metadata: d
     )
 
     sidebar_queries = build_sidebar_entries(query_sections, 'query')
+    sidebar_wallet = build_sidebar_entries(wallet_sections, 'wallet')
     sidebar_transitions = build_sidebar_entries(transition_sections, 'transition')
 
     query_content = render_categories(query_sections, 'query', '// Evo SDK example', True) if query_sections else ''
+    wallet_content = render_categories(wallet_sections, 'wallet', '// Evo SDK example', True) if wallet_sections else ''
     transition_content = render_categories(transition_sections, 'transition', '// Evo SDK example (requires keys/funding)', False) if transition_sections else ''
+
+    # Wallet helpers render as their own top-level section below transitions.
+    sidebar_wallet_block = ''
+    wallet_section_block = ''
+    if wallet_sections:
+        sidebar_wallet_block = f'''
+        <div class="section-header">Wallet Helpers</div>
+        <ul>
+{textwrap.indent(sidebar_wallet, '            ')}
+        </ul>
+'''
+        wallet_section_block = f'''
+        <h2 id="wallet-helpers"><a class="section-anchor" href="#wallet-helpers">Wallet Helpers</a></h2>
+        <p class="description">Package-level helpers (<code>import {{ wallet }} from '@dashevo/evo-sdk'</code>) that run locally in the WebAssembly runtime — no SDK instance or platform connection required.</p>
+{wallet_content}
+'''
 
     docs_script = generate_docs_script()
 
@@ -1512,7 +1538,7 @@ def generate_docs_html(query_defs: dict, transition_defs: dict, type_metadata: d
         <ul>
 {textwrap.indent(sidebar_transitions, '            ')}
         </ul>
-    </div>
+{sidebar_wallet_block}    </div>
 
     <div class=\"main-content\">
         <nav class=\"nav\">
@@ -1535,7 +1561,7 @@ def generate_docs_html(query_defs: dict, transition_defs: dict, type_metadata: d
         <h2 id=\"state-transitions\"><a class=\"section-anchor\" href=\"#state-transitions\">State Transitions</a></h2>
         <p class=\"description\">Evo SDK v4 state transitions accept constructed payload objects plus the appropriate public key and signer object. Build an <code>IdentitySigner</code> with <code>addKeyFromWif</code>; do not pass a WIF string directly in a transition call. Identity creation and asset-lock top ups instead take typed <code>AssetLockProof</code> and <code>PrivateKey</code> objects.</p>
 {transition_content}
-    </div>
+{wallet_section_block}    </div>
 </body>
 </html>
 """
@@ -1587,6 +1613,7 @@ def format_ai_example_block(code: str | None, item_key: str) -> str:
 
 
 def generate_ai_reference_md(query_defs: dict, transition_defs: dict, type_metadata: dict) -> str:
+    platform_query_defs, wallet_defs = split_package_level_defs(query_defs)
     identity_sample = TESTNET_TEST_DATA['identity_id']
     contract_sample = TESTNET_TEST_DATA['data_contract_id']
 
@@ -1638,10 +1665,6 @@ def generate_ai_reference_md(query_defs: dict, transition_defs: dict, type_metad
         'const result = await sdk.<namespace>.<method>(params);',
         '```',
         '',
-        'Exception: the `wallet` namespace is a package-level export (`import { wallet } from '
-        "'@dashevo/evo-sdk'`), called as `wallet.<method>(…)` without an SDK instance or "
-        'platform connection.',
-        '',
         '### Available Queries',
     ]
 
@@ -1673,8 +1696,8 @@ def generate_ai_reference_md(query_defs: dict, transition_defs: dict, type_metad
 
             target.append('')
 
-    def append_query_sections() -> None:
-        for cat_key, category in query_defs.items():
+    def append_query_sections(definitions: dict) -> None:
+        for cat_key, category in definitions.items():
             queries = category.get('queries') or {}
             if not queries:
                 continue
@@ -1718,7 +1741,7 @@ def generate_ai_reference_md(query_defs: dict, transition_defs: dict, type_metad
                 lines.append('```')
                 lines.append('')
 
-    append_query_sections()
+    append_query_sections(platform_query_defs)
 
     lines.extend([
         '## State Transition Operations',
@@ -1772,6 +1795,22 @@ def generate_ai_reference_md(query_defs: dict, transition_defs: dict, type_metad
             lines.append(format_ai_example_block(example_code, transition_key))
             lines.append('```')
             lines.append('')
+
+    if wallet_defs:
+        lines.extend([
+            '## Wallet Helpers',
+            '',
+            '### Pattern',
+            'The `wallet` namespace is a package-level export, called without an SDK instance '
+            'or platform connection — it runs locally in the WebAssembly runtime:',
+            '```javascript',
+            "import { wallet } from '@dashevo/evo-sdk';",
+            'const result = await wallet.<method>(params);',
+            '```',
+            '',
+            '### Available Wallet Helpers',
+        ])
+        append_query_sections(wallet_defs)
 
     lines.extend([
         '## Common Patterns',
