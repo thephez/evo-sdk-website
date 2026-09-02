@@ -76,6 +76,22 @@ TESTNET_TEST_DATA = {
     'platform_address': 'tdash1krt0z5hrcaphyuraxmk2h2ff8nyv5fmncsgf7evf',
 }
 
+# Namespaces exported at package level (not on the EvoSDK instance); their
+# examples and reference strings use `wallet.method()` instead of
+# `sdk.wallet.method()`. Keep in sync with NAMESPACE_FILES in
+# scripts/extract_sdk_types.mjs.
+PACKAGE_LEVEL_NAMESPACES = {'wallet'}
+
+# Throwaway wallet fixtures (BIP39 reference vector + a derived test key).
+# Deliberately public — never use for real funds.
+WALLET_TEST_DATA = {
+    'mnemonic': 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about',
+    'private_key_hex': 'c4bbcb1fbec99d65bf59d85c8cb62ee2db963f0fe106f483d9afa73bd4e39a8a',
+    'private_key_wif_testnet': 'cUB8G5cFtxc4usfgfovqRgCo8qTQUJtctLV8t6YYNfULg3GtehdX',
+    'public_key_hex': '0378d430274f8c5ec1321338151e9f27f4c676a008bdf8638d07c0b6be9ab35c71',
+    'address_testnet': 'yXSSUfQ8AFeWVionamYzedYSf3PANMazbw',
+}
+
 
 def example(text: str) -> str:
     return textwrap.dedent(text).strip()
@@ -583,6 +599,44 @@ def evo_example_for_query(key: str, inputs: List[dict]):
             const nullifier = new Uint8Array(32);
             return await sdk.shielded.nullifiers([nullifier])
         """),
+        # Wallet helpers: package-level `wallet` namespace, runs locally in
+        # wasm without a platform connection. Key material shown here is a
+        # throwaway test fixture — never use it for real funds.
+        # These are the RUNNABLE docs.html variants (no import line — the Run
+        # button executes them as a function body with `wallet` in scope); the
+        # standalone-module form lives in each op's sdk_example in
+        # api-definitions.json and feeds AI_REFERENCE.md. Keep both in sync.
+        'walletGenerateMnemonic': example("""
+            return await wallet.generateMnemonic({ wordCount: 12 })
+        """),
+        'walletValidateMnemonic': example(f"""
+            return await wallet.validateMnemonic('{WALLET_TEST_DATA['mnemonic']}')
+        """),
+        'walletMnemonicToSeed': example(f"""
+            // Returns the 64-byte BIP39 seed as a Uint8Array.
+            return await wallet.mnemonicToSeed('{WALLET_TEST_DATA['mnemonic']}')
+        """),
+        'walletGenerateKeyPair': example("""
+            return await wallet.generateKeyPair('testnet')
+        """),
+        'walletGenerateKeyPairs': example("""
+            return await wallet.generateKeyPairs('testnet', 3)
+        """),
+        'walletKeyPairFromWif': example(f"""
+            return await wallet.keyPairFromWif('{WALLET_TEST_DATA['private_key_wif_testnet']}')
+        """),
+        'walletKeyPairFromHex': example(f"""
+            return await wallet.keyPairFromHex('{WALLET_TEST_DATA['private_key_hex']}', 'testnet')
+        """),
+        'walletPubkeyToAddress': example(f"""
+            return await wallet.pubkeyToAddress('{WALLET_TEST_DATA['public_key_hex']}', 'testnet')
+        """),
+        'walletValidateAddress': example(f"""
+            return await wallet.validateAddress('{WALLET_TEST_DATA['address_testnet']}', 'testnet')
+        """),
+        'walletSignMessage': example(f"""
+            return await wallet.signMessage('Hello Dash', '{WALLET_TEST_DATA['private_key_wif_testnet']}')
+        """),
     }
     return examples.get(key)
 
@@ -823,8 +877,11 @@ def render_operation(
     sdk_method = str(item.get('sdk_method') or '')
     sdk_namespace, separator, sdk_method_name = sdk_method.rpartition('.')
     if separator:
+        # Package-level namespaces are imported directly, not reached through
+        # an EvoSDK instance, so they get no `sdk.` prefix.
+        instance_prefix = '' if sdk_namespace in PACKAGE_LEVEL_NAMESPACES else 'sdk.'
         sdk_path_html = (
-            f'<span>sdk.{safe_value(sdk_namespace)}.</span>'
+            f'<span>{instance_prefix}{safe_value(sdk_namespace)}.</span>'
             f'<strong>{safe_value(sdk_method_name)}</strong>'
         )
     else:
@@ -889,12 +946,15 @@ def render_categories(
     for cat_key, category, items in sections:
         label = safe_value(category.get('label', cat_key))
         category_id = f'{prefix}-category-{cat_key}'
+        category_note = ''
+        if category.get('description'):
+            category_note = f'\n        <p class="description">{safe_value(category["description"])}</p>'
         operations = '\n'.join(
             render_operation(prefix, item_key, item, example, header, include_run_button)
             for item_key, item, example in items
         )
         blocks.append(f'''    <div class="category operation-category">
-        <h3 id="{category_id}"><a class="category-anchor" href="#{category_id}">{label}</a></h3>
+        <h3 id="{category_id}"><a class="category-anchor" href="#{category_id}">{label}</a></h3>{category_note}
 {operations}
     </div>''')
     return '\n'.join(blocks)
@@ -902,7 +962,7 @@ def render_categories(
 
 def generate_docs_script() -> str:
     script = """
-        import { EvoSDK } from './dist/evo-sdk.module.js';
+        import { EvoSDK, wallet } from './dist/evo-sdk.module.js';
 
         let client = null;
         let clientPromise = null;
@@ -1089,10 +1149,12 @@ def generate_docs_script() -> str:
             result.style.display = 'none';
 
             try {
-                const sdk = await getClient();
                 const code = codeElement.textContent;
-                const fn = new Function('EvoSDK', 'getClient', 'sdk', 'return (async () => { ' + code + ' })();');
-                const output = await fn(EvoSDK, getClient, sdk);
+                // Wallet helper examples run locally in wasm; only connect a
+                // platform client for examples that actually use `sdk`.
+                const sdk = /\\bsdk\\b/.test(code) ? await getClient() : null;
+                const fn = new Function('EvoSDK', 'getClient', 'sdk', 'wallet', 'return (async () => { ' + code + ' })();');
+                const output = await fn(EvoSDK, getClient, sdk, wallet);
                 result.className = 'example-result success';
                 result.textContent = formatResult(output);
                 return { success: true, output };
@@ -1356,6 +1418,12 @@ def generate_docs_script() -> str:
 
 
 def generate_docs_html(query_defs: dict, transition_defs: dict, type_metadata: dict) -> str:
+    # Deliberately NOT `item.get('sdk_example') or …` (unlike the AI
+    # reference): docs.html examples are runnable function bodies executed via
+    # `new Function(...)` by the page's Run button, so they must not contain
+    # import statements — sdk_example snippets are standalone modules that do.
+    # Runnable variants live in evo_example_for_query; keep the two in sync
+    # when editing either.
     query_sections = collect_sections(
         query_defs,
         'queries',
@@ -1570,6 +1638,10 @@ def generate_ai_reference_md(query_defs: dict, transition_defs: dict, type_metad
         'const result = await sdk.<namespace>.<method>(params);',
         '```',
         '',
+        'Exception: the `wallet` namespace is a package-level export (`import { wallet } from '
+        "'@dashevo/evo-sdk'`), called as `wallet.<method>(…)` without an SDK instance or "
+        'platform connection.',
+        '',
         '### Available Queries',
     ]
 
@@ -1609,11 +1681,14 @@ def generate_ai_reference_md(query_defs: dict, transition_defs: dict, type_metad
 
             lines.append(f"#### {category.get('label', cat_key)}")
             lines.append('')
+            if category.get('description'):
+                lines.append(f"*{category['description']}*")
+                lines.append('')
 
             for query_key, query in queries.items():
                 label = query.get('label', query_key)
                 description = query.get('description', 'No description available')
-                example_code = evo_example_for_query(query_key, query.get('inputs', []))
+                example_code = query.get('sdk_example') or evo_example_for_query(query_key, query.get('inputs', []))
 
                 # Use sdk_method field from api-definitions.json if available, otherwise fall back to query_key
                 sdk_method = query.get('sdk_method', query_key)

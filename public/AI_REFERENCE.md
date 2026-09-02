@@ -41,6 +41,8 @@ All queries follow this pattern:
 const result = await sdk.<namespace>.<method>(params);
 ```
 
+Exception: the `wallet` namespace is a package-level export (`import { wallet } from '@dashevo/evo-sdk'`), called as `wallet.<method>(…)` without an SDK instance or platform connection.
+
 ### Available Queries
 #### Identity Queries
 
@@ -1904,6 +1906,216 @@ Example:
 // Each nullifier must be exactly 32 bytes.
 const nullifier = new Uint8Array(32);
 return await sdk.shielded.nullifiers([nullifier]);
+```
+
+#### Wallet Utilities
+
+*Wallet helpers run locally in the WebAssembly runtime and never contact Dash Platform — no connection is created or required. Operations that take a network use the value selected in the site’s network selector.*
+
+**Generate Mnemonic** - `wallet.generateMnemonic`
+*Generate a random BIP39 mnemonic seed phrase. Generated key material is for testing only — never use it to store real funds.*
+
+Signature: `generateMnemonic(params?: wasm.GenerateMnemonicParams): Promise<string>`
+
+Parameters:
+- `params`: `wasm.GenerateMnemonicParams` (optional)
+  - Type declarations: [`wasm.GenerateMnemonicParams`](TYPE_REFERENCE.md#type-generatemnemonicparams)
+  - `wordCount`: `number` (optional)
+  - `languageCode`: `string` (optional)
+
+Returns:
+
+- `Promise<string>`
+
+Example:
+```javascript
+import { wallet } from '@dashevo/evo-sdk';
+const mnemonic = await wallet.generateMnemonic({ wordCount: 12 });
+```
+
+**Validate Mnemonic** - `wallet.validateMnemonic`
+*Check whether a BIP39 mnemonic seed phrase is valid. Without a language, all supported wordlists are tried.*
+
+Signature: `validateMnemonic(mnemonic: string, languageCode?: string): Promise<boolean>`
+
+Parameters:
+- `mnemonic`: `string` (required)
+
+- `languageCode`: `string` (optional)
+
+Returns:
+
+- `Promise<boolean>`
+
+Example:
+```javascript
+import { wallet } from '@dashevo/evo-sdk';
+const isValid = await wallet.validateMnemonic('your seed phrase here …');
+```
+
+**Mnemonic to Seed** - `wallet.mnemonicToSeed`
+*Derive the 64-byte BIP39 seed (hex-encoded) from a mnemonic seed phrase and optional passphrase.*
+
+Signature: `mnemonicToSeed(mnemonic: string, passphrase?: string): Promise<Uint8Array>`
+
+Parameters:
+- `mnemonic`: `string` (required)
+
+- `passphrase`: `string` (optional)
+
+Returns:
+
+- `Promise<Uint8Array>`
+
+Example:
+```javascript
+import { wallet } from '@dashevo/evo-sdk';
+const seedBytes = await wallet.mnemonicToSeed('your seed phrase here …');
+```
+
+**Generate Key Pair** - `wallet.generateKeyPair`
+*Generate a random private key with its public key and address. The network comes from the site’s network selector. Generated key material is for testing only — never use it to store real funds.*
+
+Signature: `generateKeyPair(network: NetworkLike): Promise<wasm.KeyPair>`
+
+Parameters:
+- `network`: `NetworkLike` (required)
+  - Type declarations: [`NetworkLike`](TYPE_REFERENCE.md#type-networklike)
+
+Returns:
+
+- `Promise<wasm.KeyPair>`
+  - Type declarations: [`wasm.KeyPair`](TYPE_REFERENCE.md#type-keypair)
+
+Example:
+```javascript
+import { wallet } from '@dashevo/evo-sdk';
+const keyPair = await wallet.generateKeyPair('testnet');
+```
+
+**Generate Key Pairs** - `wallet.generateKeyPairs`
+*Generate multiple random key pairs at once. The network comes from the site’s network selector. Generated key material is for testing only — never use it to store real funds.*
+
+Signature: `generateKeyPairs(network: NetworkLike, count: number): Promise<wasm.KeyPair[]>`
+
+Parameters:
+- `network`: `NetworkLike` (required)
+  - Type declarations: [`NetworkLike`](TYPE_REFERENCE.md#type-networklike)
+
+- `count`: `number` (required)
+
+Returns:
+
+- `Promise<wasm.KeyPair[]>`
+  - Type declarations: [`wasm.KeyPair`](TYPE_REFERENCE.md#type-keypair)
+
+Example:
+```javascript
+import { wallet } from '@dashevo/evo-sdk';
+const keyPairs = await wallet.generateKeyPairs('testnet', 3);
+```
+
+**Key Pair from WIF** - `wallet.keyPairFromWif`
+*Import a private key from WIF and show its public key and address. The WIF version prefix determines the network, so the site’s network selector does not affect this operation.*
+
+Signature: `keyPairFromWif(privateKeyWif: string): Promise<wasm.KeyPair>`
+
+Parameters:
+- `privateKeyWif`: `string` (required)
+
+Returns:
+
+- `Promise<wasm.KeyPair>`
+  - Type declarations: [`wasm.KeyPair`](TYPE_REFERENCE.md#type-keypair)
+
+Example:
+```javascript
+import { wallet } from '@dashevo/evo-sdk';
+const keyPair = await wallet.keyPairFromWif('cYourTestnetPrivateKeyWif…');
+```
+
+**Key Pair from Hex** - `wallet.keyPairFromHex`
+*Import a raw 32-byte private key (64 hex characters) and show its WIF, public key, and address. The network comes from the site’s network selector.*
+
+Signature: `keyPairFromHex(privateKeyHex: string, network: NetworkLike): Promise<wasm.KeyPair>`
+
+Parameters:
+- `privateKeyHex`: `string` (required)
+
+- `network`: `NetworkLike` (required)
+  - Type declarations: [`NetworkLike`](TYPE_REFERENCE.md#type-networklike)
+
+Returns:
+
+- `Promise<wasm.KeyPair>`
+  - Type declarations: [`wasm.KeyPair`](TYPE_REFERENCE.md#type-keypair)
+
+Example:
+```javascript
+import { wallet } from '@dashevo/evo-sdk';
+const keyPair = await wallet.keyPairFromHex('c4bb… (64 hex chars)', 'testnet');
+```
+
+**Public Key to Address** - `wallet.pubkeyToAddress`
+*Convert a compressed public key (hex) to a Dash address. The network comes from the site’s network selector.*
+
+Signature: `pubkeyToAddress(pubkeyHex: string, network: NetworkLike): Promise<string>`
+
+Parameters:
+- `pubkeyHex`: `string` (required)
+
+- `network`: `NetworkLike` (required)
+  - Type declarations: [`NetworkLike`](TYPE_REFERENCE.md#type-networklike)
+
+Returns:
+
+- `Promise<string>`
+
+Example:
+```javascript
+import { wallet } from '@dashevo/evo-sdk';
+const address = await wallet.pubkeyToAddress('0378d4…', 'testnet');
+```
+
+**Validate Address** - `wallet.validateAddress`
+*Check whether a Dash address is valid for a network. The network comes from the site’s network selector.*
+
+Signature: `validateAddress(address: string, network: NetworkLike): Promise<boolean>`
+
+Parameters:
+- `address`: `string` (required)
+
+- `network`: `NetworkLike` (required)
+  - Type declarations: [`NetworkLike`](TYPE_REFERENCE.md#type-networklike)
+
+Returns:
+
+- `Promise<boolean>`
+
+Example:
+```javascript
+import { wallet } from '@dashevo/evo-sdk';
+const isValid = await wallet.validateAddress('yXSSUfQ8AFeWVionamYzedYSf3PANMazbw', 'testnet');
+```
+
+**Sign Message** - `wallet.signMessage`
+*Sign an arbitrary message with a private key (WIF) using deterministic ECDSA. The message is signed exactly as entered.*
+
+Signature: `signMessage(message: string, privateKeyWif: string): Promise<string>`
+
+Parameters:
+- `message`: `string` (required)
+
+- `privateKeyWif`: `string` (required)
+
+Returns:
+
+- `Promise<string>`
+
+Example:
+```javascript
+import { wallet } from '@dashevo/evo-sdk';
+const signature = await wallet.signMessage('Hello Dash', 'cYourPrivateKeyWif…');
 ```
 
 ## State Transition Operations
