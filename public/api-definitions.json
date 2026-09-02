@@ -1786,7 +1786,7 @@
     },
     "wallet": {
       "label": "Wallet Utilities",
-      "description": "Wallet helpers run locally in the WebAssembly runtime and never contact Dash Platform — no connection is created or required. Operations that take a network use the value selected in the site’s network selector.",
+      "description": "Wallet helpers run locally in the WebAssembly runtime and never contact Dash Platform — no connection is created or required. Operations that take a network use the value selected in the site's network selector.",
       "queries": {
         "walletGenerateMnemonic": {
           "label": "Generate Mnemonic",
@@ -1971,14 +1971,14 @@
         },
         "walletGenerateKeyPair": {
           "label": "Generate Key Pair",
-          "description": "Generate a random private key with its public key and address. The network comes from the site’s network selector. Generated key material is for testing only — never use it to store real funds.",
+          "description": "Generate a random private key with its public key and address. The network comes from the site's network selector. Generated key material is for testing only — never use it to store real funds.",
           "inputs": [],
           "sdk_method": "wallet.generateKeyPair",
           "sdk_example": "import { wallet } from '@dashevo/evo-sdk';\nconst keyPair = await wallet.generateKeyPair('testnet');"
         },
         "walletGenerateKeyPairs": {
           "label": "Generate Key Pairs",
-          "description": "Generate multiple random key pairs at once. The network comes from the site’s network selector. Generated key material is for testing only — never use it to store real funds.",
+          "description": "Generate multiple random key pairs at once. The network comes from the site's network selector. Generated key material is for testing only — never use it to store real funds.",
           "inputs": [
             {
               "name": "count",
@@ -1996,7 +1996,7 @@
         },
         "walletKeyPairFromWif": {
           "label": "Key Pair from WIF",
-          "description": "Import a private key from WIF and show its public key and address. The WIF version prefix determines the network, so the site’s network selector does not affect this operation.",
+          "description": "Import a private key from WIF and show its public key and address. The WIF version prefix determines the network, so the site's network selector does not affect this operation.",
           "inputs": [
             {
               "name": "privateKeyWif",
@@ -2011,7 +2011,7 @@
         },
         "walletKeyPairFromHex": {
           "label": "Key Pair from Hex",
-          "description": "Import a raw 32-byte private key (64 hex characters) and show its WIF, public key, and address. The network comes from the site’s network selector.",
+          "description": "Import a raw 32-byte private key (64 hex characters) and show its WIF, public key, and address. The network comes from the site's network selector.",
           "inputs": [
             {
               "name": "privateKeyHex",
@@ -2026,7 +2026,7 @@
         },
         "walletPubkeyToAddress": {
           "label": "Public Key to Address",
-          "description": "Convert a compressed public key (hex) to a Dash address. The network comes from the site’s network selector.",
+          "description": "Convert a compressed public key (hex) to a Dash address. The network comes from the site's network selector.",
           "inputs": [
             {
               "name": "pubkeyHex",
@@ -2042,7 +2042,7 @@
         },
         "walletValidateAddress": {
           "label": "Validate Address",
-          "description": "Check whether a Dash address is valid for a network. The network comes from the site’s network selector.",
+          "description": "Check whether a Dash address is valid for a network. The network comes from the site's network selector.",
           "inputs": [
             {
               "name": "address",

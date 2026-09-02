@@ -1910,7 +1910,7 @@ return await sdk.shielded.nullifiers([nullifier]);
 
 #### Wallet Utilities
 
-*Wallet helpers run locally in the WebAssembly runtime and never contact Dash Platform — no connection is created or required. Operations that take a network use the value selected in the site’s network selector.*
+*Wallet helpers run locally in the WebAssembly runtime and never contact Dash Platform — no connection is created or required. Operations that take a network use the value selected in the site's network selector.*
 
 **Generate Mnemonic** - `wallet.generateMnemonic`
 *Generate a random BIP39 mnemonic seed phrase. Generated key material is for testing only — never use it to store real funds.*
@@ -1974,7 +1974,7 @@ const seedBytes = await wallet.mnemonicToSeed('your seed phrase here …');
 ```
 
 **Generate Key Pair** - `wallet.generateKeyPair`
-*Generate a random private key with its public key and address. The network comes from the site’s network selector. Generated key material is for testing only — never use it to store real funds.*
+*Generate a random private key with its public key and address. The network comes from the site's network selector. Generated key material is for testing only — never use it to store real funds.*
 
 Signature: `generateKeyPair(network: NetworkLike): Promise<wasm.KeyPair>`
 
@@ -1994,7 +1994,7 @@ const keyPair = await wallet.generateKeyPair('testnet');
 ```
 
 **Generate Key Pairs** - `wallet.generateKeyPairs`
-*Generate multiple random key pairs at once. The network comes from the site’s network selector. Generated key material is for testing only — never use it to store real funds.*
+*Generate multiple random key pairs at once. The network comes from the site's network selector. Generated key material is for testing only — never use it to store real funds.*
 
 Signature: `generateKeyPairs(network: NetworkLike, count: number): Promise<wasm.KeyPair[]>`
 
@@ -2016,7 +2016,7 @@ const keyPairs = await wallet.generateKeyPairs('testnet', 3);
 ```
 
 **Key Pair from WIF** - `wallet.keyPairFromWif`
-*Import a private key from WIF and show its public key and address. The WIF version prefix determines the network, so the site’s network selector does not affect this operation.*
+*Import a private key from WIF and show its public key and address. The WIF version prefix determines the network, so the site's network selector does not affect this operation.*
 
 Signature: `keyPairFromWif(privateKeyWif: string): Promise<wasm.KeyPair>`
 
@@ -2035,7 +2035,7 @@ const keyPair = await wallet.keyPairFromWif('cYourTestnetPrivateKeyWif…');
 ```
 
 **Key Pair from Hex** - `wallet.keyPairFromHex`
-*Import a raw 32-byte private key (64 hex characters) and show its WIF, public key, and address. The network comes from the site’s network selector.*
+*Import a raw 32-byte private key (64 hex characters) and show its WIF, public key, and address. The network comes from the site's network selector.*
 
 Signature: `keyPairFromHex(privateKeyHex: string, network: NetworkLike): Promise<wasm.KeyPair>`
 
@@ -2057,7 +2057,7 @@ const keyPair = await wallet.keyPairFromHex('c4bb… (64 hex chars)', 'testnet')
 ```
 
 **Public Key to Address** - `wallet.pubkeyToAddress`
-*Convert a compressed public key (hex) to a Dash address. The network comes from the site’s network selector.*
+*Convert a compressed public key (hex) to a Dash address. The network comes from the site's network selector.*
 
 Signature: `pubkeyToAddress(pubkeyHex: string, network: NetworkLike): Promise<string>`
 
@@ -2078,7 +2078,7 @@ const address = await wallet.pubkeyToAddress('0378d4…', 'testnet');
 ```
 
 **Validate Address** - `wallet.validateAddress`
-*Check whether a Dash address is valid for a network. The network comes from the site’s network selector.*
+*Check whether a Dash address is valid for a network. The network comes from the site's network selector.*
 
 Signature: `validateAddress(address: string, network: NetworkLike): Promise<boolean>`
 
