@@ -59,8 +59,8 @@ describe('generated return type documentation', () => {
       expect.objectContaining({ name: 'document', type: 'Document', optional: false }),
       expect.objectContaining({ name: 'settings', type: 'PutSettings', optional: true }),
     ]));
-    expect(aiReference).toContain('Signature: `create(options: wasm.DocumentCreateOptions): Promise<void>`');
-    expect(docs).toContain('create(options: wasm.DocumentCreateOptions): Promise&lt;void&gt;');
+    expect(aiReference).toContain('Signature: `create(options: wasm.DocumentCreateOptions): Promise<wasm.Document>`');
+    expect(docs).toContain('create(options: wasm.DocumentCreateOptions): Promise&lt;wasm.Document&gt;');
   });
 
   it('keeps playground construction fields out of SDK documentation', () => {
